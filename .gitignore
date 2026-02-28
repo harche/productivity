@@ -1,0 +1,6 @@
+.playwright-cli/
+.claude/projects/
+.claude/plans/
+.claude/memory/
+.claude/settings.local.json
+node_modules/
