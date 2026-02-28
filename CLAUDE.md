@@ -8,7 +8,7 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 - `docs/` — Important documents and references (gitignored, local-only)
 - `bookmarks/` — Saved links and resources (gitignored, local-only)
 - `slack-browser-tools/` — Slack API integration via browser session injection
-- `.claude/skills/` — Skill definitions (playwright-cli, slack, gmail/workspace, jira)
+- `.claude/skills/` — Skill definitions (playwright-cli, slack, gmail/workspace, jira, github)
 
 ## Skills
 
@@ -16,6 +16,7 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 - `/slack` — Read/search/send Slack messages via browser session
 - `/gmail` — Gmail, Google Calendar, Drive, and Docs via `gog` CLI
 - `/jira` — View, search, create, and update Jira issues via REST API
+- `/github` — GitHub repos, PRs, issues, and actions via `gh` CLI
 
 ## Guardrails
 
