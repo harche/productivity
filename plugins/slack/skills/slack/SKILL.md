@@ -73,12 +73,24 @@ All commands output **clean JSON** with Slack markup already converted:
 - `<https://url|text>` → `[text](https://url)`
 - `&amp;` `&lt;` `&gt;` → `&` `<` `>`
 
+## Enterprise Grid Restrictions
+
+This workspace runs on Slack Enterprise Grid, which restricts certain API methods for browser session tokens. **Avoid these API calls** — they will fail with `enterprise_is_restricted`:
+- `conversations.list` (especially with `types: "im"`)
+- Other admin/discovery endpoints
+
+**Use `search` instead.** For example, to check recent DMs or mentions:
+- `search "to:me"` — messages sent to you
+- `search "from:@username"` — messages from a specific person
+- `search "in:#channel"` — messages in a specific channel
+
 ## Error Handling
 
 - If the browser is not connected, the tool prints an error asking to run `playwright-cli open --extension`
 - If the token is stale, clear and re-init: run `init` command
 - Rate limiting (429) is handled automatically with retry
 - 1 second delay between API calls to avoid detection
+- `enterprise_is_restricted` — see Enterprise Grid Restrictions above
 
 ## Important
 

@@ -195,6 +195,15 @@ function formatUser(u) {
   };
 }
 
+// --- Enterprise Grid restricted methods ---
+// These API methods fail with `enterprise_is_restricted` on Enterprise Grid
+// workspaces when using browser session tokens.
+const RESTRICTED_METHODS = {
+  "conversations.list": 'Use "search" command instead (e.g., search "in:#channel" or search "to:me")',
+  "conversations.open": 'Use "search" command to find DMs (e.g., search "from:@username")',
+  "users.conversations": 'Use "search" command instead (e.g., search "in:#channel")',
+};
+
 // --- Commands ---
 
 const [, , command, ...args] = process.argv;
@@ -266,7 +275,14 @@ async function main() {
          return await window.__slack.channels(args.types);`,
         { types: args[0] || null }
       );
-      if (!data.ok) { console.error("API error:", data.error); process.exit(1); }
+      if (!data.ok) {
+        if (data.error === "enterprise_is_restricted") {
+          console.error('ERROR: "conversations.list" is restricted on this Enterprise Grid workspace.');
+          console.error('Use the "search" command instead (e.g., search "in:#channel-name").');
+          process.exit(1);
+        }
+        console.error("API error:", data.error); process.exit(1);
+      }
       const channels = (data.items || []).map(formatChannel);
       console.log(JSON.stringify(channels, null, 2));
       break;
@@ -391,6 +407,11 @@ async function main() {
     case "api": {
       const method = args[0];
       if (!method) { console.error("Usage: slack.mjs api <method> [json-params]"); process.exit(1); }
+      if (RESTRICTED_METHODS[method]) {
+        console.error(`ERROR: "${method}" is restricted on Enterprise Grid workspaces.`);
+        console.error(`Suggestion: ${RESTRICTED_METHODS[method]}`);
+        process.exit(1);
+      }
       const params = args[1] ? JSON.parse(args[1]) : {};
       ensureInit();
       const data = runInBrowser(
@@ -398,6 +419,11 @@ async function main() {
          return await window.__slack.call(args.method, args.params);`,
         { method, params }
       );
+      if (!data.ok && data.error === "enterprise_is_restricted") {
+        console.error(`ERROR: "${method}" is restricted on this Enterprise Grid workspace.`);
+        console.error('Use the "search" command as an alternative.');
+        process.exit(1);
+      }
       console.log(JSON.stringify(data, null, 2));
       break;
     }
