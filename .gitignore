@@ -4,3 +4,4 @@ node_modules/
 workspace/
 docs/
 bookmarks/
+plugins/**/.playwright-cli/

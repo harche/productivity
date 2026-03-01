@@ -1,0 +1,5 @@
+{
+  "name": "playwright-cli",
+  "description": "Browser automation for web testing, screenshots, and data extraction",
+  "version": "1.0.0"
+}

@@ -8,8 +8,9 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 - `docs/` — Important documents and references (gitignored, local-only)
 - `bookmarks/` — Saved links and resources (gitignored, local-only)
 - `slack-browser-tools/` — Slack API integration via browser session injection
-- `skills/` — Skills registry organized by category (`skills/<category>/<skill>/`)
-- `.claude/skills/` — Local skill copies (flat, auto-discovered by Claude Code)
+- `plugins/` — Plugin marketplace: each plugin is at `plugins/<name>/` with `.claude-plugin/plugin.json`
+- `.claude-plugin/marketplace.json` — Marketplace catalog listing all plugins
+- `.claude/skills/` — Local standalone skill copies (flat, auto-discovered by Claude Code)
 
 ## Skills
 
@@ -31,9 +32,13 @@ API tokens are stored in macOS Keychain and loaded as environment variables via 
 security add-generic-password -a "$USER" -s "TOKEN_NAME" -w "new-value" -U
 ```
 
-## Copying Skills to Other Repos
+## Distributing Plugins to Other Repos
 
-`copy-skills.sh` installs skills from the registry into a project's `.claude/skills/`. Supports installing by name (`jira github`), by category (`-c redhat`), all (`all`), or interactive mode (no args). Use `--list` to see skills grouped by category.
+In the target repo, use Claude Code's native plugin system:
+```bash
+/plugin marketplace add harche/productivity
+/plugin install jira@productivity-tools
+```
 
 ## Guardrails
 

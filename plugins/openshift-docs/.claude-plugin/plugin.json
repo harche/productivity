@@ -1,0 +1,5 @@
+{
+  "name": "openshift-docs",
+  "description": "Search and read OpenShift Container Platform docs",
+  "version": "1.0.0"
+}

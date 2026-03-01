@@ -14,53 +14,49 @@ Slack must be open in Chrome, connected via Playwright CLI extension. If the bro
 
 ## Commands
 
-All commands go through a single CLI tool at `slack-browser-tools/slack.mjs` (relative to project root). It handles init, auth, and rate limiting automatically.
-
-The CLI path relative to this skill file is `../../../slack-browser-tools/slack.mjs`. Use the skill's base directory to construct the full path. For example if the base directory is `/path/to/project/.claude/skills/slack`, the CLI is at `/path/to/project/slack-browser-tools/slack.mjs`.
+All commands go through a single CLI tool bundled at `${CLAUDE_PLUGIN_ROOT}/slack-browser-tools/slack.mjs`. It handles init, auth, and rate limiting automatically.
 
 ```bash
 # Fetch content from a Slack URL (channels, threads, messages)
-node <project-root>/slack-browser-tools/slack.mjs url "<slack-url>"
+node ${CLAUDE_PLUGIN_ROOT}/slack-browser-tools/slack.mjs url "<slack-url>"
 
 # Read channel history
-node <project-root>/slack-browser-tools/slack.mjs history <channelId> [limit]
+node ${CLAUDE_PLUGIN_ROOT}/slack-browser-tools/slack.mjs history <channelId> [limit]
 
 # Read a thread
-node <project-root>/slack-browser-tools/slack.mjs thread <channelId> <threadTs>
+node ${CLAUDE_PLUGIN_ROOT}/slack-browser-tools/slack.mjs thread <channelId> <threadTs>
 
 # Search messages
-node <project-root>/slack-browser-tools/slack.mjs search "<query>" [count]
+node ${CLAUDE_PLUGIN_ROOT}/slack-browser-tools/slack.mjs search "<query>" [count]
 
 # List channels
-node <project-root>/slack-browser-tools/slack.mjs channels
+node ${CLAUDE_PLUGIN_ROOT}/slack-browser-tools/slack.mjs channels
 
 # Channel details
-node <project-root>/slack-browser-tools/slack.mjs channel-info <channelId>
+node ${CLAUDE_PLUGIN_ROOT}/slack-browser-tools/slack.mjs channel-info <channelId>
 
 # List users
-node <project-root>/slack-browser-tools/slack.mjs users [limit]
+node ${CLAUDE_PLUGIN_ROOT}/slack-browser-tools/slack.mjs users [limit]
 
 # User details
-node <project-root>/slack-browser-tools/slack.mjs user-info <userId>
+node ${CLAUDE_PLUGIN_ROOT}/slack-browser-tools/slack.mjs user-info <userId>
 
 # Send a message (ALWAYS confirm with user first)
-node <project-root>/slack-browser-tools/slack.mjs send <channelId> "<text>" [threadTs]
+node ${CLAUDE_PLUGIN_ROOT}/slack-browser-tools/slack.mjs send <channelId> "<text>" [threadTs]
 
 # Add a reaction (ALWAYS confirm with user first)
-node <project-root>/slack-browser-tools/slack.mjs react <channelId> <messageTs> <emoji>
+node ${CLAUDE_PLUGIN_ROOT}/slack-browser-tools/slack.mjs react <channelId> <messageTs> <emoji>
 
 # Call any Slack API method directly
-node <project-root>/slack-browser-tools/slack.mjs api <method> '<json-params>'
+node ${CLAUDE_PLUGIN_ROOT}/slack-browser-tools/slack.mjs api <method> '<json-params>'
 ```
-
-**Resolving `<project-root>`**: The skill's base directory is provided at the top of the skill invocation. Strip `.claude/skills/slack` from it to get the project root. For example: base directory `/foo/bar/.claude/skills/slack` → project root is `/foo/bar`.
 
 ## URL Parsing
 
 When the user shares a Slack URL, use the `url` command — it automatically parses the channel ID, message timestamp, and thread info:
 
 ```bash
-node <project-root>/slack-browser-tools/slack.mjs url "https://redhat-internal.slack.com/archives/C0A8HU4VCG0/p1771943379438339"
+node ${CLAUDE_PLUGIN_ROOT}/slack-browser-tools/slack.mjs url "https://redhat-internal.slack.com/archives/C0A8HU4VCG0/p1771943379438339"
 ```
 
 Supported URL patterns:
