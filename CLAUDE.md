@@ -40,6 +40,10 @@ security add-generic-password -a "$USER" -s "TOKEN_NAME" -w "new-value" -U
 - Never delete files, branches, or data without confirmation.
 - When working in `workspace/` repos, respect each repo's own CLAUDE.md if present.
 
+## Bookmarks
+
+Chrome bookmarks are at `~/Library/Application Support/Google/Chrome/Default/Bookmarks` (JSON). Read this file directly when looking up saved links.
+
 ## Conventions
 
 - Keep responses concise and direct.
