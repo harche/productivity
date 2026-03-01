@@ -13,27 +13,26 @@ cd productivity
 
 ### 2. Set up a workspace
 
-Create a project folder and install the skills you need:
+Clone a project into `workspace/` and install skills:
 
 ```bash
-# Working on a real project
-mkdir -p workspace/my-project && cd workspace/my-project
-git init
+cd workspace
+git clone https://github.com/openshift/kubernetes.git && cd kubernetes
 
-# Install skills
+# Install skills — the repo already has .git, so you're good to go
 ../../copy-skills.sh jira github openshift-docs
 ```
 
-Or just spin up a scratch workspace for quick lookups:
+Now open Claude Code in that directory and start asking questions.
+
+**No git repo?** If you're working in a plain folder (not a git repo), run `git init` first. This creates a `.git` boundary so Claude Code only discovers skills installed in that folder — not from parent directories.
 
 ```bash
 mkdir -p workspace/scratch && cd workspace/scratch
-git init    # .git boundary prevents Claude from searching parent dirs for skills
+git init
 
 ../../copy-skills.sh support-cases knowledge-base jira
 ```
-
-Now open Claude Code in that directory and start asking questions.
 
 ### 3. Install skills
 
