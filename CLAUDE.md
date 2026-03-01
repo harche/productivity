@@ -28,6 +28,10 @@ API tokens are stored in macOS Keychain and loaded as environment variables via 
 security add-generic-password -a "$USER" -s "TOKEN_NAME" -w "new-value" -U
 ```
 
+## Copying Skills to Other Repos
+
+`copy-skills.sh` (in project root) copies skills into the current directory's `.claude/skills/`. Supports interactive mode (no args), specific skills by name, or `all`.
+
 ## Guardrails
 
 - **Always confirm with the user** before sending emails, Slack messages, creating calendar events, creating/updating Jira issues, pushing code, or any action visible to others.
