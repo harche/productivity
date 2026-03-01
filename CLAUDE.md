@@ -8,7 +8,7 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 - `docs/` — Important documents and references (gitignored, local-only)
 - `bookmarks/` — Saved links and resources (gitignored, local-only)
 - `slack-browser-tools/` — Slack API integration via browser session injection
-- `.claude/skills/` — Skill definitions (playwright-cli, slack, gmail/workspace, jira, github, support-cases)
+- `.claude/skills/` — Skill definitions (playwright-cli, slack, gmail/workspace, jira, github, support-cases, knowledge-base)
 
 ## Skills
 
@@ -18,6 +18,7 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 - `/jira` — View, search, create, and update Jira issues via REST API
 - `/github` — GitHub repos, PRs, issues, and actions via `gh` CLI
 - `/support-cases` — View, search, and manage Red Hat support cases via Customer Portal API
+- `/knowledge-base` — Search Red Hat Knowledge Base articles, solutions, and documentation
 
 ## Authentication
 
