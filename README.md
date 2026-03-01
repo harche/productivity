@@ -65,6 +65,69 @@ Then in Claude Code:
 | `playwright-cli` | Browser automation: navigate, interact, screenshot, scrape |
 | `kubernetes-docs` | Search and read upstream Kubernetes documentation |
 
+## Bulk Install by Category
+
+To auto-install a group of plugins in a repo, add this to `.claude/settings.json`:
+
+**All Red Hat plugins:**
+```json
+{
+  "extraKnownMarketplaces": {
+    "productivity-tools": {
+      "source": { "source": "github", "repo": "harche/productivity" }
+    }
+  },
+  "enabledPlugins": {
+    "jira@productivity-tools": true,
+    "support-cases@productivity-tools": true,
+    "knowledge-base@productivity-tools": true,
+    "openshift-docs@productivity-tools": true
+  }
+}
+```
+
+**All Tools plugins:**
+```json
+{
+  "extraKnownMarketplaces": {
+    "productivity-tools": {
+      "source": { "source": "github", "repo": "harche/productivity" }
+    }
+  },
+  "enabledPlugins": {
+    "github@productivity-tools": true,
+    "gmail@productivity-tools": true,
+    "slack@productivity-tools": true,
+    "playwright-cli@productivity-tools": true,
+    "kubernetes-docs@productivity-tools": true
+  }
+}
+```
+
+**All plugins:**
+```json
+{
+  "extraKnownMarketplaces": {
+    "productivity-tools": {
+      "source": { "source": "github", "repo": "harche/productivity" }
+    }
+  },
+  "enabledPlugins": {
+    "jira@productivity-tools": true,
+    "support-cases@productivity-tools": true,
+    "knowledge-base@productivity-tools": true,
+    "openshift-docs@productivity-tools": true,
+    "github@productivity-tools": true,
+    "gmail@productivity-tools": true,
+    "slack@productivity-tools": true,
+    "playwright-cli@productivity-tools": true,
+    "kubernetes-docs@productivity-tools": true
+  }
+}
+```
+
+Plugins are auto-installed when the repo folder is trusted in Claude Code.
+
 ## How It Works
 
 Plugins live in `plugins/<name>/` as the source of truth, cataloged by `.claude-plugin/marketplace.json`. Users add this repo as a marketplace and install individual plugins via `/plugin install`.
