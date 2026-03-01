@@ -23,7 +23,7 @@ ACCESS_TOKEN=$(curl -s https://sso.redhat.com/auth/realms/redhat-external/protoc
 curl -s -H "Authorization: Bearer $ACCESS_TOKEN" "<url>" | python3 -m json.tool
 ```
 
-**Important:** Always get a fresh access token at the start of each request sequence. Access tokens expire quickly. The offline token (`$RH_API_OFFLINE_TOKEN`) is sourced from `~/.zshrc`.
+**Important:** Always get a fresh access token at the start of each request sequence. Access tokens expire quickly. The offline token (`$RH_API_OFFLINE_TOKEN`) is sourced from `~/.zshrc` (stored in macOS Keychain).
 
 ## Base URL
 

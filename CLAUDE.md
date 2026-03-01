@@ -19,6 +19,14 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 - `/github` — GitHub repos, PRs, issues, and actions via `gh` CLI
 - `/support-cases` — View, search, and manage Red Hat support cases via Customer Portal API
 
+## Authentication
+
+API tokens are stored in macOS Keychain and loaded as environment variables via `~/.zshrc`. Skills that need tokens (Jira, support cases, GitHub, etc.) read them from env vars — check `~/.zshrc` for the variable names. To update a token:
+
+```bash
+security add-generic-password -a "$USER" -s "TOKEN_NAME" -w "new-value" -U
+```
+
 ## Guardrails
 
 - **Always confirm with the user** before sending emails, Slack messages, creating calendar events, creating/updating Jira issues, pushing code, or any action visible to others.
