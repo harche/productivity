@@ -154,15 +154,6 @@ productivity/                       # This repo
     └── my-project/                 # Plugins installed via /plugin install
 ```
 
-## Authentication
-
-Plugins that call APIs (Jira, GitHub, support cases, etc.) need tokens. Tokens are stored in macOS Keychain and loaded as environment variables via `~/.zshrc`. Check each plugin's `SKILL.md` for which env vars it expects.
-
-```bash
-# Store a token
-security add-generic-password -a "$USER" -s "TOKEN_NAME" -w "your-token" -U
-```
-
 ## Example Workflows
 
 **Investigate a support case and check related Jira bugs:**
