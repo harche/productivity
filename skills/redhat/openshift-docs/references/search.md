@@ -2,17 +2,25 @@
 
 All commands use the `gh` CLI. See the [github](../../tools/github/SKILL.md) skill for general `gh` usage.
 
+## Discovering Available Versions
+
+```bash
+# List available versions (highest = latest)
+gh api repos/harche/openshift-docs-md/contents/docs \
+  --jq '[.[] | select(.type=="dir") | .name | select(test("^[0-9]"))] | sort | reverse | .[]'
+
+# Get the latest version into a variable
+VERSION=$(gh api repos/harche/openshift-docs-md/contents/docs \
+  --jq '[.[] | select(.type=="dir") | .name | select(test("^[0-9]"))] | sort | last')
+```
+
 ## Fetching the Documentation Index
 
 Each version has an `AGENTS.md` file that maps topics to documentation files.
 
 ```bash
-# Fetch the full index for version 4.22
-gh api repos/harche/openshift-docs-md/contents/docs/4.22/AGENTS.md \
-  -H "Accept: application/vnd.github.raw+json"
-
-# Fetch for a different version
-gh api repos/harche/openshift-docs-md/contents/docs/4.21/AGENTS.md \
+# Fetch the full index for the latest version
+gh api repos/harche/openshift-docs-md/contents/docs/$VERSION/AGENTS.md \
   -H "Accept: application/vnd.github.raw+json"
 ```
 
@@ -22,24 +30,18 @@ Search the index to find which files cover a topic:
 
 ```bash
 # Search for a topic (case-insensitive)
-gh api repos/harche/openshift-docs-md/contents/docs/4.22/AGENTS.md \
+gh api repos/harche/openshift-docs-md/contents/docs/$VERSION/AGENTS.md \
   -H "Accept: application/vnd.github.raw+json" | grep -i "topic"
 
 # Examples
-gh api repos/harche/openshift-docs-md/contents/docs/4.22/AGENTS.md \
+gh api repos/harche/openshift-docs-md/contents/docs/$VERSION/AGENTS.md \
   -H "Accept: application/vnd.github.raw+json" | grep -i "network"
 
-gh api repos/harche/openshift-docs-md/contents/docs/4.22/AGENTS.md \
+gh api repos/harche/openshift-docs-md/contents/docs/$VERSION/AGENTS.md \
   -H "Accept: application/vnd.github.raw+json" | grep -i "storage"
 
-gh api repos/harche/openshift-docs-md/contents/docs/4.22/AGENTS.md \
-  -H "Accept: application/vnd.github.raw+json" | grep -i "authentication"
-
-gh api repos/harche/openshift-docs-md/contents/docs/4.22/AGENTS.md \
+gh api repos/harche/openshift-docs-md/contents/docs/$VERSION/AGENTS.md \
   -H "Accept: application/vnd.github.raw+json" | grep -i "install"
-
-gh api repos/harche/openshift-docs-md/contents/docs/4.22/AGENTS.md \
-  -H "Accept: application/vnd.github.raw+json" | grep -i "monitor"
 ```
 
 ## Reading Documentation Files
@@ -65,23 +67,23 @@ Always include the raw content header:
 
 ```bash
 # Read the networking overview
-gh api repos/harche/openshift-docs-md/contents/docs/4.22/networking/index.md \
+gh api repos/harche/openshift-docs-md/contents/docs/$VERSION/networking/index.md \
   -H "Accept: application/vnd.github.raw+json"
 
 # Read about installing on AWS (IPI)
-gh api repos/harche/openshift-docs-md/contents/docs/4.22/installing/installing_aws/ipi/installing-aws-default.md \
+gh api repos/harche/openshift-docs-md/contents/docs/$VERSION/installing/installing_aws/ipi/installing-aws-default.md \
   -H "Accept: application/vnd.github.raw+json"
 
 # Read about persistent storage with CSI
-gh api repos/harche/openshift-docs-md/contents/docs/4.22/storage/container_storage_interface/persistent-storage-csi.md \
+gh api repos/harche/openshift-docs-md/contents/docs/$VERSION/storage/container_storage_interface/persistent-storage-csi.md \
   -H "Accept: application/vnd.github.raw+json"
 
 # Read about RBAC
-gh api repos/harche/openshift-docs-md/contents/docs/4.22/authentication/using-rbac.md \
+gh api repos/harche/openshift-docs-md/contents/docs/$VERSION/authentication/using-rbac.md \
   -H "Accept: application/vnd.github.raw+json"
 
 # Read the release notes
-gh api repos/harche/openshift-docs-md/contents/docs/4.22/release_notes/ocp-4-22-release-notes.md \
+gh api repos/harche/openshift-docs-md/contents/docs/$VERSION/release_notes/ocp-4-22-release-notes.md \
   -H "Accept: application/vnd.github.raw+json"
 ```
 
@@ -89,11 +91,11 @@ gh api repos/harche/openshift-docs-md/contents/docs/4.22/release_notes/ocp-4-22-
 
 ```bash
 # List files in a directory
-gh api repos/harche/openshift-docs-md/contents/docs/4.22/networking \
+gh api repos/harche/openshift-docs-md/contents/docs/$VERSION/networking \
   --jq '.[].name'
 
 # List with type info (file vs dir)
-gh api repos/harche/openshift-docs-md/contents/docs/4.22/networking \
+gh api repos/harche/openshift-docs-md/contents/docs/$VERSION/networking \
   --jq '.[] | "\(.type)\t\(.name)"'
 ```
 
