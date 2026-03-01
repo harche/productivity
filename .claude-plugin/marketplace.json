@@ -4,69 +4,68 @@
     "name": "harpatil"
   },
   "metadata": {
-    "description": "Personal productivity skills for Claude Code",
-    "pluginRoot": "./plugins"
+    "description": "Personal productivity skills for Claude Code"
   },
   "plugins": [
     {
       "name": "github",
-      "source": "./github",
+      "source": "./plugins/github",
       "description": "GitHub repos, PRs, issues, and actions via gh CLI",
       "category": "tools",
       "version": "1.0.0"
     },
     {
       "name": "slack",
-      "source": "./slack",
+      "source": "./plugins/slack",
       "description": "Read/search/send Slack messages via browser session",
       "category": "tools",
       "version": "1.0.0"
     },
     {
       "name": "gmail",
-      "source": "./gmail",
+      "source": "./plugins/gmail",
       "description": "Gmail, Google Calendar, Drive, and Docs via gog CLI",
       "category": "tools",
       "version": "1.0.0"
     },
     {
       "name": "playwright-cli",
-      "source": "./playwright-cli",
+      "source": "./plugins/playwright-cli",
       "description": "Browser automation for web testing, screenshots, and data extraction",
       "category": "tools",
       "version": "1.0.0"
     },
     {
       "name": "kubernetes-docs",
-      "source": "./kubernetes-docs",
+      "source": "./plugins/kubernetes-docs",
       "description": "Search and read upstream Kubernetes documentation",
       "category": "tools",
       "version": "1.0.0"
     },
     {
       "name": "jira",
-      "source": "./jira",
+      "source": "./plugins/jira",
       "description": "View, search, create, and update Jira issues",
       "category": "redhat",
       "version": "1.0.0"
     },
     {
       "name": "support-cases",
-      "source": "./support-cases",
+      "source": "./plugins/support-cases",
       "description": "View, search, and manage Red Hat support cases",
       "category": "redhat",
       "version": "1.0.0"
     },
     {
       "name": "knowledge-base",
-      "source": "./knowledge-base",
+      "source": "./plugins/knowledge-base",
       "description": "Search Red Hat Knowledge Base articles and solutions",
       "category": "redhat",
       "version": "1.0.0"
     },
     {
       "name": "openshift-docs",
-      "source": "./openshift-docs",
+      "source": "./plugins/openshift-docs",
       "description": "Search and read OpenShift Container Platform docs",
       "category": "redhat",
       "version": "1.0.0"
