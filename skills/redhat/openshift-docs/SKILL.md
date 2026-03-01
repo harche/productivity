@@ -52,6 +52,30 @@ gh api repos/harche/openshift-docs-md/contents/docs/$VERSION/AGENTS.md \
   -H "Accept: application/vnd.github.raw+json" | grep -i "metallb"
 ```
 
+### Concrete Examples
+
+```bash
+# Fetch the 4.22 doc index
+gh api repos/harche/openshift-docs-md/contents/docs/4.22/AGENTS.md \
+  -H "Accept: application/vnd.github.raw+json"
+
+# Read a specific doc (installing on AWS)
+gh api repos/harche/openshift-docs-md/contents/docs/4.22/installing/installing_aws/ipi/installing-aws-default.md \
+  -H "Accept: application/vnd.github.raw+json"
+
+# Read about RBAC
+gh api repos/harche/openshift-docs-md/contents/docs/4.22/authentication/using-rbac.md \
+  -H "Accept: application/vnd.github.raw+json"
+
+# Read storage docs
+gh api repos/harche/openshift-docs-md/contents/docs/4.22/storage/container_storage_interface/persistent-storage-csi.md \
+  -H "Accept: application/vnd.github.raw+json"
+
+# List files in a directory
+gh api repos/harche/openshift-docs-md/contents/docs/4.22/networking \
+  --jq '.[].name'
+```
+
 ## Workflow
 
 1. **Start with the index** — Fetch `AGENTS.md` for the target version to find relevant files
