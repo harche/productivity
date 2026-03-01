@@ -20,6 +20,8 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 - `/github` — GitHub repos, PRs, issues, and actions via `gh` CLI
 - `/support-cases` — View, search, and manage Red Hat support cases via Customer Portal API
 - `/knowledge-base` — Search Red Hat Knowledge Base articles, solutions, and documentation
+- `/openshift-docs` — Search and read OpenShift Container Platform docs via `gh` CLI
+- `/kubernetes-docs` — Search and read upstream Kubernetes docs via `gh` CLI
 
 ## Authentication
 
