@@ -14,7 +14,7 @@ set -euo pipefail
 
 # Resolve source relative to where this script lives
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || realpath "$0")")" && pwd)"
-SKILLS_SOURCE="$SCRIPT_DIR/.claude/skills"
+SKILLS_SOURCE="$SCRIPT_DIR/skills"
 SKILLS_DEST=""
 
 usage() {

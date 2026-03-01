@@ -8,7 +8,8 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 - `docs/` — Important documents and references (gitignored, local-only)
 - `bookmarks/` — Saved links and resources (gitignored, local-only)
 - `slack-browser-tools/` — Slack API integration via browser session injection
-- `.claude/skills/` — Skill definitions (playwright-cli, slack, gmail/workspace, jira, github, support-cases, knowledge-base)
+- `skills/` — Skill definitions (source of truth for distribution via `copy-skills.sh`)
+- `.claude/skills/` — Local skill copies (auto-discovered by Claude Code)
 
 ## Skills
 
@@ -30,7 +31,7 @@ security add-generic-password -a "$USER" -s "TOKEN_NAME" -w "new-value" -U
 
 ## Copying Skills to Other Repos
 
-`copy-skills.sh` (in project root) copies skills into the current directory's `.claude/skills/`. Supports interactive mode (no args), specific skills by name, or `all`.
+`copy-skills.sh` (in project root) copies skills from the top-level `skills/` directory into the target project's `.claude/skills/`. Supports interactive mode (no args), specific skills by name, or `all`.
 
 ## Guardrails
 
