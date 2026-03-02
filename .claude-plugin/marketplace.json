@@ -47,7 +47,7 @@
       "source": "./plugins/jira",
       "description": "View, search, create, and update Jira issues",
       "category": "redhat",
-      "version": "1.0.0"
+      "version": "1.0.1"
     },
     {
       "name": "support-cases",
