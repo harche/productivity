@@ -54,6 +54,7 @@ Then in Claude Code:
 | `support-cases` | View, search, and manage Red Hat support cases |
 | `knowledge-base` | Search Red Hat Knowledge Base articles and solutions |
 | `openshift-docs` | Search and read OpenShift Container Platform documentation |
+| `ocp-cluster` | Create, destroy, debug, and manage OpenShift clusters on GCP |
 
 ### Tools (category: `tools`)
 
@@ -81,7 +82,8 @@ To auto-install a group of plugins in a repo, add this to `.claude/settings.json
     "jira@productivity-tools": true,
     "support-cases@productivity-tools": true,
     "knowledge-base@productivity-tools": true,
-    "openshift-docs@productivity-tools": true
+    "openshift-docs@productivity-tools": true,
+    "ocp-cluster@productivity-tools": true
   }
 }
 ```
@@ -117,6 +119,7 @@ To auto-install a group of plugins in a repo, add this to `.claude/settings.json
     "support-cases@productivity-tools": true,
     "knowledge-base@productivity-tools": true,
     "openshift-docs@productivity-tools": true,
+    "ocp-cluster@productivity-tools": true,
     "github@productivity-tools": true,
     "gmail@productivity-tools": true,
     "slack@productivity-tools": true,
@@ -137,7 +140,7 @@ The key concept: **Claude Code stops discovering skills at `.git` boundaries.** 
 ```
 productivity/                       # This repo
 ├── .claude-plugin/
-│   └── marketplace.json            # Marketplace catalog (9 plugins)
+│   └── marketplace.json            # Marketplace catalog (10 plugins)
 ├── plugins/                        # Plugin registry (source of truth)
 │   ├── jira/
 │   │   ├── .claude-plugin/plugin.json
@@ -149,7 +152,8 @@ productivity/                       # This repo
 │   ├── kubernetes-docs/
 │   ├── support-cases/
 │   ├── knowledge-base/
-│   └── openshift-docs/
+│   ├── openshift-docs/
+│   └── ocp-cluster/
 └── workspace/                      # Your projects (gitignored)
     └── my-project/                 # Plugins installed via /plugin install
 ```
