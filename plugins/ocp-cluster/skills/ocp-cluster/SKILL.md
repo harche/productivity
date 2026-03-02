@@ -10,11 +10,10 @@ Manage OpenShift clusters using the `ocp-install.sh` script.
 
 ## Script location
 
-The script lives in the productivity repo and operates on `~/clusters/`:
+When installed as a plugin, use `${CLAUDE_PLUGIN_ROOT}`:
 
 ```bash
-# From the productivity repo root:
-./clusters/ocp-install.sh <command>
+${CLAUDE_PLUGIN_ROOT}/ocp-install.sh <command>
 ```
 
 ## Commands
@@ -22,7 +21,7 @@ The script lives in the productivity repo and operates on `~/clusters/`:
 ### Download installer for a version
 
 ```bash
-./clusters/ocp-install.sh download <version>
+${CLAUDE_PLUGIN_ROOT}/ocp-install.sh download <version>
 ```
 
 Downloads `openshift-install` from `https://amd64.ocp.releases.ci.openshift.org/` artifacts.
@@ -31,7 +30,7 @@ Binary is saved to `~/clusters/<major.minor>/<version>/openshift-install`.
 ### Create a cluster
 
 ```bash
-./clusters/ocp-install.sh create <version> <type> [cluster-name]
+${CLAUDE_PLUGIN_ROOT}/ocp-install.sh create <version> <type> [cluster-name]
 ```
 
 Types:
@@ -40,7 +39,7 @@ Types:
 - `gpu` — 3 control-plane + 3 GPU workers (a2-highgpu-1g, zone us-central1-f)
 - `sno-cpu` — Single Node OpenShift, CPU only (cpuPartitioningMode: AllNodes)
 
-If cluster-name is omitted, one is auto-generated as `harpatil<type><random>`.
+If cluster-name is omitted, one is auto-generated as `$USER<type><random>`.
 
 The script:
 1. Reads pull secret from macOS Keychain (`OCP_PULL_SECRET`)
@@ -52,7 +51,7 @@ The script:
 ### Debug a failed installation
 
 ```bash
-./clusters/ocp-install.sh debug <version> <cluster-dir>
+${CLAUDE_PLUGIN_ROOT}/ocp-install.sh debug <version> <cluster-dir>
 ```
 
 Runs a full diagnostic:
@@ -63,7 +62,7 @@ Runs a full diagnostic:
 ### Destroy a cluster
 
 ```bash
-./clusters/ocp-install.sh destroy <version> <cluster-dir>
+${CLAUDE_PLUGIN_ROOT}/ocp-install.sh destroy <version> <cluster-dir>
 ```
 
 Asks for confirmation before destroying.
@@ -71,7 +70,7 @@ Asks for confirmation before destroying.
 ### List clusters
 
 ```bash
-./clusters/ocp-install.sh list [version]
+${CLAUDE_PLUGIN_ROOT}/ocp-install.sh list [version]
 ```
 
 Shows all clusters with their version, status (ACTIVE/DESTROYED/CONFIG/EMPTY), and path.
@@ -79,30 +78,30 @@ Shows all clusters with their version, status (ACTIVE/DESTROYED/CONFIG/EMPTY), a
 ### Get kubeconfig
 
 ```bash
-eval $(./clusters/ocp-install.sh kubeconfig <version> <cluster-dir>)
+eval $(${CLAUDE_PLUGIN_ROOT}/ocp-install.sh kubeconfig <version> <cluster-dir>)
 ```
 
 ## Workflow example
 
 ```bash
 # 1. Download the installer
-./clusters/ocp-install.sh download 4.21.3
+${CLAUDE_PLUGIN_ROOT}/ocp-install.sh download 4.21.3
 
 # 2. Create an SNO cluster
-./clusters/ocp-install.sh create 4.21.3 sno
+${CLAUDE_PLUGIN_ROOT}/ocp-install.sh create 4.21.3 sno
 
 # 3. List clusters
-./clusters/ocp-install.sh list
+${CLAUDE_PLUGIN_ROOT}/ocp-install.sh list
 
 # 4. Set kubeconfig
-eval $(./clusters/ocp-install.sh kubeconfig 4.21.3 cluster1)
+eval $(${CLAUDE_PLUGIN_ROOT}/ocp-install.sh kubeconfig 4.21.3 cluster1)
 
 # 5. Verify
 oc get nodes
 oc get co
 
 # 6. Destroy when done
-./clusters/ocp-install.sh destroy 4.21.3 cluster1
+${CLAUDE_PLUGIN_ROOT}/ocp-install.sh destroy 4.21.3 cluster1
 ```
 
 ## Environment
