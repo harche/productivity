@@ -51,6 +51,12 @@ In the target repo, use Claude Code's native plugin system:
 
 Chrome bookmarks are at `~/Library/Application Support/Google/Chrome/Default/Bookmarks` (JSON). Read this file directly when looking up saved links.
 
+## Plugin Versioning
+
+When bumping a plugin version, **always update both files**:
+1. `plugins/<name>/.claude-plugin/plugin.json`
+2. `.claude-plugin/marketplace.json`
+
 ## Conventions
 
 - Keep responses concise and direct.
