@@ -69,6 +69,13 @@
       "description": "Search and read OpenShift Container Platform docs",
       "category": "redhat",
       "version": "1.0.0"
+    },
+    {
+      "name": "ocp-cluster",
+      "source": "./plugins/ocp-cluster",
+      "description": "Create, destroy, and manage OpenShift clusters on GCP",
+      "category": "redhat",
+      "version": "1.0.0"
     }
   ]
 }

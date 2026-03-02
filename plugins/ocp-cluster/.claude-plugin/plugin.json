@@ -1,0 +1,5 @@
+{
+  "name": "ocp-cluster",
+  "description": "Create, destroy, and manage OpenShift clusters on GCP",
+  "version": "1.0.0"
+}
