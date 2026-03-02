@@ -53,6 +53,35 @@ Detailed command references:
 * **Actions** — [references/actions.md](references/actions.md) — Workflows, runs, artifacts, logs
 * **Repos** — [references/repos.md](references/repos.md) — Clone, fork, view, create, releases, collaborators
 
+## Common Pitfalls
+
+### Always use `--repo` for external repos
+
+When the user shares a URL or references a repo other than the current working directory, **always** include `-R owner/repo` (or `--repo owner/repo`). Without it, `gh` defaults to the current directory's repo and will fail.
+
+```bash
+# WRONG — will fail if you're not in the cluster-version-operator checkout
+gh pr view 1314
+
+# CORRECT
+gh pr view 1314 -R openshift/cluster-version-operator
+```
+
+### Avoid `!=` in jq expressions
+
+Zsh treats `!` as history expansion, which corrupts `!=` into `\!=` inside jq filters. Use negation alternatives instead:
+
+```bash
+# WRONG — zsh will mangle != to \!=
+gh api repos/o/r/pulls --jq '[.[] | select(.merged_at != null)]'
+
+# CORRECT — use truthy check
+gh api repos/o/r/pulls --jq '[.[] | select(.merged_at)]'
+
+# CORRECT — use "not" for negation
+gh api repos/o/r/pulls --jq '[.[] | select(.merged_at | not)]'
+```
+
 ## Important
 
 - **Always confirm with the user before creating PRs/issues, commenting, merging, pushing, deleting branches, or triggering workflow runs.**
