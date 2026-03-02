@@ -16,14 +16,14 @@ Requests require a two-step OAuth flow. First exchange the offline token for an 
 # Step 1: Get access token (short-lived)
 ACCESS_TOKEN=$(curl -s https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token \
   -d grant_type=refresh_token -d client_id=rhsm-api \
-  -d "refresh_token=$RH_API_OFFLINE_TOKEN" \
+  -d "refresh_token=$(security find-generic-password -a "$USER" -s "RH_API_OFFLINE_TOKEN" -w)" \
   | python3 -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
 
 # Step 2: Use in API calls
 curl -s -H "Authorization: Bearer $ACCESS_TOKEN" "<url>" | python3 -m json.tool
 ```
 
-**Important:** Always get a fresh access token at the start of each request sequence. Access tokens expire quickly. The offline token (`$RH_API_OFFLINE_TOKEN`) is sourced from `~/.zshrc` (stored in macOS Keychain).
+**Important:** Always get a fresh access token at the start of each request sequence. Access tokens expire quickly. The offline token is read directly from macOS Keychain — do NOT rely on `$RH_API_OFFLINE_TOKEN` being set in the environment, as the Bash tool does not source `~/.zshrc`.
 
 ## Base URL
 
@@ -37,7 +37,7 @@ https://api.access.redhat.com/support/v1
 # Get access token (run this first, then use $ACCESS_TOKEN in subsequent calls)
 ACCESS_TOKEN=$(curl -s https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token \
   -d grant_type=refresh_token -d client_id=rhsm-api \
-  -d "refresh_token=$RH_API_OFFLINE_TOKEN" \
+  -d "refresh_token=$(security find-generic-password -a "$USER" -s "RH_API_OFFLINE_TOKEN" -w)" \
   | python3 -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
 
 # View a specific case

@@ -16,11 +16,11 @@ Same two-step OAuth flow as support cases. Exchange the offline token for an acc
 # Get access token (run this first)
 ACCESS_TOKEN=$(curl -s https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token \
   -d grant_type=refresh_token -d client_id=rhsm-api \
-  -d "refresh_token=$RH_API_OFFLINE_TOKEN" \
+  -d "refresh_token=$(security find-generic-password -a "$USER" -s "RH_API_OFFLINE_TOKEN" -w)" \
   | python3 -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
 ```
 
-The offline token (`$RH_API_OFFLINE_TOKEN`) is sourced from `~/.zshrc` (stored in macOS Keychain).
+The offline token is read directly from macOS Keychain — do NOT rely on `$RH_API_OFFLINE_TOKEN` being set in the environment, as the Bash tool does not source `~/.zshrc`.
 
 ## Base URL
 
@@ -34,7 +34,7 @@ https://access.redhat.com/hydra/rest/search/kcs
 # Get access token first
 ACCESS_TOKEN=$(curl -s https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token \
   -d grant_type=refresh_token -d client_id=rhsm-api \
-  -d "refresh_token=$RH_API_OFFLINE_TOKEN" \
+  -d "refresh_token=$(security find-generic-password -a "$USER" -s "RH_API_OFFLINE_TOKEN" -w)" \
   | python3 -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
 
 # Search the knowledge base

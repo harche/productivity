@@ -47,21 +47,21 @@
       "source": "./plugins/jira",
       "description": "View, search, create, and update Jira issues",
       "category": "redhat",
-      "version": "1.0.1"
+      "version": "1.0.2"
     },
     {
       "name": "support-cases",
       "source": "./plugins/support-cases",
       "description": "View, search, and manage Red Hat support cases",
       "category": "redhat",
-      "version": "1.0.0"
+      "version": "1.0.1"
     },
     {
       "name": "knowledge-base",
       "source": "./plugins/knowledge-base",
       "description": "Search Red Hat Knowledge Base articles and solutions",
       "category": "redhat",
-      "version": "1.0.0"
+      "version": "1.0.1"
     },
     {
       "name": "openshift-docs",

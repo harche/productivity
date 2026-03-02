@@ -2,6 +2,9 @@
 
 View, create, update, and manage Jira issues.
 
+> **Auth:** Always set the token from Keychain before any curl call:
+> `JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w)`
+
 ## View Issue
 
 ```bash

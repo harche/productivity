@@ -10,15 +10,19 @@ Interact with Red Hat Jira (issues.redhat.com) using the REST API v2 with `curl`
 
 ## Authentication
 
-All requests use a Bearer token from `$JIRA_API_TOKEN` (sourced from `~/.zshrc`):
+All requests use a Bearer token stored in macOS Keychain. **Always** read the token directly from Keychain — do NOT rely on `$JIRA_API_TOKEN` being set in the environment, as the Bash tool does not source `~/.zshrc`:
 
 ```bash
+JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w)
 curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" "<url>" | python3 -m json.tool
 ```
+
+**Important:** Always set `JIRA_API_TOKEN` from Keychain at the start of every Bash invocation, either as a prefix or as a separate command chained with `&&`.
 
 **PAT limitation**: `currentUser()` in JQL and the `/rest/api/2/myself` endpoint do NOT work with PATs on Red Hat Jira. To find the token owner's username, use the session endpoint:
 
 ```bash
+JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w)
 curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" \
   "https://issues.redhat.com/rest/auth/1/session" | python3 -m json.tool
 ```

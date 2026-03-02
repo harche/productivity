@@ -2,6 +2,9 @@
 
 Search for issues using Jira Query Language (JQL).
 
+> **Auth:** Always set the token from Keychain before any curl call:
+> `JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w)`
+
 ## Basic Search
 
 ```bash
