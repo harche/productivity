@@ -7,7 +7,6 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 - `workspace/` — Coding repos and projects (gitignored, local-only)
 - `docs/` — Important documents and references (gitignored, local-only)
 - `bookmarks/` — Saved links and resources (gitignored, local-only)
-- `slack-browser-tools/` — Slack API integration via browser session injection
 - `plugins/` — Plugin marketplace: each plugin is at `plugins/<name>/` with `.claude-plugin/plugin.json`
 - `.claude-plugin/marketplace.json` — Marketplace catalog listing all plugins
 - `.claude/skills/` — Local standalone skill copies (flat, auto-discovered by Claude Code)
