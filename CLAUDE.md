@@ -23,6 +23,7 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 - `/knowledge-base` — Search Red Hat Knowledge Base articles, solutions, and documentation
 - `/openshift-docs` — Search and read OpenShift Container Platform docs via `gh` CLI
 - `/kubernetes-docs` — Search and read upstream Kubernetes docs via `gh` CLI
+- `/ocp-cluster` — Create, destroy, and list OpenShift clusters on GCP via `~/clusters/ocp-install.sh`
 
 ## Authentication
 
