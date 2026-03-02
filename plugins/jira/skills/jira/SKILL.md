@@ -16,6 +16,15 @@ All requests use a Bearer token from `$JIRA_API_TOKEN` (sourced from `~/.zshrc`)
 curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" "<url>" | python3 -m json.tool
 ```
 
+**PAT limitation**: `currentUser()` in JQL and the `/rest/api/2/myself` endpoint do NOT work with PATs on Red Hat Jira. To find the token owner's username, use the session endpoint:
+
+```bash
+curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" \
+  "https://issues.redhat.com/rest/auth/1/session" | python3 -m json.tool
+```
+
+Then use the `name` field (e.g., `harpatil@redhat.com`) in JQL queries like `assignee="harpatil@redhat.com"`.
+
 ## Base URL
 
 ```
@@ -30,9 +39,9 @@ curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" \
   "https://issues.redhat.com/rest/api/2/issue/OCPNODE-4151?fields=summary,status,assignee,priority,issuetype,description,created,updated,components,labels,fixVersions" \
   | python3 -m json.tool
 
-# Search issues with JQL
+# Search issues with JQL (use explicit email, NOT currentUser())
 curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" \
-  "https://issues.redhat.com/rest/api/2/search?jql=project%3DOCPNODE+AND+type%3DEpic+AND+status%3D%27In+Progress%27&maxResults=10&fields=summary,status,assignee,priority" \
+  "https://issues.redhat.com/rest/api/2/search?jql=assignee%3D%22harpatil%40redhat.com%22+AND+type%3DEpic+AND+status+not+in+(Closed,Done)&maxResults=10&fields=summary,status,assignee,priority" \
   | python3 -m json.tool
 
 # Get children of an epic
