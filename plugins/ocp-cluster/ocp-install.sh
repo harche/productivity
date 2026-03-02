@@ -67,7 +67,9 @@ random_suffix() {
 
 get_pull_secret() {
   local secret
-  secret="$(security find-generic-password -a "$USER" -s "OCP_PULL_SECRET" -w 2>/dev/null)" || true
+  # -w doesn't work for long values; use -g and parse the password line
+  secret="$(security find-generic-password -s "OCP_PULL_SECRET" -g 2>&1 \
+    | grep '^password: "' | sed 's/^password: "//;s/"$//')" || true
   if [[ -z "$secret" ]]; then
     # Fallback: try file
     local fallback="${CLUSTERS_DIR}/pull-secret-gcp.txt"
