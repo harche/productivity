@@ -1,7 +1,7 @@
 ---
 name: github
 description: Interact with GitHub repositories, pull requests, issues, actions, and more using the gh CLI. Use when the user asks about GitHub repos, shares a GitHub URL, or wants to manage PRs, issues, or CI/CD workflows.
-allowed-tools: Bash(gh:*) Bash(curl:*)
+allowed-tools: Bash(gh:*)
 ---
 
 # GitHub via gh CLI
@@ -81,47 +81,6 @@ gh api repos/o/r/pulls --jq '[.[] | select(.merged_at)]'
 # CORRECT — use "not" for negation
 gh api repos/o/r/pulls --jq '[.[] | select(.merged_at | not)]'
 ```
-
-### OAuth-restricted organizations (curl fallback)
-
-Some GitHub organizations (e.g., `containers`) restrict OAuth app access. When this happens, `gh` CLI commands fail with errors like:
-
-```
-Resource protected by organization SAML enforcement. You must grant your OAuth token access to this organization.
-```
-
-or:
-
-```
-Could not resolve to a PullRequest
-```
-
-**When `gh` fails on an org-restricted repo, fall back to `curl` using `gh auth token` to get the token:**
-
-```bash
-# View a PR
-curl -s -H "Authorization: token $(gh auth token)" \
-  https://api.github.com/repos/containers/podman/pulls/25972 | jq '{title: .title, state: .state, user: .user.login, body: .body}'
-
-# List open PRs
-curl -s -H "Authorization: token $(gh auth token)" \
-  "https://api.github.com/repos/containers/podman/pulls?state=open&per_page=10" | jq '.[].title'
-
-# View an issue
-curl -s -H "Authorization: token $(gh auth token)" \
-  https://api.github.com/repos/containers/podman/issues/500 | jq '{title: .title, state: .state, body: .body}'
-
-# List PR files
-curl -s -H "Authorization: token $(gh auth token)" \
-  https://api.github.com/repos/containers/podman/pulls/25972/files | jq '.[].filename'
-
-# Get PR diff
-curl -s -H "Authorization: token $(gh auth token)" \
-  -H "Accept: application/vnd.github.v3.diff" \
-  https://api.github.com/repos/containers/podman/pulls/25972
-```
-
-Always try `gh` first and fall back to `curl` only when it fails due to org restrictions.
 
 ## Important
 

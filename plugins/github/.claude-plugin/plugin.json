@@ -1,5 +1,5 @@
 {
   "name": "github",
   "description": "GitHub repos, PRs, issues, and actions via gh CLI",
-  "version": "1.0.2"
+  "version": "1.0.1"
 }

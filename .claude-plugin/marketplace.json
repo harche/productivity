@@ -12,7 +12,7 @@
       "source": "./plugins/github",
       "description": "GitHub repos, PRs, issues, and actions via gh CLI",
       "category": "tools",
-      "version": "1.0.2"
+      "version": "1.0.1"
     },
     {
       "name": "slack",
