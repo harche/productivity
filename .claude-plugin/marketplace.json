@@ -76,6 +76,13 @@
       "description": "Create, destroy, and manage OpenShift clusters on GCP",
       "category": "redhat",
       "version": "1.0.0"
+    },
+    {
+      "name": "ibkr",
+      "source": "./plugins/ibkr",
+      "description": "Interactive Brokers Web API for trading, market data, and portfolio management",
+      "category": "tools",
+      "version": "1.0.0"
     }
   ]
 }
