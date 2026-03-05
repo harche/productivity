@@ -122,14 +122,21 @@ Detailed command references:
 
 ## Automation Scripts
 
-Scripts live in `~/ibkr/` and use a venv at `~/ibkr/.venv/`. Run with `~/ibkr/.venv/bin/python3` or the shebang.
+Scripts are in the plugin at `scripts/` (relative to the plugin root). They require `requests` (`pip install requests`).
+
+The `IBKR_SCRIPTS` path is the plugin's `scripts/` directory. To find it at runtime, the plugin is cached at:
+`~/.claude/plugins/cache/productivity-tools/ibkr/<version>/`
+
+So the scripts path is: `~/.claude/plugins/cache/productivity-tools/ibkr/<version>/scripts/`
+
+You can also run them directly if they're symlinked or copied to `~/ibkr/`.
 
 ### 1. Iron Butterfly Builder: `iron_butterfly.py`
 
 Builds an SPX iron butterfly order (max_loss = 2x max_profit) and saves it as a JSON file.
 
 ```bash
-~/ibkr/iron_butterfly.py <expiry> [--quantity N] [--output FILE] [--submit]
+python3 scripts/iron_butterfly.py <expiry> [--quantity N] [--output FILE] [--submit]
 ```
 
 - `expiry`: "today", "tomorrow", or YYYY-MM-DD
@@ -139,10 +146,10 @@ Builds an SPX iron butterfly order (max_loss = 2x max_profit) and saves it as a 
 
 ```bash
 # Build order for tomorrow
-~/ibkr/iron_butterfly.py tomorrow
+python3 scripts/iron_butterfly.py tomorrow
 
 # Build and immediately submit
-~/ibkr/iron_butterfly.py 2026-03-10 --quantity 2 --submit
+python3 scripts/iron_butterfly.py 2026-03-10 --quantity 2 --submit
 ```
 
 ### 2. Order Submitter: `submit_order.py`
@@ -151,20 +158,20 @@ Generic order submitter — works with **any ticker, any price, individual or co
 
 ```bash
 # From JSON file (output of iron_butterfly.py or any strategy builder)
-~/ibkr/submit_order.py iron_butterfly_2026-03-06.json
+python3 scripts/submit_order.py iron_butterfly_2026-03-06.json
 
 # Dry run — show order details without submitting
-~/ibkr/submit_order.py iron_butterfly_2026-03-06.json --dry-run
+python3 scripts/submit_order.py iron_butterfly_2026-03-06.json --dry-run
 
 # Skip confirmation prompt
-~/ibkr/submit_order.py iron_butterfly_2026-03-06.json -y
+python3 scripts/submit_order.py iron_butterfly_2026-03-06.json -y
 
 # Inline single contract order
-~/ibkr/submit_order.py --account DUXXXXXXX --conid 265598 --side BUY \
+python3 scripts/submit_order.py --account DUXXXXXXX --conid 265598 --side BUY \
     --quantity 10 --order-type LMT --price 150.00 --tif DAY
 
 # Inline combo order
-~/ibkr/submit_order.py --account DUXXXXXXX \
+python3 scripts/submit_order.py --account DUXXXXXXX \
     --conidex "416904;;;854745265/1,849314253/-1" \
     --side BUY --quantity 1 --order-type LMT --price -35.00 --tif DAY
 ```
