@@ -40,15 +40,25 @@ Use `/trsrv/stocks` to look up conids for any symbol.
 
 ## Market Data Snapshot
 
+**PREREQUISITE:** You MUST call `/iserver/accounts` at least once per session before market data snapshots will work. Without this, snapshots return conid-only responses with no price fields.
+
+**IMPORTANT:** Use the `/iserver/marketdata/snapshot` endpoint (NOT `/md/snapshot`). The `/md/snapshot` endpoint may not return field values reliably.
+
 ```bash
+# REQUIRED: Initialize iserver session first (call once per session)
+curl -sk https://localhost:5000/v1/api/iserver/accounts | python3 -m json.tool
+
 # Get snapshot for one or more contracts
-curl -sk "https://localhost:5000/v1/api/md/snapshot?conids=265598&fields=31,55,84,86" | python3 -m json.tool
+# First call primes the subscription (may return empty fields) — wait 2-3 seconds, then call again
+curl -sk "https://localhost:5000/v1/api/iserver/marketdata/snapshot?conids=265598&fields=31,55,84,86" | python3 -m json.tool
+sleep 3
+curl -sk "https://localhost:5000/v1/api/iserver/marketdata/snapshot?conids=265598&fields=31,55,84,86" | python3 -m json.tool
 
 # Multiple contracts
-curl -sk "https://localhost:5000/v1/api/md/snapshot?conids=265598,272093&fields=31,55,84,86,70,71,82,83,7295" | python3 -m json.tool
+curl -sk "https://localhost:5000/v1/api/iserver/marketdata/snapshot?conids=265598,272093&fields=31,55,84,86,70,71,82,83,7295" | python3 -m json.tool
 ```
 
-**Note:** The first snapshot call for a contract may return incomplete data. Call it again after a brief pause to get populated fields.
+**Note:** The first snapshot call for a contract primes the data subscription and will return incomplete data (conid only, no price fields). You MUST call it again after a 2-3 second pause to get populated fields. This two-call pattern is required for every new conid you query.
 
 ### Common Snapshot Fields
 
