@@ -4,16 +4,7 @@ AI-powered productivity hub with Claude Code plugins for software engineering wo
 
 ## Quick Start
 
-### 1. Clone the repo
-
-```bash
-git clone https://github.com/harche/productivity.git
-cd productivity
-```
-
-### 2. Install plugins in any project
-
-In the target repo, use Claude Code's native plugin system:
+In any project, add the marketplace and install plugins:
 
 ```bash
 # Add the marketplace (one-time)
@@ -26,23 +17,6 @@ In the target repo, use Claude Code's native plugin system:
 # Browse all available plugins
 /plugin
 ```
-
-### 3. Use a workspace project
-
-Clone a project into `workspace/` and install plugins:
-
-```bash
-cd workspace
-git clone https://github.com/openshift/kubernetes.git && cd kubernetes
-```
-
-Then in Claude Code:
-```
-/plugin marketplace add harche/productivity
-/plugin install jira@productivity-tools github@productivity-tools openshift-docs@productivity-tools
-```
-
-**No git repo?** If you're working in a plain folder (not a git repo), run `git init` first. This creates a `.git` boundary so Claude Code only discovers skills installed in that folder — not from parent directories.
 
 ## Available Plugins
 
@@ -130,33 +104,6 @@ To auto-install a group of plugins in a repo, add this to `.claude/settings.json
 ```
 
 Plugins are auto-installed when the repo folder is trusted in Claude Code.
-
-## How It Works
-
-Plugins live in `plugins/<name>/` as the source of truth, cataloged by `.claude-plugin/marketplace.json`. Users add this repo as a marketplace and install individual plugins via `/plugin install`.
-
-The key concept: **Claude Code stops discovering skills at `.git` boundaries.** So each workspace project only sees its own installed plugins — not the parent repo's.
-
-```
-productivity/                       # This repo
-├── .claude-plugin/
-│   └── marketplace.json            # Marketplace catalog (10 plugins)
-├── plugins/                        # Plugin registry (source of truth)
-│   ├── jira/
-│   │   ├── .claude-plugin/plugin.json
-│   │   └── skills/jira/SKILL.md
-│   ├── github/
-│   ├── gmail/
-│   ├── slack/
-│   ├── playwright-cli/
-│   ├── kubernetes-docs/
-│   ├── support-cases/
-│   ├── knowledge-base/
-│   ├── openshift-docs/
-│   └── ocp-cluster/
-└── workspace/                      # Your projects (gitignored)
-    └── my-project/                 # Plugins installed via /plugin install
-```
 
 ## Example Workflows
 

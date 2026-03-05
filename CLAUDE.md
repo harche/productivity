@@ -4,9 +4,6 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 
 ## Directory Structure
 
-- `workspace/` — Coding repos and projects (gitignored, local-only)
-- `docs/` — Important documents and references (gitignored, local-only)
-- `bookmarks/` — Saved links and resources (gitignored, local-only)
 - `plugins/` — Plugin marketplace: each plugin is at `plugins/<name>/` with `.claude-plugin/plugin.json`
 - `.claude-plugin/marketplace.json` — Marketplace catalog listing all plugins
 - `.claude/skills/` — Local standalone skill copies (flat, auto-discovered by Claude Code)
@@ -22,7 +19,7 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 - `/knowledge-base` — Search Red Hat Knowledge Base articles, solutions, and documentation
 - `/openshift-docs` — Search and read OpenShift Container Platform docs via `gh` CLI
 - `/kubernetes-docs` — Search and read upstream Kubernetes docs via `gh` CLI
-- `/ocp-cluster` — Create, destroy, and list OpenShift clusters on GCP via `~/clusters/ocp-install.sh`
+- `/ocp-cluster` — Create, destroy, and list OpenShift clusters on GCP
 
 ## Authentication
 
@@ -45,12 +42,6 @@ In the target repo, use Claude Code's native plugin system:
 - **Always confirm with the user** before sending emails, Slack messages, creating calendar events, creating/updating Jira issues, pushing code, or any action visible to others.
 - Never auto-commit or push without explicit request.
 - Never delete files, branches, or data without confirmation.
-- When working in `workspace/` repos, respect each repo's own CLAUDE.md if present.
-
-## Bookmarks
-
-Chrome bookmarks are at `~/Library/Application Support/Google/Chrome/Default/Bookmarks` (JSON). Read this file directly when looking up saved links.
-
 ## Plugin Versioning
 
 When bumping a plugin version, **always update both files**:
@@ -60,5 +51,4 @@ When bumping a plugin version, **always update both files**:
 ## Conventions
 
 - Keep responses concise and direct.
-- When working on code in `workspace/`, cd into the specific project — don't operate from the productivity root unless managing the assistant itself.
 - Prefer reading existing code before suggesting changes.
