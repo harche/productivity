@@ -19,35 +19,35 @@
       "source": "./plugins/slack",
       "description": "Read/search/send Slack messages via browser session",
       "category": "workflow",
-      "version": "1.1.0"
+      "version": "1.1.1"
     },
     {
       "name": "google",
       "source": "./plugins/google",
       "description": "Gmail, Google Calendar, Drive, and Docs via gog CLI",
       "category": "workflow",
-      "version": "1.0.0"
+      "version": "1.0.1"
     },
     {
       "name": "redhat-support",
       "source": "./plugins/redhat-support",
       "description": "Red Hat Jira, Knowledge Base, and support cases",
       "category": "workflow",
-      "version": "1.0.0"
+      "version": "1.0.1"
     },
     {
       "name": "platform-docs",
       "source": "./plugins/platform-docs",
       "description": "Search and read Kubernetes and OpenShift documentation",
       "category": "reference",
-      "version": "1.0.0"
+      "version": "1.0.1"
     },
     {
       "name": "cluster-installer",
       "source": "./plugins/cluster-installer",
       "description": "Create, manage, and destroy Kubernetes and OpenShift clusters (kind, GKE, OpenShift)",
       "category": "infra",
-      "version": "1.0.0"
+      "version": "1.0.1"
     },
     {
       "name": "playwright-cli",
@@ -61,7 +61,7 @@
       "source": "./plugins/ibkr",
       "description": "Interactive Brokers Web API for trading, market data, and portfolio management",
       "category": "misc",
-      "version": "1.1.0"
+      "version": "1.1.1"
     }
   ]
 }
