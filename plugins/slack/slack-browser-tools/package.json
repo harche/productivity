@@ -1,6 +1,6 @@
 {
   "name": "slack-browser-tools",
   "version": "0.1.0",
-  "description": "Slack API tools via Playwright browser session injection. No Slack app required.",
+  "description": "Slack API tools via Chrome session extraction. No Playwright or Slack app required.",
   "private": true
 }

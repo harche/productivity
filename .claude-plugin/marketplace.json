@@ -17,9 +17,9 @@
     {
       "name": "slack",
       "source": "./plugins/slack",
-      "description": "Read/search/send Slack messages via browser session",
+      "description": "Read/search/send Slack messages via Chrome session (no Playwright)",
       "category": "workflow",
-      "version": "1.1.1"
+      "version": "2.0.0"
     },
     {
       "name": "google",

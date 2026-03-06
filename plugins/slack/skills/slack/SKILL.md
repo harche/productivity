@@ -1,20 +1,22 @@
 ---
 name: slack
-description: Fetch Slack messages, channels, and threads from the user's browser session. Use when the user shares a Slack URL, asks about Slack content, or wants to interact with Slack (read messages, search channels, read threads, check DMs, send messages). Requires the playwright-cli plugin to connect to the browser.
+description: Fetch Slack messages, channels, and threads from the user's browser session. Use when the user shares a Slack URL, asks about Slack content, or wants to interact with Slack (read messages, search channels, read threads, check DMs, send messages).
 allowed-tools: Bash(node:*)
 ---
 
-# Slack Browser Tools
+# Slack CLI
 
-Read and interact with Slack via the user's authenticated browser session.
+Read and interact with Slack using the user's Chrome session. Auth tokens are extracted directly from Chrome's local storage — no browser automation or Slack app required.
 
 ## Prerequisite
 
-Slack must be open in Chrome, connected via Playwright CLI extension. If the browser is not connected, use the `playwright-cli` skill (invoke it with `/playwright-cli open --extension`) to connect first.
+The user must be logged into Slack in Google Chrome. The tool reads the session token and cookie directly from Chrome's storage files on disk.
+
+If Chrome extraction fails (e.g., different browser, locked DB), the tool automatically falls back to Playwright browser injection. For the fallback, Slack must be open in Chrome and connected via `playwright-cli open --extension`.
 
 ## Commands
 
-All commands go through a single CLI tool bundled at `${CLAUDE_PLUGIN_ROOT}/slack-browser-tools/slack.mjs`. It handles init, auth, and rate limiting automatically.
+All commands go through a single CLI tool bundled at `${CLAUDE_PLUGIN_ROOT}/slack-browser-tools/slack.mjs`.
 
 ```bash
 # Fetch content from a Slack URL (channels, threads, messages)
@@ -86,14 +88,14 @@ This workspace runs on Slack Enterprise Grid, which restricts certain API method
 
 ## Error Handling
 
-- If the browser is not connected, the tool prints an error asking to run `playwright-cli open --extension`
-- If the token is stale, clear and re-init: run `init` command
+- If Chrome extraction fails, the tool falls back to Playwright automatically
+- If both Chrome and Playwright fail, you'll get a clear error about what's needed
 - Rate limiting (429) is handled automatically with retry
-- 1 second delay between API calls to avoid detection
+- 800-1500ms random delay between API calls
 - `enterprise_is_restricted` — see Enterprise Grid Restrictions above
 
 ## Important
 
 - **Always confirm with the user before sending messages or reactions.**
-- All actions happen as the logged-in user.
-- Token is extracted from Slack's localStorage — workspace-aware, no Slack app needed.
+- All actions happen as the logged-in Chrome user.
+- Token is extracted from Chrome's LevelDB localStorage; `d` cookie is decrypted from Chrome's Cookies DB. Falls back to Playwright if needed.
