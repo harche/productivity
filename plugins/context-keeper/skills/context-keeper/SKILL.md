@@ -72,6 +72,7 @@ Knowledge bases aren't write-once. As discussions continue, the user will come b
 
 ## Important
 
+- **Link everything.** Every Jira issue, Slack thread, Google Doc, GitHub PR, or strategy document you mention must be a clickable link. Bare references like "OCPSTRAT-918" or "the original doc" are not acceptable — always use `[OCPSTRAT-918](https://issues.redhat.com/browse/OCPSTRAT-918)` or `[original doc](https://docs.google.com/document/d/...)`. Links are how readers find depth. If you don't have a URL for something, use the available plugins to look it up, or ask the user. This applies to every file you generate — CLAUDE.md, README.md, and all docs.
 - **Don't over-document.** Capture decisions, rationale, and open questions — not meeting minutes or play-by-play transcripts. The goal is a knowledge base, not a log.
 - **Prefer updating to appending.** A clean, current document is more useful than one with a changelog at the bottom.
 - **Keep CLAUDE.md under 50 lines.** It loads into every conversation. It should contain just enough for an AI agent to orient itself and know where to look for details.

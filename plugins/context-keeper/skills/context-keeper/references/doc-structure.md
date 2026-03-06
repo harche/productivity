@@ -138,6 +138,21 @@ Every doc in `docs/` should include a header line linking to related docs:
 
 This lets both humans and AI agents navigate between docs without loading everything at once.
 
+## Linking Convention
+
+Every reference to an external resource must be a clickable markdown link. This is non-negotiable — links are how readers find depth and verify claims.
+
+What to link:
+- **Jira issues** — `[OCPSTRAT-918](https://issues.redhat.com/browse/OCPSTRAT-918)`
+- **Slack threads** — `[#channel-name thread](https://slack-workspace.slack.com/archives/...)`
+- **Google Docs** — `[Doc title](https://docs.google.com/document/d/...)`
+- **GitHub issues/PRs** — `[repo#123](https://github.com/org/repo/issues/123)`
+- **Knowledge base articles** — `[KB article title](https://access.redhat.com/...)`
+
+If you encounter a reference without a URL (e.g., someone mentions "OCPSTRAT-918" in a Slack message), look it up using the available plugins and add the link. If you can't find it, ask the user.
+
+Never write bare references like "see OCPSTRAT-918" or "as discussed in the doc". Always make them clickable.
+
 ## Formatting Conventions
 
 - **Tables** for comparing options, listing scenarios, or any structured data
