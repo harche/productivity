@@ -68,7 +68,7 @@
       "source": "./plugins/context-keeper",
       "description": "Extract context from discussions and build structured markdown knowledge bases",
       "category": "workflow",
-      "version": "0.2.0"
+      "version": "0.3.0"
     }
   ]
 }
