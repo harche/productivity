@@ -62,6 +62,13 @@
       "description": "Interactive Brokers Web API for trading, market data, and portfolio management",
       "category": "misc",
       "version": "1.1.1"
+    },
+    {
+      "name": "context-keeper",
+      "source": "./plugins/context-keeper",
+      "description": "Extract context from discussions and build structured markdown knowledge bases",
+      "category": "workflow",
+      "version": "0.1.0"
     }
   ]
 }
