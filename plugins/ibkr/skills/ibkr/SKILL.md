@@ -1,7 +1,7 @@
 ---
 name: ibkr
 description: Interact with Interactive Brokers (IBKR) Web API for trading, market data, portfolio management, and account information. Use when the user asks about stocks, options, orders, positions, portfolio, or anything related to their brokerage account.
-allowed-tools: Bash(curl:*),Bash(~/ibkr/*)
+allowed-tools: Bash(curl:*),Bash(${CLAUDE_PLUGIN_ROOT}/scripts/*)
 ---
 
 # IBKR Web API (Client Portal API)
@@ -124,19 +124,14 @@ Detailed command references:
 
 Scripts are in the plugin at `scripts/` (relative to the plugin root). They require `requests` (`pip install requests`).
 
-The `IBKR_SCRIPTS` path is the plugin's `scripts/` directory. To find it at runtime, the plugin is cached at:
-`~/.claude/plugins/cache/productivity-tools/ibkr/<version>/`
-
-So the scripts path is: `~/.claude/plugins/cache/productivity-tools/ibkr/<version>/scripts/`
-
-You can also run them directly if they're symlinked or copied to `~/ibkr/`.
+Use `${CLAUDE_PLUGIN_ROOT}/scripts/` to reference scripts at runtime — this resolves to the plugin's root directory automatically.
 
 ### 1. Iron Butterfly Builder: `iron_butterfly.py`
 
 Builds an SPX iron butterfly order (max_loss = 2x max_profit) and saves it as a JSON file.
 
 ```bash
-python3 scripts/iron_butterfly.py <expiry> [--quantity N] [--output FILE] [--submit]
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py <expiry> [--quantity N] [--output FILE] [--submit]
 ```
 
 - `expiry`: "today", "tomorrow", or YYYY-MM-DD
@@ -146,10 +141,10 @@ python3 scripts/iron_butterfly.py <expiry> [--quantity N] [--output FILE] [--sub
 
 ```bash
 # Build order for tomorrow
-python3 scripts/iron_butterfly.py tomorrow
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py tomorrow
 
 # Build and immediately submit
-python3 scripts/iron_butterfly.py 2026-03-10 --quantity 2 --submit
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py 2026-03-10 --quantity 2 --submit
 ```
 
 ### 2. Order Submitter: `submit_order.py`
@@ -158,20 +153,20 @@ Generic order submitter — works with **any ticker, any price, individual or co
 
 ```bash
 # From JSON file (output of iron_butterfly.py or any strategy builder)
-python3 scripts/submit_order.py iron_butterfly_2026-03-06.json
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/submit_order.py iron_butterfly_2026-03-06.json
 
 # Dry run — show order details without submitting
-python3 scripts/submit_order.py iron_butterfly_2026-03-06.json --dry-run
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/submit_order.py iron_butterfly_2026-03-06.json --dry-run
 
 # Skip confirmation prompt
-python3 scripts/submit_order.py iron_butterfly_2026-03-06.json -y
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/submit_order.py iron_butterfly_2026-03-06.json -y
 
 # Inline single contract order
-python3 scripts/submit_order.py --account DUXXXXXXX --conid 265598 --side BUY \
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/submit_order.py --account DUXXXXXXX --conid 265598 --side BUY \
     --quantity 10 --order-type LMT --price 150.00 --tif DAY
 
 # Inline combo order
-python3 scripts/submit_order.py --account DUXXXXXXX \
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/submit_order.py --account DUXXXXXXX \
     --conidex "416904;;;854745265/1,849314253/-1" \
     --side BUY --quantity 1 --order-type LMT --price -35.00 --tif DAY
 ```

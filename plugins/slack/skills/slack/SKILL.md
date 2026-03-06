@@ -1,6 +1,6 @@
 ---
 name: slack
-description: Fetch Slack messages, channels, and threads from the user's browser session. Use when the user shares a Slack URL, asks about Slack content, or wants to interact with Slack (read messages, search, send messages).
+description: Fetch Slack messages, channels, and threads from the user's browser session. Use when the user shares a Slack URL, asks about Slack content, or wants to interact with Slack (read messages, search channels, read threads, check DMs, send messages). Requires the playwright-cli plugin to connect to the browser.
 allowed-tools: Bash(node:*)
 ---
 

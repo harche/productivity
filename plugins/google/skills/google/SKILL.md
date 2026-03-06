@@ -1,6 +1,6 @@
 ---
 name: google
-description: Manage Gmail, Google Calendar, Google Drive, and Google Docs using the gog CLI. Use when the user asks about email, calendar events, drive files, or Google Docs.
+description: Manage Gmail, Google Calendar, Google Drive, and Google Docs using the gog CLI. Use when the user asks about email, sending mail, calendar events, meetings, schedule, drive files, documents, or Google Docs.
 allowed-tools: Bash(gog:*)
 ---
 

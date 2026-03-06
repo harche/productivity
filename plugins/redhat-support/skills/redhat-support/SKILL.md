@@ -1,6 +1,6 @@
 ---
 name: redhat-support
-description: Interact with Red Hat Jira (issues.redhat.com), search Red Hat Knowledge Base articles and solutions, and manage Customer Portal support cases. Use when the user asks about Jira issues, shares a Jira URL, asks about known issues, troubleshooting, knowledge base articles, support cases, or shares a case/knowledge base URL.
+description: Interact with Red Hat Jira (issues.redhat.com), search Red Hat Knowledge Base articles and solutions, and manage Customer Portal support cases. Use when the user asks about Jira issues, shares a Jira URL, asks about known issues, troubleshooting, knowledge base articles, support cases, shares a case/knowledge base URL, or mentions issue keys like OCPBUGS-*, OCPNODE-*, or any issues.redhat.com link.
 allowed-tools: Bash(curl:*)
 ---
 

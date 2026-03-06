@@ -1,6 +1,6 @@
 ---
 name: platform-docs
-description: Search and read Kubernetes and OpenShift Container Platform documentation in markdown format. Use when the user asks about Kubernetes concepts, OpenShift features, configuration, installation, troubleshooting, or any k8s/OCP topic.
+description: Search and read Kubernetes and OpenShift Container Platform documentation in markdown format. Use when the user asks about Kubernetes concepts, OpenShift features, configuration, installation, troubleshooting, or any k8s/OCP topic — including pods, operators, routes, services, kubectl, oc, RBAC, networking, storage, or cluster administration.
 allowed-tools: Bash(gh:*)
 ---
 

@@ -1,5 +1,5 @@
 {
   "name": "redhat-support",
-  "description": "Search Red Hat Knowledge Base and manage support cases",
+  "description": "Red Hat Jira, Knowledge Base, and support cases",
   "version": "1.0.0"
 }
