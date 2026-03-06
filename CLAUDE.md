@@ -8,18 +8,23 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 - `.claude-plugin/marketplace.json` — Marketplace catalog listing all plugins
 - `.claude/skills/` — Local standalone skill copies (flat, auto-discovered by Claude Code)
 
-## Skills
+## Plugins
 
-- `/playwright-cli` — Browser automation: navigate, interact, screenshot, scrape
-- `/slack` — Read/search/send Slack messages via browser session
-- `/gmail` — Gmail, Google Calendar, Drive, and Docs via `gog` CLI
-- `/jira` — View, search, create, and update Jira issues via REST API
-- `/github` — GitHub repos, PRs, issues, and actions via `gh` CLI
-- `/support-cases` — View, search, and manage Red Hat support cases via Customer Portal API
-- `/knowledge-base` — Search Red Hat Knowledge Base articles, solutions, and documentation
-- `/openshift-docs` — Search and read OpenShift Container Platform docs via `gh` CLI
-- `/kubernetes-docs` — Search and read upstream Kubernetes docs via `gh` CLI
-- `/ocp-cluster` — Create, destroy, and list OpenShift clusters on GCP
+**workflow**
+- `github` — GitHub repos, PRs, issues, and actions via `gh` CLI
+- `slack` — Read/search/send Slack messages via browser session
+- `google` — Gmail, Google Calendar, Drive, and Docs via `gog` CLI
+- `redhat-support` — Red Hat Jira, Knowledge Base, and support cases
+
+**reference**
+- `platform-docs` — Search and read Kubernetes and OpenShift documentation
+
+**infra**
+- `cluster-installer` — Create, manage, and destroy clusters (kind, GKE, OpenShift on GCP)
+- `playwright-cli` — Browser automation: navigate, interact, screenshot, scrape
+
+**misc**
+- `ibkr` — Interactive Brokers Web API for trading, market data, and portfolio management
 
 ## Authentication
 
@@ -34,7 +39,7 @@ security add-generic-password -a "$USER" -s "TOKEN_NAME" -w "new-value" -U
 In the target repo, use Claude Code's native plugin system:
 ```bash
 /plugin marketplace add harche/productivity
-/plugin install jira@productivity-tools
+/plugin install redhat-support@productivity-tools
 ```
 
 ## Guardrails

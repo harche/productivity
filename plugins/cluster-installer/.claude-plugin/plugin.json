@@ -1,0 +1,5 @@
+{
+  "name": "cluster-installer",
+  "description": "Create, manage, and destroy Kubernetes and OpenShift clusters (kind, GKE, OpenShift on GCP)",
+  "version": "1.0.0"
+}

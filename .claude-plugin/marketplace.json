@@ -11,77 +11,56 @@
       "name": "github",
       "source": "./plugins/github",
       "description": "GitHub repos, PRs, issues, and actions via gh CLI",
-      "category": "tools",
+      "category": "workflow",
       "version": "1.0.2"
     },
     {
       "name": "slack",
       "source": "./plugins/slack",
       "description": "Read/search/send Slack messages via browser session",
-      "category": "tools",
+      "category": "workflow",
+      "version": "1.1.0"
+    },
+    {
+      "name": "google",
+      "source": "./plugins/google",
+      "description": "Gmail, Google Calendar, Drive, and Docs via gog CLI",
+      "category": "workflow",
       "version": "1.0.0"
     },
     {
-      "name": "gmail",
-      "source": "./plugins/gmail",
-      "description": "Gmail, Google Calendar, Drive, and Docs via gog CLI",
-      "category": "tools",
+      "name": "redhat-support",
+      "source": "./plugins/redhat-support",
+      "description": "Red Hat Jira, Knowledge Base, and support cases",
+      "category": "workflow",
+      "version": "1.0.0"
+    },
+    {
+      "name": "platform-docs",
+      "source": "./plugins/platform-docs",
+      "description": "Search and read Kubernetes and OpenShift documentation",
+      "category": "reference",
+      "version": "1.0.0"
+    },
+    {
+      "name": "cluster-installer",
+      "source": "./plugins/cluster-installer",
+      "description": "Create, manage, and destroy Kubernetes and OpenShift clusters (kind, GKE, OpenShift)",
+      "category": "infra",
       "version": "1.0.0"
     },
     {
       "name": "playwright-cli",
       "source": "./plugins/playwright-cli",
       "description": "Browser automation for web testing, screenshots, and data extraction",
-      "category": "tools",
-      "version": "1.0.0"
-    },
-    {
-      "name": "kubernetes-docs",
-      "source": "./plugins/kubernetes-docs",
-      "description": "Search and read upstream Kubernetes documentation",
-      "category": "tools",
-      "version": "1.0.0"
-    },
-    {
-      "name": "jira",
-      "source": "./plugins/jira",
-      "description": "View, search, create, and update Jira issues",
-      "category": "redhat",
-      "version": "1.0.2"
-    },
-    {
-      "name": "support-cases",
-      "source": "./plugins/support-cases",
-      "description": "View, search, and manage Red Hat support cases",
-      "category": "redhat",
-      "version": "1.0.1"
-    },
-    {
-      "name": "knowledge-base",
-      "source": "./plugins/knowledge-base",
-      "description": "Search Red Hat Knowledge Base articles and solutions",
-      "category": "redhat",
-      "version": "1.0.1"
-    },
-    {
-      "name": "openshift-docs",
-      "source": "./plugins/openshift-docs",
-      "description": "Search and read OpenShift Container Platform docs",
-      "category": "redhat",
-      "version": "1.0.0"
-    },
-    {
-      "name": "ocp-cluster",
-      "source": "./plugins/ocp-cluster",
-      "description": "Create, destroy, and manage OpenShift clusters on GCP",
-      "category": "redhat",
+      "category": "infra",
       "version": "1.0.0"
     },
     {
       "name": "ibkr",
       "source": "./plugins/ibkr",
       "description": "Interactive Brokers Web API for trading, market data, and portfolio management",
-      "category": "tools",
+      "category": "misc",
       "version": "1.1.0"
     }
   ]
