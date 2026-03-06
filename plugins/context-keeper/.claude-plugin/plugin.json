@@ -1,5 +1,5 @@
 {
   "name": "context-keeper",
   "description": "Extract context from discussions and build structured markdown knowledge bases",
-  "version": "0.1.0"
+  "version": "0.2.0"
 }
