@@ -1,0 +1,5 @@
+{
+  "name": "prometheus",
+  "description": "Query and analyze Prometheus metrics on Kubernetes and OpenShift clusters using promtool",
+  "version": "1.0.0"
+}

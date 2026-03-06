@@ -69,6 +69,13 @@
       "description": "Extract context from discussions and build structured markdown knowledge bases",
       "category": "workflow",
       "version": "0.3.0"
+    },
+    {
+      "name": "prometheus",
+      "source": "./plugins/prometheus",
+      "description": "Query and analyze Prometheus metrics on Kubernetes and OpenShift clusters using promtool",
+      "category": "infra",
+      "version": "1.0.0"
     }
   ]
 }
