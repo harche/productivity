@@ -486,9 +486,153 @@ async function graphqlPost(operationName, variables, features) {
   });
 }
 
-// --- Search via Playwright navigation (bypasses x-client-transaction-id) ---
+// --- Search via JS injection (generates x-client-transaction-id in-browser) ---
 
-async function searchViaPlaywright(query, count) {
+function searchViaJsInjection(query, count) {
+  ensurePlaywrightBrowser();
+
+  const runCode = `async page => {
+    const args = ${JSON.stringify({ query, count })};
+
+    // Ensure we're on x.com so webpack modules are available
+    const url = await page.url();
+    if (!url.includes('x.com') && !url.includes('twitter.com')) {
+      await page.goto('https://x.com/home', { waitUntil: 'domcontentloaded', timeout: 20000 });
+    }
+
+    // Wait for webpack chunks and module cache to be fully loaded
+    for (let i = 0; i < 20; i++) {
+      const ready = await page.evaluate(() => {
+        const chunks = window.webpackChunk_twitter_responsive_web;
+        if (!chunks || !chunks.length) return false;
+        let req = null;
+        chunks.push([['__ready_check_' + Date.now() + '__'], {}, (r) => { req = r; }]);
+        return !!(req && req.c && Object.keys(req.c).length > 100);
+      });
+      if (ready) break;
+      await page.waitForTimeout(500);
+    }
+
+    const result = await page.evaluate(async ({ query, count }) => {
+      // Access webpack require via chunk push trick
+      const chunks = window.webpackChunk_twitter_responsive_web;
+      if (!chunks) return { error: 'Not on x.com or webpack chunks not available' };
+
+      // Get webpack require with retry (cache may not be populated on first push)
+      let webpackRequire = null;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        chunks.push([['__search_probe_' + Date.now()], {}, (req) => { webpackRequire = req; }]);
+        if (webpackRequire && webpackRequire.c && Object.keys(webpackRequire.c).length > 0) break;
+        webpackRequire = null;
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (!webpackRequire || !webpackRequire.c) return { error: 'Could not access webpack module cache' };
+
+      // Find the transaction ID generator module (exports.jJ = async function(host, path, method))
+      let generateTxId = null;
+      for (const id of Object.keys(webpackRequire.c)) {
+        const mod = webpackRequire.c[id];
+        if (!mod?.exports?.jJ || !mod?.exports?.ZP) continue;
+        const fn = mod.exports.ZP.toString();
+        if (fn.includes('x-client-transaction-id')) {
+          generateTxId = mod.exports.jJ;
+          break;
+        }
+      }
+      if (!generateTxId) return { error: 'Transaction ID generator not found in webpack modules' };
+
+      // Find SearchTimeline query ID from chunk module factories
+      let searchQueryId = null;
+      for (const chunk of chunks) {
+        if (!chunk[1]) continue;
+        for (const [, factory] of Object.entries(chunk[1])) {
+          if (typeof factory !== 'function') continue;
+          const src = factory.toString();
+          const match = src.match(/queryId:\s*"([^"]+)",\s*operationName:\s*"SearchTimeline",\s*operationType:\s*"query"/);
+          if (match) { searchQueryId = match[1]; break; }
+        }
+        if (searchQueryId) break;
+      }
+      if (!searchQueryId) return { error: 'SearchTimeline queryId not found in webpack chunks' };
+
+      // Get CSRF token
+      const ct0 = document.cookie.split(';').map(c => c.trim())
+        .find(c => c.startsWith('ct0='))?.split('=')[1];
+      if (!ct0) return { error: 'No CSRF token found in cookies' };
+
+      // Build request
+      const variables = {
+        rawQuery: query, count, querySource: 'typed_query',
+        product: 'Latest', withGrokTranslatedBio: false,
+      };
+      const features = ${JSON.stringify(TWEET_FEATURES)};
+      const params = new URLSearchParams();
+      params.set('variables', JSON.stringify(variables));
+      params.set('features', JSON.stringify(features));
+
+      const apiPath = '/i/api/graphql/' + searchQueryId + '/SearchTimeline';
+      const fullUrl = 'https://x.com' + apiPath + '?' + params.toString();
+      const txId = await generateTxId('x.com', apiPath, 'GET');
+
+      const response = await fetch(fullUrl, {
+        method: 'GET',
+        headers: {
+          'authorization': 'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA',
+          'x-csrf-token': ct0,
+          'x-twitter-auth-type': 'OAuth2Session',
+          'x-twitter-active-user': 'yes',
+          'x-twitter-client-language': 'en',
+          'x-client-transaction-id': txId,
+        },
+        credentials: 'include',
+      });
+
+      if (response.status !== 200) {
+        const body = await response.text();
+        return { error: 'API returned status ' + response.status, body: body.substring(0, 500) };
+      }
+
+      return await response.json();
+    }, args);
+
+    return JSON.stringify(result);
+  }`;
+
+  const proc = spawnSync("playwright-cli", ["run-code", runCode], {
+    encoding: "utf-8",
+    timeout: 60000,
+  });
+
+  if (proc.status !== 0) {
+    return { error: "Playwright process failed: " + (proc.stderr || proc.stdout || "unknown").substring(0, 200) };
+  }
+
+  const output = proc.stdout;
+
+  // Handle error responses from playwright-cli
+  if (output.includes("### Error")) {
+    const errMatch = output.match(/### Error\n([\s\S]*?)(?:\n###|$)/);
+    return { error: "Playwright error: " + (errMatch ? errMatch[1].trim().substring(0, 200) : "unknown") };
+  }
+
+  const match = output.match(/### Result\n([\s\S]*?)(?:\n###|$)/);
+  if (!match) {
+    return { error: "Could not parse playwright-cli output" };
+  }
+
+  try {
+    return JSON.parse(JSON.parse(match[1].trim()));
+  } catch {
+    try {
+      return JSON.parse(match[1].trim());
+    } catch {
+      return { error: "Failed to parse response" };
+    }
+  }
+}
+
+// Legacy fallback: navigate the browser to search URL and intercept the response.
+function searchViaPlaywrightNavigation(query, count) {
   ensurePlaywrightBrowser();
   const encodedQuery = encodeURIComponent(query);
   const pageUrl = `https://x.com/search?q=${encodedQuery}&f=live`;
@@ -874,34 +1018,14 @@ async function main() {
         process.exit(1);
       }
 
-      let data;
-      try {
-        // Try direct API first (works with Chrome backend only if
-        // x-client-transaction-id is not required)
-        data = await graphqlGet(
-          "SearchTimeline",
-          {
-            rawQuery: query,
-            count,
-            querySource: "typed_query",
-            product: "Latest",
-            withGrokTranslatedBio: false,
-          },
-          TWEET_FEATURES
+      // Try JS injection first (fastest, no browser navigation needed)
+      let data = searchViaJsInjection(query, count);
+      if (data.error) {
+        // Fall back to navigation-based search
+        console.error(
+          "JS injection search failed:", data.error, "— falling back to navigation..."
         );
-      } catch (e) {
-        if (
-          e.message.includes("x-client-transaction-id") ||
-          e.message.includes("empty 404")
-        ) {
-          // Fall back to Playwright navigation-based search
-          console.error(
-            "Direct search blocked. Using Playwright navigation fallback..."
-          );
-          data = await searchViaPlaywright(query, count);
-        } else {
-          throw e;
-        }
+        data = searchViaPlaywrightNavigation(query, count);
       }
 
       if (data.errors) {
@@ -1140,29 +1264,12 @@ async function main() {
           break;
         }
         case "search": {
-          // Search always needs Playwright navigation fallback
-          let data;
-          try {
-            data = await graphqlGet(
-              "SearchTimeline",
-              {
-                rawQuery: parsed.query,
-                count: 20,
-                querySource: "typed_query",
-                product: "Latest",
-                withGrokTranslatedBio: false,
-              },
-              TWEET_FEATURES
+          let data = searchViaJsInjection(parsed.query, 20);
+          if (data.error) {
+            console.error(
+              "JS injection search failed:", data.error, "— falling back to navigation..."
             );
-          } catch (e) {
-            if (
-              e.message.includes("x-client-transaction-id") ||
-              e.message.includes("empty 404")
-            ) {
-              data = await searchViaPlaywright(parsed.query, 20);
-            } else {
-              throw e;
-            }
+            data = searchViaPlaywrightNavigation(parsed.query, 20);
           }
           const tweets = extractTimelineTweets(data);
           console.log(
