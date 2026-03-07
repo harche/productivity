@@ -76,6 +76,13 @@
       "description": "Query and analyze Prometheus metrics on Kubernetes and OpenShift clusters using promtool",
       "category": "infra",
       "version": "1.0.0"
+    },
+    {
+      "name": "twitter",
+      "source": "./plugins/twitter",
+      "description": "Read/search/post Twitter (X) content via browser session",
+      "category": "workflow",
+      "version": "1.0.0"
     }
   ]
 }
