@@ -66,9 +66,9 @@
     {
       "name": "context-keeper",
       "source": "./plugins/context-keeper",
-      "description": "Extract context from discussions and build structured markdown knowledge bases",
+      "description": "Capture project state as structured, interlinked markdown notes from Slack, Docs, Jira, and other sources",
       "category": "workflow",
-      "version": "0.3.0"
+      "version": "0.4.0"
     },
     {
       "name": "prometheus",

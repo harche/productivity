@@ -1,6 +1,6 @@
 ---
 name: context-keeper
-description: Extract context from Slack threads, Google Docs, Jira issues, and other sources, then build and maintain structured markdown knowledge bases that track evolving discussions, debates, and decisions. Use this skill whenever the user wants to summarize or document a discussion, track a decision-making process, create project notes from scattered sources, build a knowledge base from conversations, or asks you to "write up" or "document" what was discussed. Also trigger when the user shares multiple source links (Slack, Google Docs, Jira) and wants them synthesized into coherent documentation, or when they ask you to update existing project docs with new information from ongoing discussions.
+description: Capture the current state of a project as structured, interlinked markdown notes that provide instant context for humans and AI agents. Gathers information from Slack threads, Google Docs, Jira issues, and other sources, investigates claims with real evidence, and produces a navigable knowledge base of what was decided, why, what's still open, and where things stand now. Use when the user wants to document a project, track decisions, or synthesize scattered discussions into a single source of truth.
 ---
 
 # Context Keeper
@@ -68,6 +68,8 @@ Share your understanding with the user before generating docs. A quick summary l
 
 Generate a documentation tree in the user's current working directory. The structure uses **progressive disclosure** — a reader (human or AI) starts with the overview and drills into details only as needed.
 
+**Each file must have a clear, non-overlapping role.** The most common mistake is putting investigation evidence in both the problem-statement and the decision doc. The rule: problem-statement presents the landscape (options with theoretical pros/cons from the source material); decision doc presents the analysis (investigated evidence, real-world incidents, why one option wins). If you find yourself writing the same evidence in two files, it belongs in the decision doc only — the problem-statement should link to it.
+
 See [references/doc-structure.md](references/doc-structure.md) for the file structure, templates, and formatting conventions.
 
 ### Phase 5: Evolve
@@ -76,9 +78,11 @@ Knowledge bases aren't write-once. As discussions continue, the user will come b
 
 1. **Read existing docs first** — understand what's already captured before making changes.
 2. **Update in place** — modify existing files rather than creating new ones, unless a genuinely new topic emerges.
-3. **Track decision changes** — if a decision changed, note what changed and why. Don't silently overwrite.
-4. **Keep cross-references valid** — if you add or rename a file, update all links.
-5. **Update CLAUDE.md** — if the project context changed materially, reflect it there.
+3. **Propagate corrections.** When new information contradicts data stated in existing docs (e.g., a number turns out to be wrong, an assumption is invalidated), find and update every reference across all files. Stale data in one doc undermines the whole knowledge base. Search for the old value to make sure you catch every instance.
+4. **Track decision changes** — if a decision changed, note what changed and why. Don't silently overwrite.
+5. **Keep cross-references valid** — if you add or rename a file, update all links.
+6. **Update README.md Status and Open Questions** — reflect the current state after any significant update.
+7. **Update CLAUDE.md** — if the project context changed materially, reflect it there.
 
 ## Important
 

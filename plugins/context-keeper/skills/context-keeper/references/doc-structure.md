@@ -62,7 +62,7 @@ Start with [README.md](README.md) for the full overview.
 
 ### README.md
 
-The entry point for humans. Contains the overview, links to source materials, a summary of decisions, and an index of all docs.
+The entry point for humans. Contains the overview, links to source materials, a summary of decisions, and an index of all docs. Key People should include everyone who contributed meaningfully — not just the primary author, but also people who provided critical data, raised important concerns, or own related components. These are the people a future reader might need to find.
 
 Template:
 
@@ -82,6 +82,14 @@ Template:
 
 [Summary of what was decided. If no decision yet, note that.]
 
+## Status
+
+[Current phase: design / implementation / blocked / complete. One or two sentences on where things stand and what's blocking progress, with links to relevant docs.]
+
+## Open Questions
+
+- **[Question]** — [Brief context and link to where it's discussed in detail]
+
 ## Documentation
 
 | Document | Description |
@@ -95,27 +103,36 @@ Template:
 - **Name** (`@handle`) — Role/contribution
 ```
 
+The Open Questions section is a rollup — collect unresolved questions from across all docs into one place so a reader can see everything that's still open without reading every file. Each entry should link to the doc where that question is discussed in detail.
+
 ### docs/problem-statement.md
 
-Summarizes the source material — the problem, background, and options/approaches that were considered. This is a synthesis, not a copy-paste of the original doc. It should stand on its own for someone who can't access the original source.
+Presents the landscape — the problem, background, constraints, and options that were considered. This is a synthesis of the source material, not a copy-paste. It should stand on its own for someone who can't access the original source.
+
+**This file describes what the options ARE, not which is best.** Present each option with its theoretical pros and cons (use tables). Do NOT include investigated evidence, analysis, or argument for/against options here — that belongs in the decision doc. After each option's pros/cons table, add a one-line pointer: `See [investigated evidence](decision-xyz.md#section-anchor) for real-world analysis.`
 
 Structure:
 - Link back to source document
 - Cross-references to related docs
 - Background/context section
-- Problem description
-- Options/approaches with pros and cons (use tables for comparison)
-- Open questions
+- Problem description and constraints (technical limitations, API constraints, etc.)
+- Options/approaches with pros and cons tables (from source material)
+- One-line pointers to decision doc for evidence on each option
+- Cross-cutting concerns (issues that affect all options)
 
 ### docs/decision-*.md
 
 One file per major decision. Captures what was chosen, why, and why alternatives were rejected.
 
+**This is the single home for all investigated evidence.** All findings from Phase 2 (Investigate) live here — incident reports, precedent analysis, Slack quotes, Jira evidence, performance data. The problem statement presents the theoretical landscape; this doc proves or disproves those theories with real-world evidence. This separation prevents duplication and ensures evidence is maintained in exactly one place.
+
 Structure:
 - Cross-references to problem statement and design details
 - Summary of the decision
-- Rationale (the core argument for this choice)
-- Why not the alternatives (brief, focused on the deal-breakers)
+- Core insight (the fundamental reason this option wins)
+- Rationale with evidence (why the chosen option works, backed by findings)
+- Why not the alternatives (evidence-backed deal-breakers for each rejected option)
+- Risks of the chosen option (investigated honestly, with mitigations)
 - Open questions or caveats
 
 ### docs/design-*.md

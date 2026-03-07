@@ -1,5 +1,5 @@
 {
   "name": "context-keeper",
-  "description": "Extract context from discussions and build structured markdown knowledge bases",
-  "version": "0.3.0"
+  "description": "Capture project state as structured, interlinked markdown notes from Slack, Docs, Jira, and other sources",
+  "version": "0.4.0"
 }
