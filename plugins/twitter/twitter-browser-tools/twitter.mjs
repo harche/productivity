@@ -280,6 +280,27 @@ function playwrightCall(url, options) {
   );
 }
 
+// Ensure playwright-cli has a browser connected (auto-open via extension if needed).
+function ensurePlaywrightBrowser() {
+  const check = spawnSync("playwright-cli", ["list"], {
+    encoding: "utf-8",
+    timeout: 5000,
+  });
+  if (check.status === 0 && check.stdout.includes("browser-type:")) return;
+
+  console.error("No browser connected. Opening via Playwright extension...");
+  const open = spawnSync("playwright-cli", ["open", "--extension"], {
+    encoding: "utf-8",
+    timeout: 15000,
+  });
+  if (open.status !== 0) {
+    const err = open.stderr || open.stdout || "Unknown error";
+    console.error("ERROR: Could not connect to Chrome:", err.trim());
+    console.error("Run manually: playwright-cli open --extension");
+    process.exit(1);
+  }
+}
+
 // Navigate the browser to a URL and intercept a specific API response.
 // Used for endpoints that require x-client-transaction-id (e.g., SearchTimeline).
 function playwrightNavigateAndCapture(pageUrl, apiPattern) {
@@ -468,6 +489,7 @@ async function graphqlPost(operationName, variables, features) {
 // --- Search via Playwright navigation (bypasses x-client-transaction-id) ---
 
 async function searchViaPlaywright(query, count) {
+  ensurePlaywrightBrowser();
   const encodedQuery = encodeURIComponent(query);
   const pageUrl = `https://x.com/search?q=${encodedQuery}&f=live`;
   const data = playwrightNavigateAndCapture(pageUrl, "SearchTimeline");
