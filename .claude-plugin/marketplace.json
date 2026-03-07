@@ -83,6 +83,13 @@
       "description": "Read/search/post Twitter (X) content via browser session",
       "category": "misc",
       "version": "1.2.0"
+    },
+    {
+      "name": "youtube",
+      "source": "./plugins/youtube",
+      "description": "Fetch YouTube transcripts, metadata, comments, search, and browse channels/playlists",
+      "category": "misc",
+      "version": "0.1.0"
     }
   ]
 }

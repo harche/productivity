@@ -1,0 +1,10 @@
+{
+  "name": "youtube-tools",
+  "version": "0.1.0",
+  "description": "YouTube CLI — fetch transcripts, metadata, comments, search, and download via yt-dlp",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "youtube-transcript": "^3.2.2"
+  }
+}
