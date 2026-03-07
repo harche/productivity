@@ -28,6 +28,7 @@ In any project, add the marketplace and install plugins:
 | `slack` | Read, search, and send Slack messages via browser session |
 | `google` | Gmail, Google Calendar, Drive, and Docs via `gog` CLI |
 | `redhat-support` | Red Hat Jira, Knowledge Base, and support cases |
+| `context-keeper` | Capture project state as structured markdown notes from Slack, Docs, Jira, and other sources |
 
 ### Reference
 
@@ -41,12 +42,14 @@ In any project, add the marketplace and install plugins:
 |--------|-------------|
 | `cluster-installer` | Create, manage, and destroy clusters (kind, GKE, OpenShift on GCP) |
 | `playwright-cli` | Browser automation: navigate, interact, screenshot, scrape |
+| `prometheus` | Query and analyze Prometheus metrics on Kubernetes/OpenShift clusters |
 
 ### Misc
 
 | Plugin | Description |
 |--------|-------------|
 | `ibkr` | Interactive Brokers Web API for trading, market data, and portfolio management |
+| `twitter` | Read, search, and post on Twitter (X) via browser session |
 
 ## Bulk Install by Category
 
@@ -82,9 +85,12 @@ To auto-install a group of plugins in a repo, add this to `.claude/settings.json
     "slack@productivity-tools": true,
     "google@productivity-tools": true,
     "redhat-support@productivity-tools": true,
+    "twitter@productivity-tools": true,
+    "context-keeper@productivity-tools": true,
     "platform-docs@productivity-tools": true,
     "cluster-installer@productivity-tools": true,
     "playwright-cli@productivity-tools": true,
+    "prometheus@productivity-tools": true,
     "ibkr@productivity-tools": true
   }
 }

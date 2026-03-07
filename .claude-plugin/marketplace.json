@@ -81,7 +81,7 @@
       "name": "twitter",
       "source": "./plugins/twitter",
       "description": "Read/search/post Twitter (X) content via browser session",
-      "category": "workflow",
+      "category": "misc",
       "version": "1.2.0"
     }
   ]

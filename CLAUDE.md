@@ -15,6 +15,7 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 - `slack` — Read/search/send Slack messages via browser session
 - `google` — Gmail, Google Calendar, Drive, and Docs via `gog` CLI
 - `redhat-support` — Red Hat Jira, Knowledge Base, and support cases
+- `context-keeper` — Capture project state as structured markdown notes from Slack, Docs, Jira, and other sources
 
 **reference**
 - `platform-docs` — Search and read Kubernetes and OpenShift documentation
@@ -22,9 +23,11 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 **infra**
 - `cluster-installer` — Create, manage, and destroy clusters (kind, GKE, OpenShift on GCP)
 - `playwright-cli` — Browser automation: navigate, interact, screenshot, scrape
+- `prometheus` — Query and analyze Prometheus metrics on Kubernetes/OpenShift clusters
 
 **misc**
 - `ibkr` — Interactive Brokers Web API for trading, market data, and portfolio management
+- `twitter` — Read, search, and post on Twitter (X) via browser session
 
 ## Authentication
 
