@@ -4,6 +4,18 @@ AI-powered productivity hub with Claude Code plugins for software engineering wo
 
 ## Quick Start
 
+### Prerequisites
+
+Some plugins depend on external CLIs or API tokens being available on your system **before** you install them:
+
+| Dependency | Needed by | Install |
+|------------|-----------|---------|
+| [`gh`](https://cli.github.com/) | `github` | `brew install gh` / `dnf install gh` / `apt install gh` |
+| [`gog`](https://github.com/steipete/gogcli) | `google` | See repo README |
+| API tokens (Jira, Red Hat, etc.) | `redhat-detective`, `cluster-installer` | See [Authentication & Secrets](#authentication--secrets) below |
+
+### Install Plugins
+
 In any project, add the marketplace and install plugins:
 
 ```bash
