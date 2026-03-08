@@ -2,7 +2,7 @@
 name: polymarket-news
 description: Generate a news briefing from Polymarket prediction markets, cross-referenced with Twitter. Use when the user wants a news report, daily briefing, market summary, or asks what's happening in the world based on prediction market data.
 tools: Bash, Read, Write, Glob, Grep
-model: claude-opus-4-6[1m]
+model: opus
 skills:
   - polymarket
   - twitter
