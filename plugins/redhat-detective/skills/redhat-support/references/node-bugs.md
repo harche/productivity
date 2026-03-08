@@ -117,37 +117,37 @@ AND NOT (filter = "Node Green Team" OR filter = "Node Blue Team")
 
 ## Team Members
 
-Use Jira username for `assignee =` queries. For names with `JIRAUSER*` IDs, use the email form `"name@redhat.com"` instead.
+**Always use the email form** (`"name@redhat.com"`) for `assignee =` queries via PAT. Short Jira IDs (e.g., `pehunt`) silently return zero results.
 
-| Name | Jira ID |
-|------|---------|
-| Abu Kashem | tkashem |
-| Adrian Reber | areber |
-| Aravindh Puthiyaparambil | aravindhp |
-| Damien Grisonnet | dgrisonn |
+| Name | Assignee (for JQL) |
+|------|--------------------|
+| Abu Kashem | REDACTED |
+| Adrian Reber | REDACTED |
+| Aravindh Puthiyaparambil | REDACTED |
+| Damien Grisonnet | REDACTED |
 | David Vossel | rhn-engineering-dvossel |
-| Fabio Bertinatto | fbertina |
-| Francesco Giudici | fgiudici |
-| Francesco Romani | fromani |
-| Gal Ben Haim | gbenhaim |
-| Giuseppe Scrivano | gscrivano |
-| Harshal Patil | harpatil |
-| Jindrich Novy | jnovy |
-| Jiri Mencak | jmencak |
+| Fabio Bertinatto | REDACTED |
+| Francesco Giudici | REDACTED |
+| Francesco Romani | REDACTED |
+| Gal Ben Haim | REDACTED |
+| Giuseppe Scrivano | REDACTED |
+| Harshal Patil | harpatil@redhat.com |
+| Jindrich Novy | REDACTED |
+| Jiri Mencak | REDACTED |
 | Joel Smith | joelsmith.redhat |
-| Kirill Kolyshkin | kkolyshk |
-| Martin Sivak | marsik |
-| Michael Burke | mburke1 |
-| Min Li | minmli |
-| Mrunal Patel | mpatel1 |
-| Peter Hunt | pehunt |
-| Piotr Aleszczyk | paleszcz |
-| Qi Wang | qiwan |
-| Ryan Phillips | rphillip |
+| Kirill Kolyshkin | REDACTED |
+| Martin Sivak | REDACTED |
+| Michael Burke | REDACTED |
+| Min Li | REDACTED |
+| Mrunal Patel | REDACTED |
+| Peter Hunt | REDACTED |
+| Piotr Aleszczyk | REDACTED |
+| Qi Wang | REDACTED |
+| Ryan Phillips | REDACTED |
 | Sascha Grunert | JIRAUSER156599 |
-| Sohan Kunkerkar | skunkerk |
-| Swati Sehgal | swsehgal |
-| Vadim Rutkovsky | vrutkovs |
+| Sohan Kunkerkar | REDACTED |
+| Swati Sehgal | REDACTED |
+| Vadim Rutkovsky | REDACTED |
 
 ## Example Queries
 

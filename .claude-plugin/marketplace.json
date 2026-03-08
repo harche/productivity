@@ -33,7 +33,7 @@
       "source": "./plugins/redhat-detective",
       "description": "Red Hat debugging and investigation toolkit: Jira issues, Knowledge Base, support cases, platform docs, and Prometheus metrics",
       "category": "workflow",
-      "version": "1.1.1"
+      "version": "1.1.2"
     },
     {
       "name": "cluster-installer",
