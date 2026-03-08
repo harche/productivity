@@ -7,37 +7,34 @@ This reference defines the file structure, templates, and conventions for mind-m
 ```
 project-folder/
   CLAUDE.md    # AI agent entry point — concise context, section index, glossary
-  README.md    # The knowledge base — overview mindmap, sections, sub-mindmaps
+  README.md    # The knowledge base — overview mindmap, sections, sub-mindmaps (all plain markdown)
 ```
 
 Two files. The mindmap is the backbone — it defines the structure, and everything else flows from it.
 
 ## Design Principle: Mindmap First
 
-The mindmap is not decoration — it's the structural backbone of the knowledge base. Every mindmap has two representations that must stay in sync:
-
-1. **Mermaid diagram** — the visual rendering for humans on GitHub
-2. **Linked navigation list** — a nested markdown list with anchor links, immediately below the Mermaid diagram, for AI agents and programmatic navigation
+The mindmap is not decoration — it's the structural backbone of the knowledge base. It is represented as a **nested markdown list** with clickable anchor links and brief descriptions.
 
 The workflow is:
 
 1. **Design the mindmap** — decide the branches, hierarchy, and topology
-2. **Add linked navigation** — mirror the mindmap as a nested list with clickable anchor links and brief descriptions
+2. **Write it as a nested linked list** — each entry is an anchor link with a brief description
 3. **Write sections** — flesh out each branch with detail text, tables, evidence
-4. **When updating** — change the mindmap and linked list first, then update sections to match
+4. **When updating** — change the mindmap list first, then update sections to match
 
-**Structural consistency rule:** Every branch in the overview mindmap must have a corresponding `##` section, a linked navigation entry, and vice versa. If they diverge, the mindmap wins — update the linked list and sections to match. The same applies to sub-mindmaps and their `###` headings.
+**Structural consistency rule:** Every branch in the overview mindmap must have a corresponding `##` section and vice versa. If they diverge, the mindmap wins — update sections to match. The same applies to sub-mindmaps and their `###` headings.
 
 ## README.md
 
-The single knowledge base file. The overview mindmap at the top defines the document structure. Sub-mindmaps within sections define sub-section structure. Detail text, tables, and evidence hang off each mindmap node.
+The single knowledge base file. The overview mindmap at the top (as a nested linked list) defines the document structure. Sub-mindmaps within sections define sub-section structure. Detail text, tables, and evidence hang off each mindmap node.
 
 ### Structure
 
 1. **Title** — `# [Project Title]`
-2. **Overview mindmap** — Mermaid mindmap showing all major topic branches
+2. **Overview mindmap** — nested linked list showing all major topic branches
 3. **Sources** — Links to origin materials (Slack, Docs, Jira, GitHub)
-4. **Content sections** — One `##` section per major mindmap branch, in left-to-right order
+4. **Content sections** — One `##` section per major mindmap branch
 5. **Open Questions** — Rollup of unresolved items with links to relevant sections
 6. **Key People** — Contributors with handles and roles
 7. **Key Terms** — Glossary of project-specific terminology
@@ -46,20 +43,6 @@ The single knowledge base file. The overview mindmap at the top defines the docu
 
 ~~~markdown
 # [Project Title]
-
-```mermaid
-mindmap
-  root(([Short Topic Name]))
-    Branch 1
-      Key point
-      Key point
-    Branch 2
-      Sub-branch
-        Detail
-    Branch 3
-      Key point
-    Open Questions
-```
 
 - [Branch 1](#branch-1) — brief description
   - [Key point](#key-point)
@@ -79,16 +62,6 @@ mindmap
 [Detail text with tables, evidence, and links.]
 
 ## Branch 2
-
-```mermaid
-mindmap
-  root((Branch 2))
-    Sub-topic A
-      Detail
-      Detail
-    Sub-topic B
-      Detail
-```
 
 - [Sub-topic A](#sub-topic-a) — brief description
 - [Sub-topic B](#sub-topic-b) — brief description
@@ -116,12 +89,11 @@ mindmap
 
 ### When to add sub-mindmaps
 
-Add a sub-mindmap at the top of a section when:
+Add a sub-mindmap (nested linked list) at the top of a section when:
 
 - The section has **3+ sub-topics** with their own internal structure
 - You're comparing **multiple options or alternatives**
 - The section covers **multiple design areas** or concerns
-- The visual map genuinely helps the reader navigate
 
 Don't add sub-mindmaps for simple sections where a heading + text is sufficient.
 
@@ -171,15 +143,7 @@ AI agent entry point. Loaded automatically into every Claude Code session. Must 
 ### Node text
 
 - **2-6 words per node.** Nodes are labels, not sentences. Detail lives in the sections below.
-- **Avoid special characters.** No parentheses, brackets, or quotes in node text — these conflict with Mermaid syntax. Colons and hyphens are fine.
 - **Use consistent phrasing.** If one node says "Key Rotation", don't label another "How to rotate keys".
-
-### Node shapes
-
-- `((text))` — Circle. Use for root nodes.
-- Default text (no brackets) — Rectangle. Use for most branches.
-- `(text)` — Rounded rectangle. Use to highlight key decisions or outcomes.
-- `[text]` — Square. Use sparingly for emphasis.
 
 ### Hierarchy
 
@@ -187,9 +151,9 @@ AI agent entry point. Loaded automatically into every Claude Code session. Must 
 - **Sub-mindmaps:** 2-3 levels deep. Zoom into one branch.
 - If you need more depth, split into another sub-mindmap in a child section.
 
-### Linked navigation
+### Format
 
-Every Mermaid mindmap must be immediately followed by a linked navigation list — a nested markdown list that mirrors the mindmap structure:
+Mindmaps are nested markdown lists with anchor links:
 
 ```markdown
 - [Branch Name](#anchor) — brief description
@@ -199,36 +163,11 @@ Every Mermaid mindmap must be immediately followed by a linked navigation list �
 ```
 
 Rules:
-- Mirror the mindmap structure exactly — same branches, same nesting
 - Every entry is a clickable anchor link to the corresponding section/heading
-- Add a brief description (3-10 words) after the link to help AI agents decide whether to navigate there
-- When updating a mindmap, always update the linked list to match
-
-### Mermaid syntax reference
-
-~~~markdown
-```mermaid
-mindmap
-  root((Central Topic))
-    Branch A
-      Leaf 1
-      Leaf 2
-    Branch B
-      Sub-branch
-        Leaf 3
-        Leaf 4
-    Branch C
-```
-~~~
-
-- Indentation defines hierarchy (2 spaces per level)
-- First line after `mindmap` is the root node
-- Nodes are plain text by default (rectangle shape)
-- Use `((text))` for circle, `(text)` for rounded, `[text]` for square
+- Add a brief description (3-10 words) after the link
+- When updating a mindmap, always update sections to match and vice versa
 
 ## Linking Convention
-
-Mindmap nodes cannot contain links. All clickable references go in the section text below the mindmap.
 
 Every reference to an external resource must be a clickable markdown link:
 

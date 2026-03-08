@@ -1,5 +1,5 @@
 {
   "name": "context-keeper",
-  "description": "Capture project state as mind-map knowledge bases with Mermaid diagrams from Slack, Docs, Jira, and other sources",
-  "version": "1.0.0"
+  "description": "Capture project state as mind-map knowledge bases from Slack, Docs, Jira, and other sources",
+  "version": "1.1.0"
 }

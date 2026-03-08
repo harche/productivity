@@ -1,11 +1,11 @@
 ---
 name: context-keeper
-description: Capture the current state of a project as a mind-map knowledge base using Mermaid diagrams that render on GitHub. Gathers information from Slack threads, Google Docs, Jira issues, and other sources, investigates claims with real evidence, and produces a visual, navigable knowledge base of what was decided, why, what's still open, and where things stand now. Use when the user wants to document a project, track decisions, or synthesize scattered discussions into a single source of truth.
+description: Capture the current state of a project as a mind-map knowledge base. Gathers information from Slack threads, Google Docs, Jira issues, and other sources, investigates claims with real evidence, and produces a navigable knowledge base of what was decided, why, what's still open, and where things stand now. Use when the user wants to document a project, track decisions, or synthesize scattered discussions into a single source of truth.
 ---
 
 # Context Keeper
 
-Build and maintain mind-map knowledge bases from scattered discussions across Slack, Google Docs, Jira, and other sources. Uses Mermaid mindmap diagrams for visual navigation — renders natively on GitHub.
+Build and maintain mind-map knowledge bases from scattered discussions across Slack, Google Docs, Jira, and other sources. Uses nested linked lists for mind-map navigation.
 
 This skill is for the common pattern where decisions and context live across many places — a Slack thread kicks off a discussion, a Google Doc captures proposals, Jira tracks the work, and follow-up threads refine the plan. Context Keeper synthesizes all of that into a mind-map knowledge base that both humans and AI agents can navigate effectively.
 
@@ -72,14 +72,14 @@ The knowledge base consists of just two files:
 
 | File | Purpose |
 |---|---|
-| `README.md` | The knowledge base — overview mindmap at top, detail sections that hang off each branch, sub-mindmaps for complex branches |
+| `README.md` | The knowledge base — overview mindmap at top, detail sections for each branch, sub-mindmaps for complex branches |
 | `CLAUDE.md` | AI agent entry point — concise context, section index, key terms (under 50 lines) |
 
 #### Step 1: Design the overview mindmap
 
 This is the most important step. The overview mindmap placed right after the title defines the entire document's structure. Each branch becomes a section, each sub-branch becomes a sub-section. The topology you choose here determines how the knowledge is organized. Keep nodes to 2-6 words — they're labels, not sentences.
 
-Immediately below every Mermaid mindmap, add a **linked navigation list** — a nested markdown list that mirrors the mindmap structure with clickable anchor links and brief descriptions. The Mermaid diagram is the visual rendering for humans on GitHub; the linked list is how AI agents navigate the knowledge base. Both must always stay in sync.
+The mindmap is a **nested markdown list** with clickable anchor links and brief descriptions. This is how both humans and AI agents navigate the knowledge base.
 
 #### Step 2: Write sections for each branch
 
@@ -87,13 +87,13 @@ Every major branch in the overview mindmap becomes a `##` section in README.md. 
 
 #### Step 3: Add sub-mindmaps for complex branches
 
-When a section has its own internal complexity (3+ sub-topics, multiple options, design areas), add a sub-mindmap at the top of that section. This sub-mindmap in turn defines the sub-section structure. The same rule applies: every sub-mindmap node must have a corresponding heading, and vice versa. Each sub-mindmap also gets its own linked navigation list below it.
+When a section has its own internal complexity (3+ sub-topics, multiple options, design areas), add a sub-mindmap at the top of that section as a nested linked list. This sub-mindmap in turn defines the sub-section structure. The same rule applies: every sub-mindmap node must have a corresponding heading, and vice versa.
 
 #### Content separation
 
 Problem/landscape sections present options with theoretical pros/cons; decision sections present investigated evidence and analysis. Don't duplicate evidence across sections — put it in the decision section and reference from others.
 
-See [references/doc-structure.md](references/doc-structure.md) for templates, mindmap guidelines, and formatting conventions.
+See [references/doc-structure.md](references/doc-structure.md) for templates and formatting conventions.
 
 ### Phase 5: Evolve
 
@@ -101,7 +101,7 @@ Knowledge bases aren't write-once. When updating, **start from the mindmap** —
 
 1. **Read the overview mindmap first** — this is the structural map. Understand the current topology before diving into detail sections. The mindmap tells you what exists and how it's organized.
 2. **Decide what changes structurally** — does a new branch need to be added? An existing one removed or renamed? A sub-branch promoted or demoted? Make structural decisions at the mindmap level, not by editing prose.
-3. **Update all mindmap diagrams and their linked navigation** — modify the overview mindmap, any affected sub-mindmaps, and their corresponding linked navigation lists to reflect the new structure. This comes before touching any detail text.
+3. **Update all mindmap lists** — modify the overview mindmap, any affected sub-mindmaps to reflect the new structure. This comes before touching any detail text.
 4. **Update corresponding sections** — add, remove, or rewrite detail sections to match the updated mindmaps. Every branch must have a section, every section must have a branch.
 5. **Propagate corrections** — when new information contradicts existing content, search for and update every reference. Stale data undermines the whole knowledge base.
 6. **Track decision changes** — if a decision changed, note what changed and why. Don't silently overwrite.
