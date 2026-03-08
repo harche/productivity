@@ -1,6 +1,6 @@
 ---
 name: redhat-support
-description: Interact with Red Hat Jira (issues.redhat.com), search Red Hat Knowledge Base articles and solutions, and manage Customer Portal support cases. Use when the user asks about Jira issues, shares a Jira URL, asks about known issues, troubleshooting, knowledge base articles, support cases, shares a case/knowledge base URL, or mentions issue keys like OCPBUGS-*, OCPNODE-*, or any issues.redhat.com link.
+description: Interact with Red Hat Jira (issues.redhat.com), search Red Hat Knowledge Base articles and solutions, and manage Customer Portal support cases. Use when the user asks about Jira issues, shares a Jira URL, asks about known issues, troubleshooting, knowledge base articles, support cases, shares a case/knowledge base URL, mentions issue keys like OCPBUGS-*, OCPNODE-*, any issues.redhat.com link, or asks about Node team bugs (untriaged, blockers, escalations, CVEs, customer issues, etc.).
 allowed-tools: Bash(curl:*)
 ---
 
@@ -117,11 +117,13 @@ curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
 Detailed command references:
 
 * **Jira** — [references/jira.md](references/jira.md) — Issues, JQL search, epics, comments, transitions, custom fields
+* **Node Bugs** — [references/node-bugs.md](references/node-bugs.md) — Node team bug dashboard filters (untriaged, blockers, CVEs, escalations, customer issues), version/assignee/priority queries, scrum teams
 * **Knowledge Base** — [references/knowledge-base.md](references/knowledge-base.md) — Query parameters, filters, field selection, document types, pagination
 * **Cases** — [references/cases.md](references/cases.md) — View, comment, attachments, case fields, search/filter, common queries
 
 ## Important
 
+- **Always include clickable Jira URLs** when displaying issues, epics, or any Jira items. Format: `https://issues.redhat.com/browse/{KEY}` (e.g., `https://issues.redhat.com/browse/OCPBUGS-10431`).
 - **Always confirm with the user before creating/updating Jira issues, adding comments, transitioning status, updating cases, or any write operation.**
 - Jira uses a PAT from Keychain (`JIRA_API_TOKEN`). Knowledge base and support cases use OAuth (`RH_API_OFFLINE_TOKEN`).
 - Always get a fresh OAuth access token before making knowledge base or case API calls.
