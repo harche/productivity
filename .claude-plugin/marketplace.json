@@ -97,6 +97,13 @@
       "description": "Browse and analyze Polymarket prediction markets, events, prices, and leaderboards",
       "category": "misc",
       "version": "0.1.0"
+    },
+    {
+      "name": "market-news",
+      "source": "./plugins/market-news",
+      "description": "Generate news briefings from Polymarket prediction markets, cross-referenced with Twitter",
+      "category": "misc",
+      "version": "0.1.0"
     }
   ]
 }
