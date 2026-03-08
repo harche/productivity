@@ -51,6 +51,7 @@ In any project, add the marketplace and install plugins:
 | `ibkr` | Interactive Brokers Web API for trading, market data, and portfolio management |
 | `twitter` | Read, search, and post on Twitter (X) via browser session |
 | `youtube` | Fetch YouTube transcripts, metadata, comments, search, and browse channels/playlists |
+| `polymarket` | Browse and analyze Polymarket prediction markets, events, prices, and leaderboards |
 
 ## Bulk Install by Category
 
@@ -88,6 +89,7 @@ To auto-install a group of plugins in a repo, add this to `.claude/settings.json
     "redhat-support@productivity-tools": true,
     "twitter@productivity-tools": true,
     "youtube@productivity-tools": true,
+    "polymarket@productivity-tools": true,
     "context-keeper@productivity-tools": true,
     "platform-docs@productivity-tools": true,
     "cluster-installer@productivity-tools": true,

@@ -28,6 +28,7 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 **misc**
 - `ibkr` — Interactive Brokers Web API for trading, market data, and portfolio management
 - `twitter` — Read, search, and post on Twitter (X) via browser session
+- `polymarket` — Browse and analyze Polymarket prediction markets, events, prices, and leaderboards
 
 ## Authentication
 

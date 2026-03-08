@@ -66,9 +66,9 @@
     {
       "name": "context-keeper",
       "source": "./plugins/context-keeper",
-      "description": "Capture project state as mind-map knowledge bases with Mermaid diagrams from Slack, Docs, Jira, and other sources",
+      "description": "Capture project state as mind-map knowledge bases from Slack, Docs, Jira, and other sources",
       "category": "workflow",
-      "version": "1.0.0"
+      "version": "1.1.0"
     },
     {
       "name": "prometheus",
@@ -88,6 +88,13 @@
       "name": "youtube",
       "source": "./plugins/youtube",
       "description": "Fetch YouTube transcripts, metadata, comments, search, and browse channels/playlists",
+      "category": "misc",
+      "version": "0.1.0"
+    },
+    {
+      "name": "polymarket",
+      "source": "./plugins/polymarket",
+      "description": "Browse and analyze Polymarket prediction markets, events, prices, and leaderboards",
       "category": "misc",
       "version": "0.1.0"
     }
