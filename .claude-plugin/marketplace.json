@@ -29,18 +29,11 @@
       "version": "1.0.1"
     },
     {
-      "name": "redhat-support",
-      "source": "./plugins/redhat-support",
-      "description": "Red Hat Jira, Knowledge Base, and support cases",
+      "name": "redhat-detective",
+      "source": "./plugins/redhat-detective",
+      "description": "Red Hat debugging and investigation toolkit: Jira issues, Knowledge Base, support cases, platform docs, and Prometheus metrics",
       "category": "workflow",
-      "version": "1.0.1"
-    },
-    {
-      "name": "platform-docs",
-      "source": "./plugins/platform-docs",
-      "description": "Search and read Kubernetes and OpenShift documentation",
-      "category": "reference",
-      "version": "1.0.1"
+      "version": "1.0.0"
     },
     {
       "name": "cluster-installer",
@@ -69,13 +62,6 @@
       "description": "Capture project state as mind-map knowledge bases from Slack, Docs, Jira, and other sources",
       "category": "workflow",
       "version": "1.1.0"
-    },
-    {
-      "name": "prometheus",
-      "source": "./plugins/prometheus",
-      "description": "Query and analyze Prometheus metrics on Kubernetes and OpenShift clusters using promtool",
-      "category": "infra",
-      "version": "1.0.0"
     },
     {
       "name": "twitter",

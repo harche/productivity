@@ -14,16 +14,12 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 - `github` — GitHub repos, PRs, issues, and actions via `gh` CLI
 - `slack` — Read/search/send Slack messages via browser session
 - `google` — Gmail, Google Calendar, Drive, and Docs via `gog` CLI
-- `redhat-support` — Red Hat Jira, Knowledge Base, and support cases
+- `redhat-detective` — Red Hat debugging/investigation toolkit: Jira issues, Knowledge Base, support cases, platform docs (k8s + OpenShift), and Prometheus metrics
 - `context-keeper` — Capture project state as structured markdown notes from Slack, Docs, Jira, and other sources
-
-**reference**
-- `platform-docs` — Search and read Kubernetes and OpenShift documentation
 
 **infra**
 - `cluster-installer` — Create, manage, and destroy clusters (kind, GKE, OpenShift on GCP)
 - `playwright-cli` — Browser automation: navigate, interact, screenshot, scrape
-- `prometheus` — Query and analyze Prometheus metrics on Kubernetes/OpenShift clusters
 
 **misc**
 - `ibkr` — Interactive Brokers Web API for trading, market data, and portfolio management
@@ -44,7 +40,7 @@ security add-generic-password -a "$USER" -s "TOKEN_NAME" -w "new-value" -U
 In the target repo, use Claude Code's native plugin system:
 ```bash
 /plugin marketplace add harche/productivity
-/plugin install redhat-support@productivity-tools
+/plugin install redhat-detective@productivity-tools
 ```
 
 ## Guardrails
