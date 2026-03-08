@@ -12,17 +12,25 @@ Interact with Red Hat Jira, search the Knowledge Base, and manage Customer Porta
 
 ### Jira (issues.redhat.com)
 
-Uses a Bearer token stored in macOS Keychain. **Always** read the token directly from Keychain — the Bash tool does not source `~/.zshrc`:
+Uses a Bearer token stored in the OS secret store. **Always** read the token directly — the Bash tool does not source shell profiles:
 
 ```bash
+# macOS
 JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w)
+# Linux
+JIRA_API_TOKEN=$(secret-tool lookup service jira key JIRA_API_TOKEN)
+
 curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" "<url>" | python3 -m json.tool
 ```
 
 **PAT limitation**: `currentUser()` in JQL and `/rest/api/2/myself` do NOT work with PATs on Red Hat Jira. To find the token owner's username:
 
 ```bash
+# macOS
 JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w)
+# Linux
+JIRA_API_TOKEN=$(secret-tool lookup service jira key JIRA_API_TOKEN)
+
 curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" \
   "https://issues.redhat.com/rest/auth/1/session" | python3 -m json.tool
 ```
@@ -34,20 +42,28 @@ Then use the `name` field (e.g., `harpatil@redhat.com`) in JQL queries like `ass
 Both use the same two-step OAuth flow. Exchange the offline token for a short-lived access token:
 
 ```bash
+# macOS
+RH_OFFLINE_TOKEN=$(security find-generic-password -a "$USER" -s "RH_API_OFFLINE_TOKEN" -w)
+# Linux
+RH_OFFLINE_TOKEN=$(secret-tool lookup service redhat key RH_API_OFFLINE_TOKEN)
+
 ACCESS_TOKEN=$(curl -s https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token \
   -d grant_type=refresh_token -d client_id=rhsm-api \
-  -d "refresh_token=$(security find-generic-password -a "$USER" -s "RH_API_OFFLINE_TOKEN" -w)" \
+  -d "refresh_token=$RH_OFFLINE_TOKEN" \
   | python3 -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
 ```
 
-Always get a fresh access token at the start of each request sequence — tokens expire quickly. The offline token is read directly from macOS Keychain.
+Always get a fresh access token at the start of each request sequence — tokens expire quickly. The offline token is read from the OS secret store.
 
 ## Quick Start
 
 ### Jira
 
 ```bash
+# macOS
 JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w)
+# Linux
+JIRA_API_TOKEN=$(secret-tool lookup service jira key JIRA_API_TOKEN)
 
 # View an issue
 curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" \
@@ -125,7 +141,7 @@ Detailed command references:
 
 - **Always include clickable Jira URLs** when displaying issues, epics, or any Jira items. Format: `https://issues.redhat.com/browse/{KEY}` (e.g., `https://issues.redhat.com/browse/OCPBUGS-10431`).
 - **Always confirm with the user before creating/updating Jira issues, adding comments, transitioning status, updating cases, or any write operation.**
-- Jira uses a PAT from Keychain (`JIRA_API_TOKEN`). Knowledge base and support cases use OAuth (`RH_API_OFFLINE_TOKEN`).
+- Jira uses a PAT from the OS secret store (`JIRA_API_TOKEN`). Knowledge base and support cases use OAuth (`RH_API_OFFLINE_TOKEN`).
 - Always get a fresh OAuth access token before making knowledge base or case API calls.
 - The Knowledge Base is **read-only**. Jira and support cases support both read and write operations.
 - Use `fields=` parameter to limit Jira response size — full issue responses are very large.

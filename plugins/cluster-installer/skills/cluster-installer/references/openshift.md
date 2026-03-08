@@ -36,7 +36,7 @@ Types:
 If cluster-name is omitted, one is auto-generated as `$USER<type><random>`.
 
 The script:
-1. Reads pull secret from macOS Keychain (`OCP_PULL_SECRET`)
+1. Reads pull secret from the OS secret store (`OCP_PULL_SECRET`) — macOS Keychain or Linux secret-tool
 2. Generates `install-config.yaml` from built-in templates
 3. Shows a summary and asks for confirmation
 4. Runs `openshift-install create cluster`
@@ -102,7 +102,7 @@ ${CLAUDE_PLUGIN_ROOT}/ocp-install.sh destroy 4.21.3 cluster1
 
 - Platform: GCP (`openshift-gce-devel` project, `us-central1` region)
 - Base domain: `gcp.devcluster.openshift.com`
-- Pull secret: macOS Keychain (`OCP_PULL_SECRET`), falls back to `~/clusters/pull-secret-gcp.txt`
+- Pull secret: OS secret store (`OCP_PULL_SECRET`) — macOS Keychain or Linux secret-tool, falls back to `~/clusters/pull-secret-gcp.txt`
 - SSH key: `~/.ssh/id_rsa.pub`
 - Data directory: `~/clusters/<major.minor>/<full-version>/cluster<N>/`
 

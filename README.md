@@ -93,6 +93,69 @@ To auto-install a group of plugins in a repo, add this to `.claude/settings.json
 
 Plugins are auto-installed when the repo folder is trusted in Claude Code.
 
+## Authentication & Secrets
+
+Some plugins require API tokens stored in the OS secret store. The table below lists every token, which plugin needs it, and how to store it on each platform.
+
+### Prerequisites
+
+| Platform | Secret store | Install |
+|----------|-------------|---------|
+| macOS | Keychain (built-in) | — |
+| Linux | libsecret / GNOME Keyring | `sudo dnf install libsecret` (Fedora) or `sudo apt install libsecret-tools` (Ubuntu/Debian) |
+
+### Required Tokens
+
+| Token | Plugin | How to obtain |
+|-------|--------|---------------|
+| `JIRA_API_TOKEN` | `redhat-detective` | [Create a PAT](https://issues.redhat.com) → Profile → Personal Access Tokens |
+| `RH_API_OFFLINE_TOKEN` | `redhat-detective` | [Generate an offline token](https://access.redhat.com/management/api) for the Customer Portal API |
+| `OCP_PULL_SECRET` | `cluster-installer` | Download from [console.redhat.com/openshift/install/pull-secret](https://console.redhat.com/openshift/install/pull-secret) |
+
+### Storing Tokens
+
+**macOS (Keychain):**
+
+```bash
+# Jira PAT
+security add-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w "your-jira-token" -U
+
+# Red Hat API offline token
+security add-generic-password -a "$USER" -s "RH_API_OFFLINE_TOKEN" -w "your-offline-token" -U
+
+# OpenShift pull secret (compact JSON)
+security add-generic-password -a "$USER" -s "OCP_PULL_SECRET" \
+  -w "$(cat pull-secret.json | python3 -c 'import sys,json; print(json.dumps(json.load(sys.stdin), separators=(",",":")))')" -U
+```
+
+**Linux (secret-tool / libsecret):**
+
+```bash
+# Jira PAT (enter token at the "Password:" prompt)
+secret-tool store --label="JIRA_API_TOKEN" service jira key JIRA_API_TOKEN
+
+# Red Hat API offline token
+secret-tool store --label="RH_API_OFFLINE_TOKEN" service redhat key RH_API_OFFLINE_TOKEN
+
+# OpenShift pull secret
+cat pull-secret.json | python3 -c 'import sys,json; print(json.dumps(json.load(sys.stdin), separators=(",",":")))' | \
+  secret-tool store --label="OCP Pull Secret" service ocp-install username "$USER" key OCP_PULL_SECRET
+```
+
+### Plugins That Don't Need Manual Tokens
+
+| Plugin | Auth method |
+|--------|-------------|
+| `github` | `gh auth login` (GitHub CLI handles OAuth) |
+| `google` | `gog` CLI (OAuth flow) |
+| `slack` | Extracted automatically from Chrome session |
+| `twitter` | Extracted automatically from Chrome cookies |
+| `youtube` | No auth required (public API) |
+| `polymarket` | No auth required (public API) |
+| `ibkr` | Session-based via IBKR Client Portal Gateway |
+| `playwright-cli` | No auth required |
+| `context-keeper` | Uses other plugins' auth |
+
 ## Example Workflows
 
 **Investigate a support case — Jira, KB, docs, and metrics in one plugin:**

@@ -2,8 +2,9 @@
 
 View, search, create, update, and manage Jira issues via the REST API v2.
 
-> **Auth:** Always set the token from Keychain before any curl call:
-> `JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w)`
+> **Auth:** Always set the token from the OS secret store before any curl call:
+> macOS: `JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w)`
+> Linux: `JIRA_API_TOKEN=$(secret-tool lookup service jira key JIRA_API_TOKEN)`
 
 ## Base URL
 

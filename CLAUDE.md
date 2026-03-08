@@ -29,10 +29,16 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 
 ## Authentication
 
-API tokens are stored in macOS Keychain and loaded as environment variables via `~/.zshrc`. Skills that need tokens (Jira, support cases, GitHub, etc.) read them from env vars — check `~/.zshrc` for the variable names. To update a token:
+API tokens are stored in the OS secret store and loaded as environment variables via shell profile (`~/.zshrc` or `~/.bashrc`). Skills that need tokens (Jira, support cases, GitHub, etc.) read them from env vars — check your shell profile for the variable names.
 
+**macOS (Keychain):**
 ```bash
 security add-generic-password -a "$USER" -s "TOKEN_NAME" -w "new-value" -U
+```
+
+**Linux (libsecret / secret-tool):**
+```bash
+echo -n "new-value" | secret-tool store --label="TOKEN_NAME" service productivity key TOKEN_NAME
 ```
 
 ## Distributing Plugins to Other Repos

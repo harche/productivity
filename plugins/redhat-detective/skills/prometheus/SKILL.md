@@ -18,7 +18,7 @@ These rules exist because they caused real failures during testing. Follow them 
 
 1. **Run setup + queries in a single bash call.** Shell variables (`$PROM_URL`, `$HTTP_CONFIG`, `$TOKEN`) do not persist across separate bash invocations. Combine setup and queries into one command using `&&`.
 
-2. **Never use `!=` in PromQL.** Zsh mangles `!=` into `\!=` via history expansion, even inside single quotes. Use `=~".+"` instead of `!=""`, and `=~"^((?!value).)*$"` or a negated regex instead of `!=`:
+2. **Never use `!=` in PromQL.** Zsh mangles `!=` into `\!=` via history expansion, even inside single quotes. Bash does not have this issue, but avoid `!=` for portability. Use `=~".+"` instead of `!=""`, and `=~"^((?!value).)*$"` or a negated regex instead of `!=`:
    ```bash
    # WRONG — zsh corrupts this
    '{container!=""}'
@@ -97,9 +97,10 @@ promtool query instant --http.config.file="$HTTP_CONFIG" -o json "$PROM_URL" \
   'sum(rate(container_cpu_usage_seconds_total{container=~".+"}[5m])) by (namespace)' | \
   jq -r '.[] | "\(.metric.namespace): \(.value[1] | tonumber | . * 1000 | round / 1000) cores"'
 
-# Range query (last hour, 1-minute steps — macOS date)
+# Range query (last hour, 1-minute steps)
+# macOS: date -u -v-1H    Linux: date -u -d '1 hour ago'
 promtool query range --http.config.file="$HTTP_CONFIG" \
-  --start="$(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ)" \
+  --start="$(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-1H +%Y-%m-%dT%H:%M:%SZ)" \
   --end="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   --step=1m \
   "$PROM_URL" 'node_memory_MemAvailable_bytes'
@@ -143,4 +144,4 @@ Useful starting points when the user asks broad questions:
 
 - For OpenShift, always query the Thanos Querier route — it aggregates data from all Prometheus instances.
 - Use `-o json` with `jq` when you need to parse or filter results programmatically.
-- On macOS, `date -v-1H` works for relative times. On Linux, use `date -d '1 hour ago'`.
+- **Cross-platform date**: Use `date -u -d '1 hour ago' +FMT 2>/dev/null || date -u -v-1H +FMT` to work on both Linux (GNU date) and macOS (BSD date).

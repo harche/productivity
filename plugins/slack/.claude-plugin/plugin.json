@@ -1,5 +1,5 @@
 {
   "name": "slack",
   "description": "Read/search/send Slack messages via browser session",
-  "version": "2.0.0"
+  "version": "2.0.1"
 }

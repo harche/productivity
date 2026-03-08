@@ -77,22 +77,19 @@ promtool query range [flags] <server> <expression>
 ### Examples
 
 ```bash
-# Last hour, 1-minute resolution (macOS date)
+# Last hour, 1-minute resolution (cross-platform: tries GNU date first, falls back to BSD)
 promtool query range --http.config.file="$HTTP_CONFIG" \
-  --start="$(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ)" \
+  --start="$(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-1H +%Y-%m-%dT%H:%M:%SZ)" \
   --end="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   --step=1m \
   "$PROM_URL" 'node_memory_MemAvailable_bytes'
 
-# Last 24 hours, 5-minute resolution (macOS date)
+# Last 24 hours, 5-minute resolution
 promtool query range --http.config.file="$HTTP_CONFIG" \
-  --start="$(date -u -v-1d +%Y-%m-%dT%H:%M:%SZ)" \
+  --start="$(date -u -d '1 day ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-1d +%Y-%m-%dT%H:%M:%SZ)" \
   --end="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   --step=5m -o json \
   "$PROM_URL" 'avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance)' | jq .
-
-# Linux date equivalent
-# --start="$(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%SZ)"
 ```
 
 ### Choosing Step Size

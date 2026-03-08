@@ -154,7 +154,7 @@ Use Jira username for `assignee =` queries. For names with `JIRAUSER*` IDs, use 
 ### Untriaged blockers for 4.22
 
 ```bash
-JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w) && \
+JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w 2>/dev/null || secret-tool lookup service jira key JIRA_API_TOKEN) && \
 curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" \
   "https://issues.redhat.com/rest/api/2/search" \
   --data-urlencode "jql=(filter = \"Node Components\" AND (project = OCPBUGS OR project = RHOCPPRIO) AND issueType in (Bug, Task, Vulnerability, Weakness) OR project = OCPNODE AND issueType = Bug) AND status not in (Obsolete, \"Won't Fix / Obsolete\") AND (priority = Undefined OR \"Release Blocker\" = Proposed OR assignee in (\"aos-node@redhat.com\")) AND fixVersion = \"4.22.0\" AND status not in (Done, CLOSED, Obsolete, \"Won't Fix / Obsolete\", Verified) ORDER BY priority DESC" \
@@ -166,7 +166,7 @@ curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" \
 ### Escalations assigned to a person
 
 ```bash
-JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w) && \
+JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w 2>/dev/null || secret-tool lookup service jira key JIRA_API_TOKEN) && \
 curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" \
   "https://issues.redhat.com/rest/api/2/search" \
   --data-urlencode "jql=(filter = \"Node Components\" AND (project = OCPBUGS OR project = RHOCPPRIO) AND issueType in (Bug, Task, Vulnerability, Weakness) OR project = OCPNODE AND issueType = Bug) AND status not in (Obsolete, \"Won't Fix / Obsolete\") AND (project = \"Red Hat OpenShift Priority List\" OR cf[12320844] = \"Customer Escalated\" OR labels in (shift_telco5g)) AND assignee = \"harpatil@redhat.com\" AND status not in (Done, CLOSED, Obsolete, \"Won't Fix / Obsolete\", Verified) ORDER BY priority DESC" \
@@ -178,7 +178,7 @@ curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" \
 ### Customer issues older than 100 days
 
 ```bash
-JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w) && \
+JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w 2>/dev/null || secret-tool lookup service jira key JIRA_API_TOKEN) && \
 curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" \
   "https://issues.redhat.com/rest/api/2/search" \
   --data-urlencode "jql=(filter = \"Node Components\" AND (project = OCPBUGS OR project = RHOCPPRIO) AND issueType in (Bug, Task, Vulnerability, Weakness) OR project = OCPNODE AND issueType = Bug) AND status not in (Obsolete, \"Won't Fix / Obsolete\") AND (\"Customer Impact\" = \"Customer Escalated\" OR \"SFDC Cases Counter\" > 0 OR issueFunction in linkedIssuesOfRemote(url, \"https://access.redhat.com/support/cases/*\")) AND created <= -100d AND status not in (Done, CLOSED, Obsolete, \"Won't Fix / Obsolete\", Verified) ORDER BY created ASC" \
@@ -190,7 +190,7 @@ curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" \
 ### CVEs due next week
 
 ```bash
-JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w) && \
+JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w 2>/dev/null || secret-tool lookup service jira key JIRA_API_TOKEN) && \
 curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" \
   "https://issues.redhat.com/rest/api/2/search" \
   --data-urlencode "jql=(filter = \"Node Components\" AND (project = OCPBUGS OR project = RHOCPPRIO) AND issueType in (Bug, Task, Vulnerability, Weakness) OR project = OCPNODE AND issueType = Bug) AND status not in (Obsolete, \"Won't Fix / Obsolete\") AND (labels in (SecurityTracking) OR issuetype in (Vulnerability, Weakness)) AND status not in (Done, CLOSED, Obsolete, \"Won't Fix / Obsolete\", Verified, ON_QA) AND due <= 7d ORDER BY due ASC" \
@@ -202,7 +202,7 @@ curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" \
 ### Open bugs by version for a person
 
 ```bash
-JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w) && \
+JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w 2>/dev/null || secret-tool lookup service jira key JIRA_API_TOKEN) && \
 curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" \
   "https://issues.redhat.com/rest/api/2/search" \
   --data-urlencode "jql=(filter = \"Node Components\" AND (project = OCPBUGS OR project = RHOCPPRIO) AND issueType in (Bug, Task, Vulnerability, Weakness) OR project = OCPNODE AND issueType = Bug) AND status not in (Obsolete, \"Won't Fix / Obsolete\") AND assignee = \"harpatil@redhat.com\" AND status not in (Done, CLOSED, Obsolete, \"Won't Fix / Obsolete\", Verified) ORDER BY fixVersion ASC, priority DESC" \
@@ -214,7 +214,7 @@ curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" \
 ### Contract priority bugs with no fix version
 
 ```bash
-JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w) && \
+JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w 2>/dev/null || secret-tool lookup service jira key JIRA_API_TOKEN) && \
 curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" \
   "https://issues.redhat.com/rest/api/2/search" \
   --data-urlencode "jql=(filter = \"Node Components\" AND (project = OCPBUGS OR project = RHOCPPRIO) AND issueType in (Bug, Task, Vulnerability, Weakness) OR project = OCPNODE AND issueType = Bug) AND status not in (Obsolete, \"Won't Fix / Obsolete\") AND \"Special Handling\" in (contract-priority) AND fixVersion is EMPTY AND status not in (Done, CLOSED, Obsolete, \"Won't Fix / Obsolete\", Verified, ON_QA) ORDER BY priority DESC" \
@@ -226,7 +226,7 @@ curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" \
 ### Green team blocker+ bugs
 
 ```bash
-JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w) && \
+JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w 2>/dev/null || secret-tool lookup service jira key JIRA_API_TOKEN) && \
 curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" \
   "https://issues.redhat.com/rest/api/2/search" \
   --data-urlencode "jql=(filter = \"Node Components\" AND (project = OCPBUGS OR project = RHOCPPRIO) AND issueType in (Bug, Task, Vulnerability, Weakness) OR project = OCPNODE AND issueType = Bug) AND status not in (Obsolete, \"Won't Fix / Obsolete\") AND (cf[12319743] = Approved OR priority = Blocker) AND filter = \"Node Green Team\" AND status not in (Done, CLOSED, Obsolete, \"Won't Fix / Obsolete\", Verified) ORDER BY priority DESC" \

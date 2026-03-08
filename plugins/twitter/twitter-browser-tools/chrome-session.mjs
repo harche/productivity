@@ -3,6 +3,8 @@
 //
 // auth_token: session cookie for authentication
 // ct0: CSRF token used in x-csrf-token header
+//
+// Supports macOS and Linux.
 
 import { execSync, spawnSync } from "child_process";
 import {
@@ -15,12 +17,13 @@ import {
 } from "fs";
 import { join } from "path";
 import { createDecipheriv, pbkdf2Sync } from "crypto";
-import { homedir, tmpdir } from "os";
+import { homedir, tmpdir, platform } from "os";
 
-const CHROME_BASE = join(
-  homedir(),
-  "Library/Application Support/Google/Chrome"
-);
+const IS_LINUX = platform() === "linux";
+
+const CHROME_BASE = IS_LINUX
+  ? join(homedir(), ".config/google-chrome")
+  : join(homedir(), "Library/Application Support/Google/Chrome");
 
 const TWITTER_HOSTS = [".x.com", ".twitter.com"];
 
@@ -84,21 +87,41 @@ function findTwitterProfile() {
   );
 }
 
-// Decrypt a Chrome cookie value (macOS: v10 prefix, AES-128-CBC, Keychain password)
-function decryptCookieValue(encryptedBuf) {
-  const prefix = encryptedBuf.subarray(0, 3).toString("utf-8");
-  if (prefix !== "v10") {
-    throw new Error(
-      `Unsupported Chrome cookie encryption version "${prefix}". Only macOS v10 is supported.`
-    );
+// Get Chrome Safe Storage password for cookie decryption.
+// macOS: from Keychain. Linux: from GNOME Keyring via secret-tool, fallback to "peanuts".
+function getChromePassword() {
+  if (IS_LINUX) {
+    try {
+      return execSync(
+        'secret-tool lookup application chrome',
+        { encoding: "utf-8" }
+      ).trim();
+    } catch {
+      // Chrome falls back to "peanuts" when no keyring is available
+      return "peanuts";
+    }
   }
-
-  const password = execSync(
+  return execSync(
     'security find-generic-password -s "Chrome Safe Storage" -w',
     { encoding: "utf-8" }
   ).trim();
+}
 
-  const key = pbkdf2Sync(password, "saltysalt", 1003, 16, "sha1");
+// Decrypt a Chrome cookie value.
+// macOS: v10 prefix, 1003 PBKDF2 iterations.
+// Linux: v10 or v11 prefix, 1 PBKDF2 iteration.
+function decryptCookieValue(encryptedBuf) {
+  const prefix = encryptedBuf.subarray(0, 3).toString("utf-8");
+  const iterations = IS_LINUX ? 1 : 1003;
+
+  if (prefix !== "v10" && prefix !== "v11") {
+    throw new Error(
+      `Unsupported Chrome cookie encryption version "${prefix}".`
+    );
+  }
+
+  const password = getChromePassword();
+  const key = pbkdf2Sync(password, "saltysalt", iterations, 16, "sha1");
   const iv = Buffer.alloc(16, 0x20);
 
   const decipher = createDecipheriv("aes-128-cbc", key, iv);

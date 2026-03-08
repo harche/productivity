@@ -14,13 +14,18 @@
 # Platform: GCP (openshift-gce-devel)
 #
 # Secrets:
-#   Pull secret read from macOS Keychain (OCP_PULL_SECRET).
+#   Pull secret read from OS secret store (OCP_PULL_SECRET).
 #   SSH key read from ~/.ssh/id_rsa.pub.
 #
-#   One-time setup:
+#   One-time setup (macOS):
 #     security add-generic-password -a "$USER" -s "OCP_PULL_SECRET" \
 #       -w "$(cat ~/clusters/pull-secret-gcp.txt | python3 -c \
 #       "import sys,json; print(json.dumps(json.load(sys.stdin), separators=(',',':')))")"
+#
+#   One-time setup (Linux):
+#     cat ~/clusters/pull-secret-gcp.txt | python3 -c \
+#       "import sys,json; print(json.dumps(json.load(sys.stdin), separators=(',',':')))" | \
+#       secret-tool store --label="OCP Pull Secret" service ocp-install username "$USER" key OCP_PULL_SECRET
 #
 set -euo pipefail
 
@@ -66,17 +71,29 @@ random_suffix() {
 }
 
 get_pull_secret() {
-  local secret
-  # -w doesn't work for long values; use -g and parse the password line
-  secret="$(security find-generic-password -s "OCP_PULL_SECRET" -g 2>&1 \
-    | grep '^password: "' | sed 's/^password: "//;s/"$//')" || true
+  local secret=""
+  case "$(uname -s)" in
+    Darwin)
+      # macOS: read from Keychain (-w doesn't work for long values; use -g and parse)
+      secret="$(security find-generic-password -s "OCP_PULL_SECRET" -g 2>&1 \
+        | grep '^password: "' | sed 's/^password: "//;s/"$//')" || true
+      ;;
+    Linux)
+      # Linux: read from GNOME Keyring / libsecret via secret-tool
+      secret="$(secret-tool lookup service ocp-install key OCP_PULL_SECRET 2>/dev/null)" || true
+      ;;
+  esac
   if [[ -z "$secret" ]]; then
     # Fallback: try file
     local fallback="${CLUSTERS_DIR}/pull-secret-gcp.txt"
     if [[ -f "$fallback" ]]; then
       secret="$(python3 -c "import sys,json; print(json.dumps(json.load(sys.stdin), separators=(',',':')))" < "$fallback")"
     else
-      die "Pull secret not found. Store it in Keychain:\n  security add-generic-password -a \"\$USER\" -s \"OCP_PULL_SECRET\" -w '\$(cat pull-secret.json)'"
+      if [[ "$(uname -s)" == "Darwin" ]]; then
+        die "Pull secret not found. Store it in Keychain:\n  security add-generic-password -a \"\$USER\" -s \"OCP_PULL_SECRET\" -w '\$(cat pull-secret.json)'"
+      else
+        die "Pull secret not found. Store it with secret-tool:\n  cat pull-secret.json | secret-tool store --label=\"OCP Pull Secret\" service ocp-install username \"\$USER\" key OCP_PULL_SECRET"
+      fi
     fi
   fi
   echo "$secret"
@@ -745,13 +762,18 @@ Environment variables:
   SSH_KEY_FILE    SSH public key (default: ~/.ssh/id_rsa.pub)
 
 Secrets:
-  Pull secret is read from macOS Keychain (OCP_PULL_SECRET).
-  Falls back to \${CLUSTERS_DIR}/pull-secret-gcp.txt if not in Keychain.
+  Pull secret is read from the OS secret store (OCP_PULL_SECRET).
+  Falls back to \${CLUSTERS_DIR}/pull-secret-gcp.txt if not found.
 
-  To store in Keychain:
+  macOS (Keychain):
     security add-generic-password -a "\$USER" -s "OCP_PULL_SECRET" \\
       -w "\$(cat pull-secret.json | python3 -c \\
       "import sys,json; print(json.dumps(json.load(sys.stdin), separators=(',',':')))")"
+
+  Linux (secret-tool / libsecret):
+    cat pull-secret.json | python3 -c \\
+      "import sys,json; print(json.dumps(json.load(sys.stdin), separators=(',',':')))" | \\
+      secret-tool store --label="OCP Pull Secret" service ocp-install username "\$USER" key OCP_PULL_SECRET
 
 Examples:
   $0 download 4.21.3

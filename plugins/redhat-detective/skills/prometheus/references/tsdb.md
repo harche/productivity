@@ -153,7 +153,7 @@ promtool tsdb create-blocks-from rules [flags] <rule-files...>
 promtool tsdb create-blocks-from rules \
   --url="$PROM_URL" \
   --http.config.file="$HTTP_CONFIG" \
-  --start="$(date -u -v-7d +%Y-%m-%dT%H:%M:%SZ)" \
+  --start="$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-7d +%Y-%m-%dT%H:%M:%SZ)" \
   --output-dir=/tmp/backfill-blocks \
   recording-rules.yml
 ```
