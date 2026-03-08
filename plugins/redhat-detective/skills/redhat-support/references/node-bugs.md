@@ -19,9 +19,9 @@ Each tab adds a clause to the base filter. Combine as: `<BASE> AND <tab-clause>`
 | Tab | JQL Clause |
 |-----|-----------|
 | Untriaged | `priority = Undefined OR "Release Blocker" = Proposed OR assignee in ("aos-node@redhat.com")` |
-| Triaged | `status in (NEW, "To Do") AND priority != Undefined AND ("Release Blocker" != Proposed OR "Release Blocker" is EMPTY) AND assignee != unassigned_jira AND assignee != "aos-node@redhat.com"` |
-| Refined | `status in (ASSIGNED, POST, Modified) AND priority != Undefined` |
-| Verification Needed | `status in (ON_QA) AND priority != Undefined` |
+| Triaged | `status in (NEW, "To Do") AND priority not in (Undefined) AND ("Release Blocker" not in (Proposed) OR "Release Blocker" is EMPTY) AND assignee not in (unassigned_jira, "aos-node@redhat.com")` |
+| Refined | `status in (ASSIGNED, POST, Modified) AND priority not in (Undefined)` |
+| Verification Needed | `status in (ON_QA) AND priority not in (Undefined)` |
 | Escape Analysis Needed | `("Customer Impact" = "Customer Escalated" OR "SFDC Cases Counter" > 0 OR issueFunction in linkedIssuesOfRemote(url, "https://access.redhat.com/support/cases/*")) AND status not in (NEW, "To Do", ASSIGNED) AND "Escape Reason" is EMPTY AND created >= 2025-01-01` |
 | Blocker? | `"Release Blocker" = Proposed OR priority = Blocker AND "Release Blocker" is EMPTY` |
 | Blocker+ | `cf[12319743] = Approved OR priority = Blocker` |

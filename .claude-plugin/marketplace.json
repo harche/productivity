@@ -90,6 +90,13 @@
       "description": "Generate news briefings from Polymarket prediction markets, cross-referenced with Twitter",
       "category": "misc",
       "version": "0.1.0"
+    },
+    {
+      "name": "dev-digest",
+      "source": "./plugins/dev-digest",
+      "description": "Generate developer attention briefings from Jira issues, GitHub PRs, and GitHub issues",
+      "category": "workflow",
+      "version": "0.1.0"
     }
   ]
 }
