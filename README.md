@@ -11,7 +11,7 @@ In any project, add the marketplace and install plugins:
 /plugin marketplace add harche/productivity
 
 # Install individual plugins
-/plugin install redhat-support@productivity-tools
+/plugin install redhat-detective@productivity-tools
 /plugin install github@productivity-tools
 
 # Browse all available plugins
@@ -27,14 +27,8 @@ In any project, add the marketplace and install plugins:
 | `github` | GitHub repos, PRs, issues, and actions via `gh` CLI |
 | `slack` | Read, search, and send Slack messages via browser session |
 | `google` | Gmail, Google Calendar, Drive, and Docs via `gog` CLI |
-| `redhat-support` | Red Hat Jira, Knowledge Base, and support cases |
+| `redhat-detective` | Red Hat debugging/investigation toolkit: Jira, Knowledge Base, support cases, platform docs (k8s + OpenShift), and Prometheus metrics |
 | `context-keeper` | Capture project state as structured markdown notes from Slack, Docs, Jira, and other sources |
-
-### Reference
-
-| Plugin | Description |
-|--------|-------------|
-| `platform-docs` | Search and read Kubernetes and OpenShift documentation |
 
 ### Infra
 
@@ -42,7 +36,6 @@ In any project, add the marketplace and install plugins:
 |--------|-------------|
 | `cluster-installer` | Create, manage, and destroy clusters (kind, GKE, OpenShift on GCP) |
 | `playwright-cli` | Browser automation: navigate, interact, screenshot, scrape |
-| `prometheus` | Query and analyze Prometheus metrics on Kubernetes/OpenShift clusters |
 
 ### Misc
 
@@ -69,7 +62,7 @@ To auto-install a group of plugins in a repo, add this to `.claude/settings.json
     "github@productivity-tools": true,
     "slack@productivity-tools": true,
     "google@productivity-tools": true,
-    "redhat-support@productivity-tools": true
+    "redhat-detective@productivity-tools": true
   }
 }
 ```
@@ -86,15 +79,13 @@ To auto-install a group of plugins in a repo, add this to `.claude/settings.json
     "github@productivity-tools": true,
     "slack@productivity-tools": true,
     "google@productivity-tools": true,
-    "redhat-support@productivity-tools": true,
+    "redhat-detective@productivity-tools": true,
     "twitter@productivity-tools": true,
     "youtube@productivity-tools": true,
     "polymarket@productivity-tools": true,
     "context-keeper@productivity-tools": true,
-    "platform-docs@productivity-tools": true,
     "cluster-installer@productivity-tools": true,
     "playwright-cli@productivity-tools": true,
-    "prometheus@productivity-tools": true,
     "ibkr@productivity-tools": true
   }
 }
@@ -104,21 +95,20 @@ Plugins are auto-installed when the repo folder is trusted in Claude Code.
 
 ## Example Workflows
 
-**Investigate a support case and check related Jira bugs:**
+**Investigate a support case — Jira, KB, docs, and metrics in one plugin:**
 ```
 /plugin marketplace add harche/productivity
-/plugin install redhat-support@productivity-tools
+/plugin install redhat-detective@productivity-tools
 ```
 
-**Work on an OpenShift project with docs at hand:**
+**Work on an OpenShift project with full investigation toolkit:**
 ```
-/plugin install platform-docs@productivity-tools
+/plugin install redhat-detective@productivity-tools
 /plugin install github@productivity-tools
-/plugin install redhat-support@productivity-tools
 ```
 
 **Spin up a cluster and start working:**
 ```
 /plugin install cluster-installer@productivity-tools
-/plugin install platform-docs@productivity-tools
+/plugin install redhat-detective@productivity-tools
 ```
