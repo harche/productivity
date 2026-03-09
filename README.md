@@ -12,13 +12,18 @@ claude plugin marketplace add harche/productivity
 claude plugin install --scope local plugin-installer@productivity-tools
 ```
 
-Once `plugin-installer` is installed, just ask Claude to install what you need:
+Once `plugin-installer` is installed, restart Claude Code and ask it to install what you need:
 
 ```
-> install redhat-detective and github
+/plugin-installer install redhat-detective and github
 ```
 
 It will resolve dependencies, check for missing CLI tools, offer to install them, warn about missing API tokens, and run the install commands for you.
+
+> **Tip:** Once you're done installing plugins, you can remove `plugin-installer` to keep things tidy — you can always add it back later:
+> ```bash
+> claude plugin uninstall plugin-installer@productivity-tools --scope local
+> ```
 
 ### Manual Install
 
@@ -79,15 +84,15 @@ cat pull-secret.json | python3 -c 'import sys,json; print(json.dumps(json.load(s
 
 **Investigate a support case — Jira, KB, docs, and metrics in one plugin:**
 ```
-install redhat-detective and github
+/plugin-installer install redhat-detective and github
 ```
 
 **Get a daily developer briefing — what needs your attention across Jira and GitHub:**
 ```
-install dev-digest, redhat-detective, and github
+/plugin-installer install dev-digest, redhat-detective, and github
 ```
 
 **Spin up a cluster and start working:**
 ```
-install cluster-installer, redhat-detective, and github
+/plugin-installer install cluster-installer, redhat-detective, and github
 ```

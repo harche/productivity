@@ -61,7 +61,12 @@ When the user asks to install one or more plugins:
    ```bash
    claude plugin install --scope local <name>@productivity-tools
    ```
-9. **Report results.** Summarize what was installed and any remaining setup steps (e.g., missing tokens, `gh auth login`).
+9. **Report results.** Summarize what was installed and any remaining setup steps (e.g., missing tokens, `gh auth login`). **Always remind the user to restart Claude Code** so the newly installed plugins are loaded.
+10. **Suggest cleanup.** Let the user know they can uninstall `plugin-installer` if they're done adding plugins:
+    ```bash
+    claude plugin uninstall plugin-installer@productivity-tools --scope local
+    ```
+    Mention they can always reinstall it later if needed.
 
 ## Recommending plugins
 
