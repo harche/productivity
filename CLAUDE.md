@@ -6,7 +6,6 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 
 - `plugins/` — Plugin marketplace: each plugin is at `plugins/<name>/` with `.claude-plugin/plugin.json`
 - `.claude-plugin/marketplace.json` — Marketplace catalog listing all plugins
-- `.claude/skills/` — Local standalone skill copies (flat, auto-discovered by Claude Code)
 
 ## Plugins
 
@@ -24,8 +23,12 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 **misc**
 - `ibkr` — Interactive Brokers Web API for trading, market data, and portfolio management
 - `twitter` — Read, search, and post on Twitter (X) via browser session
+- `youtube` — Fetch YouTube transcripts, metadata, comments, search, and browse channels/playlists
 - `polymarket` — Browse and analyze Polymarket prediction markets, events, prices, and leaderboards
-- `market-news` — Generate news briefings from Polymarket, cross-referenced with Twitter (agent plugin; depends on `polymarket` + `twitter`)
+
+**agents** (orchestrate other plugins, no tools of their own)
+- `dev-digest` — Developer attention briefing from Jira + GitHub (depends on `redhat-detective`, `github`)
+- `market-news` — News briefing from Polymarket + Twitter (depends on `polymarket`, `twitter`)
 
 ## Authentication
 
@@ -49,11 +52,6 @@ claude plugin marketplace add harche/productivity
 claude plugin install --local redhat-detective@productivity-tools
 ```
 
-## Guardrails
-
-- **Always confirm with the user** before sending emails, Slack messages, creating calendar events, creating/updating Jira issues, pushing code, or any action visible to others.
-- Never auto-commit or push without explicit request.
-- Never delete files, branches, or data without confirmation.
 ## Plugin Versioning
 
 When bumping a plugin version, **always update both files**:
@@ -64,3 +62,4 @@ When bumping a plugin version, **always update both files**:
 
 - Keep responses concise and direct.
 - Prefer reading existing code before suggesting changes.
+- All skills, scripts, and commands must work on both macOS and Linux.
