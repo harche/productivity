@@ -6,12 +6,13 @@ AI-powered productivity hub with Claude Code plugins for software engineering wo
 
 ### Prerequisites
 
-Some plugins depend on external CLIs or API tokens being available on your system **before** you install them:
+These dependencies are **optional** — you only need them if you install the plugins that use them:
 
 | Dependency | Needed by | Install |
 |------------|-----------|---------|
 | [`gh`](https://cli.github.com/) | `github` | `brew install gh` / `dnf install gh` / `apt install gh` |
 | [`gog`](https://github.com/steipete/gogcli) | `google` | See repo README |
+| [`playwright-cli`](https://github.com/microsoft/playwright-cli#installation) | `slack`, `twitter`, `playwright-cli` | `npm install -g @playwright/cli@latest` |
 | API tokens (Jira, Red Hat, etc.) | `redhat-detective`, `cluster-installer` | See [Authentication & Secrets](#authentication--secrets) below |
 
 ### Install Plugins
@@ -32,54 +33,7 @@ claude plugin
 
 ## Available Plugins
 
-### Workflow
-
-| Plugin | Description |
-|--------|-------------|
-| `github` | GitHub repos, PRs, issues, and actions via `gh` CLI |
-| `slack` | Read, search, and send Slack messages via browser session |
-| `google` | Gmail, Google Calendar, Drive, and Docs via `gog` CLI |
-| `redhat-detective` | Red Hat debugging/investigation toolkit: Jira, Knowledge Base, support cases, platform docs (k8s + OpenShift), and Prometheus metrics |
-| `context-keeper` | Capture project state as structured markdown notes from Slack, Docs, Jira, and other sources |
-
-### Infra
-
-| Plugin | Description |
-|--------|-------------|
-| `cluster-installer` | Create, manage, and destroy clusters (kind, GKE, OpenShift on GCP) |
-| `playwright-cli` | Browser automation: navigate, interact, screenshot, scrape |
-
-### Misc
-
-| Plugin | Description |
-|--------|-------------|
-| `ibkr` | Interactive Brokers Web API for trading, market data, and portfolio management |
-| `twitter` | Read, search, and post on Twitter (X) via browser session |
-| `youtube` | Fetch YouTube transcripts, metadata, comments, search, and browse channels/playlists |
-| `polymarket` | Browse and analyze Polymarket prediction markets, events, prices, and leaderboards |
-
-## Agent Plugins
-
-Agent plugins are higher-level plugins that orchestrate other plugins to produce a complete deliverable. They don't provide tools themselves — instead, they define an agent with instructions, a model, and a list of plugin dependencies. When invoked, the agent runs autonomously, calling into its dependent plugins to gather data and synthesize a result.
-
-| Agent | Description | Dependencies |
-|-------|-------------|--------------|
-| `dev-digest` | Generate a developer attention briefing from Jira issues, GitHub PRs, and GitHub issues — highlights what needs your action right now | `redhat-detective`, `github` |
-| `market-news` | Generate a news briefing from Polymarket prediction markets, cross-referenced with Twitter for context | `polymarket`, `twitter` |
-
-Install an agent plugin the same way as any other plugin — its dependencies must also be installed:
-
-```bash
-# Install dev-digest and its dependencies
-claude plugin install --local dev-digest@productivity-tools
-claude plugin install --local redhat-detective@productivity-tools
-claude plugin install --local github@productivity-tools
-
-# Install market-news and its dependencies
-claude plugin install --local market-news@productivity-tools
-claude plugin install --local polymarket@productivity-tools
-claude plugin install --local twitter@productivity-tools
-```
+See the **[Plugin Catalog](docs/plugin-catalog.md)** for the full list of plugins and agent plugins with install commands.
 
 ## Bulk Install by Category
 
@@ -121,7 +75,9 @@ To auto-install a group of plugins in a repo, add this to `.claude/settings.json
     "context-keeper@productivity-tools": true,
     "cluster-installer@productivity-tools": true,
     "playwright-cli@productivity-tools": true,
-    "ibkr@productivity-tools": true
+    "ibkr@productivity-tools": true,
+    "dev-digest@productivity-tools": true,
+    "market-news@productivity-tools": true
   }
 }
 ```
