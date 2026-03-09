@@ -12,7 +12,7 @@ claude plugin marketplace add harche/productivity
 claude plugin install --scope local plugin-installer@productivity-tools
 ```
 
-Once `plugin-installer` is installed, restart Claude Code and ask it to install what you need:
+Once `plugin-installer` is installed, start Claude Code and ask it to install what you need:
 
 ```
 /plugin-installer install redhat-detective and github
