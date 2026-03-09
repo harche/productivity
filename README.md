@@ -32,9 +32,6 @@ You can also install plugins directly without the installer:
 ```bash
 claude plugin install --scope local redhat-detective@productivity-tools
 claude plugin install --scope local github@productivity-tools
-
-# Browse all available plugins
-claude plugin
 ```
 
 ## Available Plugins
