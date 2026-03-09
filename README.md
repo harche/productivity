@@ -58,6 +58,29 @@ claude plugin
 | `youtube` | Fetch YouTube transcripts, metadata, comments, search, and browse channels/playlists |
 | `polymarket` | Browse and analyze Polymarket prediction markets, events, prices, and leaderboards |
 
+## Agent Plugins
+
+Agent plugins are higher-level plugins that orchestrate other plugins to produce a complete deliverable. They don't provide tools themselves — instead, they define an agent with instructions, a model, and a list of plugin dependencies. When invoked, the agent runs autonomously, calling into its dependent plugins to gather data and synthesize a result.
+
+| Agent | Description | Dependencies |
+|-------|-------------|--------------|
+| `dev-digest` | Generate a developer attention briefing from Jira issues, GitHub PRs, and GitHub issues — highlights what needs your action right now | `redhat-detective`, `github` |
+| `market-news` | Generate a news briefing from Polymarket prediction markets, cross-referenced with Twitter for context | `polymarket`, `twitter` |
+
+Install an agent plugin the same way as any other plugin — its dependencies must also be installed:
+
+```bash
+# Install dev-digest and its dependencies
+claude plugin install --local dev-digest@productivity-tools
+claude plugin install --local redhat-detective@productivity-tools
+claude plugin install --local github@productivity-tools
+
+# Install market-news and its dependencies
+claude plugin install --local market-news@productivity-tools
+claude plugin install --local polymarket@productivity-tools
+claude plugin install --local twitter@productivity-tools
+```
+
 ## Bulk Install by Category
 
 To auto-install a group of plugins in a repo, add this to `.claude/settings.json`:
