@@ -1,6 +1,6 @@
 # Productivity Assistant
 
-Claude Code plugin marketplace — Jira, GitHub, Slack, Kubernetes/OpenShift docs, support cases, cluster management, and more.
+Claude Code plugin marketplace — Jira, GitHub, Slack, Kubernetes/OpenShift docs, Red Hat support cases, Red Hat Knowledge Base, OpenShift cluster management, and more.
 
 ## Quick Start
 
