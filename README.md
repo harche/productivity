@@ -17,15 +17,15 @@ These dependencies are **optional** — you only need them if you install the pl
 
 ### Install Plugins
 
-In any project, add the marketplace and install plugins. Use `--local` to scope plugins to the current project — this way each repo gets only the plugins it needs:
+In any project, add the marketplace and install plugins. Use `--scope local` to scope plugins to the current project — this way each repo gets only the plugins it needs:
 
 ```bash
 # Add the marketplace (one-time)
 claude plugin marketplace add harche/productivity
 
 # Install plugins locally (scoped to the current project)
-claude plugin install --local redhat-detective@productivity-tools
-claude plugin install --local github@productivity-tools
+claude plugin install --scope local redhat-detective@productivity-tools
+claude plugin install --scope local github@productivity-tools
 
 # Browse all available plugins
 claude plugin
@@ -103,26 +103,26 @@ cat pull-secret.json | python3 -c 'import sys,json; print(json.dumps(json.load(s
 **Investigate a support case — Jira, KB, docs, and metrics in one plugin:**
 ```
 claude plugin marketplace add harche/productivity
-claude plugin install --local redhat-detective@productivity-tools
-claude plugin install --local github@productivity-tools
+claude plugin install --scope local redhat-detective@productivity-tools
+claude plugin install --scope local github@productivity-tools
 ```
 
 **Work on an OpenShift project with full investigation toolkit:**
 ```
-claude plugin install --local redhat-detective@productivity-tools
-claude plugin install --local github@productivity-tools
+claude plugin install --scope local redhat-detective@productivity-tools
+claude plugin install --scope local github@productivity-tools
 ```
 
 **Get a daily developer briefing — what needs your attention across Jira and GitHub:**
 ```
-claude plugin install --local dev-digest@productivity-tools
-claude plugin install --local redhat-detective@productivity-tools
-claude plugin install --local github@productivity-tools
+claude plugin install --scope local dev-digest@productivity-tools
+claude plugin install --scope local redhat-detective@productivity-tools
+claude plugin install --scope local github@productivity-tools
 ```
 
 **Spin up a cluster and start working:**
 ```
-claude plugin install --local cluster-installer@productivity-tools
-claude plugin install --local redhat-detective@productivity-tools
-claude plugin install --local github@productivity-tools
+claude plugin install --scope local cluster-installer@productivity-tools
+claude plugin install --scope local redhat-detective@productivity-tools
+claude plugin install --scope local github@productivity-tools
 ```
