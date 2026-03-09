@@ -116,6 +116,7 @@ claude plugin install --local github@productivity-tools
 ```
 claude plugin install --local dev-digest@productivity-tools
 claude plugin install --local redhat-detective@productivity-tools
+claude plugin install --local github@productivity-tools
 ```
 
 **Spin up a cluster and start working:**
