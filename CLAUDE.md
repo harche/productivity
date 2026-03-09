@@ -19,6 +19,7 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 **infra**
 - `cluster-installer` — Create, manage, and destroy clusters (kind, GKE, OpenShift on GCP)
 - `playwright-cli` — Browser automation: navigate, interact, screenshot, scrape
+- `plugin-installer` — Install and manage plugins from this marketplace
 
 **misc**
 - `ibkr` — Interactive Brokers Web API for trading, market data, and portfolio management

@@ -4,26 +4,27 @@ Claude Code plugin marketplace — Jira, GitHub, Slack, Kubernetes/OpenShift doc
 
 ## Quick Start
 
-### Prerequisites
-
-These dependencies are **optional** — you only need them if you install the plugins that use them:
-
-| Dependency | Needed by | Install |
-|------------|-----------|---------|
-| [`gh`](https://cli.github.com/) | `github` | `brew install gh` / `dnf install gh` / `apt install gh` |
-| [`gog`](https://github.com/steipete/gogcli) | `google` | See repo README |
-| [`playwright-cli`](https://github.com/microsoft/playwright-cli#installation) | `slack`, `twitter`, `playwright-cli` | `npm install -g @playwright/cli@latest` |
-| API tokens (Jira, Red Hat, etc.) | `redhat-detective`, `cluster-installer` | See [Authentication & Secrets](#authentication--secrets) below |
-
-### Install Plugins
-
-In any project, add the marketplace and install plugins. Use `--scope local` to scope plugins to the current project — this way each repo gets only the plugins it needs:
-
 ```bash
 # Add the marketplace (one-time)
 claude plugin marketplace add harche/productivity
 
-# Install plugins locally (scoped to the current project)
+# Install the plugin installer, then use it to set up everything else
+claude plugin install --scope local plugin-installer@productivity-tools
+```
+
+Once `plugin-installer` is installed, just ask Claude to install what you need:
+
+```
+> install redhat-detective and github
+```
+
+It will resolve dependencies, check for missing CLI tools, offer to install them, warn about missing API tokens, and run the install commands for you.
+
+### Manual Install
+
+You can also install plugins directly without the installer:
+
+```bash
 claude plugin install --scope local redhat-detective@productivity-tools
 claude plugin install --scope local github@productivity-tools
 
@@ -33,26 +34,11 @@ claude plugin
 
 ## Available Plugins
 
-See the **[Plugin Catalog](docs/plugin-catalog.md)** for the full list of plugins and agent plugins with install commands.
+See the **[Plugin Catalog](docs/plugin-catalog.md)** for the full list of plugins, dependencies, prerequisites, and install commands.
 
 ## Authentication & Secrets
 
-Some plugins require API tokens stored in the OS secret store. The table below lists every token, which plugin needs it, and how to store it on each platform.
-
-### Prerequisites
-
-| Platform | Secret store | Install |
-|----------|-------------|---------|
-| macOS | Keychain (built-in) | — |
-| Linux | libsecret / GNOME Keyring | `sudo dnf install libsecret` (Fedora) or `sudo apt install libsecret-tools` (Ubuntu/Debian) |
-
-### Required Tokens
-
-| Token | Plugin | How to obtain |
-|-------|--------|---------------|
-| `JIRA_API_TOKEN` | `redhat-detective` | [Create a PAT](https://issues.redhat.com) → Profile → Personal Access Tokens |
-| `RH_API_OFFLINE_TOKEN` | `redhat-detective` | [Generate an offline token](https://access.redhat.com/management/api) for the Customer Portal API |
-| `OCP_PULL_SECRET` | `cluster-installer` | Download from [console.redhat.com/openshift/install/pull-secret](https://console.redhat.com/openshift/install/pull-secret) |
+Some plugins require API tokens stored in the OS secret store. See the [Plugin Catalog — Prerequisites](docs/plugin-catalog.md#prerequisites) for which tokens are needed and how to obtain them.
 
 ### Storing Tokens
 
@@ -84,45 +70,24 @@ cat pull-secret.json | python3 -c 'import sys,json; print(json.dumps(json.load(s
   secret-tool store --label="OCP Pull Secret" service ocp-install username "$USER" key OCP_PULL_SECRET
 ```
 
-### Plugins That Don't Need Manual Tokens
-
-| Plugin | Auth method |
-|--------|-------------|
-| `github` | `gh auth login` (GitHub CLI handles OAuth) |
-| `google` | `gog` CLI (OAuth flow) |
-| `slack` | Extracted automatically from Chrome session |
-| `twitter` | Extracted automatically from Chrome cookies |
-| `youtube` | No auth required (public API) |
-| `polymarket` | No auth required (public API) |
-| `ibkr` | Session-based via IBKR Client Portal Gateway |
-| `playwright-cli` | No auth required |
-| `context-keeper` | Uses other plugins' auth |
+| Platform | Secret store | Install |
+|----------|-------------|---------|
+| macOS | Keychain (built-in) | — |
+| Linux | libsecret / GNOME Keyring | `sudo dnf install libsecret` (Fedora) or `sudo apt install libsecret-tools` (Ubuntu/Debian) |
 
 ## Example Workflows
 
 **Investigate a support case — Jira, KB, docs, and metrics in one plugin:**
 ```
-claude plugin marketplace add harche/productivity
-claude plugin install --scope local redhat-detective@productivity-tools
-claude plugin install --scope local github@productivity-tools
-```
-
-**Work on an OpenShift project with full investigation toolkit:**
-```
-claude plugin install --scope local redhat-detective@productivity-tools
-claude plugin install --scope local github@productivity-tools
+install redhat-detective and github
 ```
 
 **Get a daily developer briefing — what needs your attention across Jira and GitHub:**
 ```
-claude plugin install --scope local dev-digest@productivity-tools
-claude plugin install --scope local redhat-detective@productivity-tools
-claude plugin install --scope local github@productivity-tools
+install dev-digest, redhat-detective, and github
 ```
 
 **Spin up a cluster and start working:**
 ```
-claude plugin install --scope local cluster-installer@productivity-tools
-claude plugin install --scope local redhat-detective@productivity-tools
-claude plugin install --scope local github@productivity-tools
+install cluster-installer, redhat-detective, and github
 ```
