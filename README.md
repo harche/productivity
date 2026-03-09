@@ -35,55 +35,6 @@ claude plugin
 
 See the **[Plugin Catalog](docs/plugin-catalog.md)** for the full list of plugins and agent plugins with install commands.
 
-## Bulk Install by Category
-
-To auto-install a group of plugins in a repo, add this to `.claude/settings.json`:
-
-**Workflow plugins:**
-```json
-{
-  "extraKnownMarketplaces": {
-    "productivity-tools": {
-      "source": { "source": "github", "repo": "harche/productivity" }
-    }
-  },
-  "enabledPlugins": {
-    "github@productivity-tools": true,
-    "slack@productivity-tools": true,
-    "google@productivity-tools": true,
-    "redhat-detective@productivity-tools": true
-  }
-}
-```
-
-**All plugins:**
-```json
-{
-  "extraKnownMarketplaces": {
-    "productivity-tools": {
-      "source": { "source": "github", "repo": "harche/productivity" }
-    }
-  },
-  "enabledPlugins": {
-    "github@productivity-tools": true,
-    "slack@productivity-tools": true,
-    "google@productivity-tools": true,
-    "redhat-detective@productivity-tools": true,
-    "twitter@productivity-tools": true,
-    "youtube@productivity-tools": true,
-    "polymarket@productivity-tools": true,
-    "context-keeper@productivity-tools": true,
-    "cluster-installer@productivity-tools": true,
-    "playwright-cli@productivity-tools": true,
-    "ibkr@productivity-tools": true,
-    "dev-digest@productivity-tools": true,
-    "market-news@productivity-tools": true
-  }
-}
-```
-
-Plugins are auto-installed when the repo folder is trusted in Claude Code.
-
 ## Authentication & Secrets
 
 Some plugins require API tokens stored in the OS secret store. The table below lists every token, which plugin needs it, and how to store it on each platform.
