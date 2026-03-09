@@ -104,6 +104,7 @@ cat pull-secret.json | python3 -c 'import sys,json; print(json.dumps(json.load(s
 ```
 claude plugin marketplace add harche/productivity
 claude plugin install --local redhat-detective@productivity-tools
+claude plugin install --local github@productivity-tools
 ```
 
 **Work on an OpenShift project with full investigation toolkit:**
