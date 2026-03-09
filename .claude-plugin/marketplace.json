@@ -103,7 +103,7 @@
       "source": "./plugins/plugin-installer",
       "description": "Install and manage plugins from the productivity-tools marketplace",
       "category": "infra",
-      "version": "0.1.0"
+      "version": "0.2.0"
     }
   ]
 }
