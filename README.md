@@ -1,6 +1,6 @@
-# Productivity Assistant for OpenShift Node Team
+# Productivity Assistant
 
-Claude Code plugin marketplace for the OpenShift Node team — Jira, GitHub, Slack, Kubernetes/OpenShift docs, support cases, cluster management, and more.
+Claude Code plugin marketplace — Jira, GitHub, Slack, Kubernetes/OpenShift docs, support cases, cluster management, and more.
 
 ## Quick Start
 
