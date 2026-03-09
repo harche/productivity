@@ -45,8 +45,8 @@ echo -n "new-value" | secret-tool store --label="TOKEN_NAME" service productivit
 
 In the target repo, use Claude Code's native plugin system:
 ```bash
-/plugin marketplace add harche/productivity
-/plugin install redhat-detective@productivity-tools
+claude plugin marketplace add harche/productivity
+claude plugin install --local redhat-detective@productivity-tools
 ```
 
 ## Guardrails

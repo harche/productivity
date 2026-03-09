@@ -16,18 +16,18 @@ Some plugins depend on external CLIs or API tokens being available on your syste
 
 ### Install Plugins
 
-In any project, add the marketplace and install plugins:
+In any project, add the marketplace and install plugins. Use `--local` to scope plugins to the current project — this way each repo gets only the plugins it needs:
 
 ```bash
 # Add the marketplace (one-time)
-/plugin marketplace add harche/productivity
+claude plugin marketplace add harche/productivity
 
-# Install individual plugins
-/plugin install redhat-detective@productivity-tools
-/plugin install github@productivity-tools
+# Install plugins locally (scoped to the current project)
+claude plugin install --local redhat-detective@productivity-tools
+claude plugin install --local github@productivity-tools
 
 # Browse all available plugins
-/plugin
+claude plugin
 ```
 
 ## Available Plugins
@@ -172,18 +172,18 @@ cat pull-secret.json | python3 -c 'import sys,json; print(json.dumps(json.load(s
 
 **Investigate a support case — Jira, KB, docs, and metrics in one plugin:**
 ```
-/plugin marketplace add harche/productivity
-/plugin install redhat-detective@productivity-tools
+claude plugin marketplace add harche/productivity
+claude plugin install --local redhat-detective@productivity-tools
 ```
 
 **Work on an OpenShift project with full investigation toolkit:**
 ```
-/plugin install redhat-detective@productivity-tools
-/plugin install github@productivity-tools
+claude plugin install --local redhat-detective@productivity-tools
+claude plugin install --local github@productivity-tools
 ```
 
 **Spin up a cluster and start working:**
 ```
-/plugin install cluster-installer@productivity-tools
-/plugin install redhat-detective@productivity-tools
+claude plugin install --local cluster-installer@productivity-tools
+claude plugin install --local redhat-detective@productivity-tools
 ```
