@@ -1,6 +1,6 @@
 # Productivity Assistant
 
-AI-powered productivity hub with Claude Code plugins for software engineering workflows — Jira, GitHub, Slack, Kubernetes/OpenShift docs, support cases, and more.
+Claude Code plugin marketplace for the OpenShift Node team — Jira, GitHub, Slack, Kubernetes/OpenShift docs, support cases, cluster management, and more.
 
 ## Quick Start
 
