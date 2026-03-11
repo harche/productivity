@@ -39,7 +39,7 @@ class TestSubmitStopLossOrder:
 
         assert oid == "88888"
         order_body = mock_post.call_args[1]["json_body"]
-        assert order_body["orders"][0]["orderType"] == "STP_LIMIT"
+        assert order_body["orders"][0]["orderType"] == "STP LMT"
         assert order_body["orders"][0]["auxPrice"] == -36.70
         assert order_body["orders"][0]["price"] == -38.70
 

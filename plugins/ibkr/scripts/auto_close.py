@@ -6,7 +6,7 @@ Submits standing orders for profit target and/or stop-loss.
 IBKR handles execution automatically — no polling needed.
 
 Profit target: LMT order at net_credit - (target$ / 100 / quantity)
-Stop-loss: STP_LIMIT order — triggers at stop price, fills at stop + buffer
+Stop-loss: STP LMT order — triggers at stop price, fills at stop + buffer
 
 Usage:
     python auto_close.py iron_butterfly_2026-03-11.json --profit 300
@@ -51,7 +51,7 @@ def submit_stop_loss_order(
     order: dict = {
         "orders": [{
             "conidex": conidex,
-            "orderType": "STP_LIMIT",
+            "orderType": "STP LMT",
             "side": "SELL",
             "price": limit_price,
             "auxPrice": stop_price,
@@ -60,7 +60,7 @@ def submit_stop_loss_order(
         }]
     }
 
-    print(f"  Submitting STOP LOSS: SELL {quantity}x combo STP_LIMIT stop={stop_price:.2f} limit={limit_price:.2f} ...")
+    print(f"  Submitting STOP LOSS: SELL {quantity}x combo STP LMT stop={stop_price:.2f} limit={limit_price:.2f} ...")
     return submit_order(account_id, order)
 
 
@@ -129,7 +129,7 @@ def main() -> None:
         print(f"  Limit price:   {limit_price:.2f} (stop + {args.stop_buffer:.2f} buffer)")
         oid = submit_stop_loss_order(account_id, conidex, quantity, -stop_price, -limit_price)
         if oid:
-            orders_submitted.append(("Stop loss (STP_LIMIT)", oid))
+            orders_submitted.append(("Stop loss (STP LMT)", oid))
         print()
 
     if orders_submitted:
