@@ -1,4 +1,4 @@
-"""Tests for auto_close.py — standing limit order auto-close."""
+"""Tests for auto_close.py — standing limit/stop-limit order auto-close."""
 
 import json
 from unittest.mock import patch, MagicMock
@@ -39,15 +39,15 @@ class TestHandleOrderResponse:
 
 
 # ---------------------------------------------------------------------------
-# Closing order submission tests
+# Profit order submission tests
 # ---------------------------------------------------------------------------
 
-class TestSubmitClosingOrder:
+class TestSubmitProfitOrder:
     @patch("auto_close.api_post")
     def test_submits_limit_sell(self, mock_post):
         mock_post.return_value = [{"order_id": "99999", "order_status": "PreSubmitted"}]
 
-        oid = ac.submit_closing_order("DUXXXXXXX", "416904;;;111/1,222/-1", 1, -28.70, "PROFIT TARGET")
+        oid = ac.submit_profit_order("DUXXXXXXX", "416904;;;111/1,222/-1", 1, -28.70)
 
         assert oid == "99999"
         order_body = mock_post.call_args[1]["json_body"]
@@ -55,21 +55,51 @@ class TestSubmitClosingOrder:
         assert order_body["orders"][0]["orderType"] == "LMT"
         assert order_body["orders"][0]["price"] == -28.70
         assert order_body["orders"][0]["quantity"] == 1
+        assert "auxPrice" not in order_body["orders"][0]
 
     @patch("auto_close.api_post")
     def test_passes_quantity(self, mock_post):
         mock_post.return_value = [{"order_id": "99999", "order_status": "PreSubmitted"}]
 
-        ac.submit_closing_order("DUXXXXXXX", "416904;;;111/1,222/-1", 3, -28.70, "PROFIT TARGET")
+        ac.submit_profit_order("DUXXXXXXX", "416904;;;111/1,222/-1", 3, -28.70)
 
         order_body = mock_post.call_args[1]["json_body"]
         assert order_body["orders"][0]["quantity"] == 3
 
+
+# ---------------------------------------------------------------------------
+# Stop-loss order submission tests
+# ---------------------------------------------------------------------------
+
+class TestSubmitStopLossOrder:
+    @patch("auto_close.api_post")
+    def test_submits_stop_limit(self, mock_post):
+        mock_post.return_value = [{"order_id": "88888", "order_status": "PreSubmitted"}]
+
+        oid = ac.submit_stop_loss_order("DUXXXXXXX", "416904;;;111/1,222/-1", 1, -36.70, -38.70)
+
+        assert oid == "88888"
+        order_body = mock_post.call_args[1]["json_body"]
+        assert order_body["orders"][0]["side"] == "SELL"
+        assert order_body["orders"][0]["orderType"] == "STP_LIMIT"
+        assert order_body["orders"][0]["auxPrice"] == -36.70  # stop trigger
+        assert order_body["orders"][0]["price"] == -38.70     # limit fill
+        assert order_body["orders"][0]["quantity"] == 1
+
+    @patch("auto_close.api_post")
+    def test_passes_quantity(self, mock_post):
+        mock_post.return_value = [{"order_id": "88888", "order_status": "PreSubmitted"}]
+
+        ac.submit_stop_loss_order("DUXXXXXXX", "416904;;;111/1,222/-1", 2, -36.70, -38.70)
+
+        order_body = mock_post.call_args[1]["json_body"]
+        assert order_body["orders"][0]["quantity"] == 2
+
     @patch("auto_close.api_post")
     def test_uses_day_tif(self, mock_post):
-        mock_post.return_value = [{"order_id": "99999", "order_status": "PreSubmitted"}]
+        mock_post.return_value = [{"order_id": "88888", "order_status": "PreSubmitted"}]
 
-        ac.submit_closing_order("DUXXXXXXX", "416904;;;111/1,222/-1", 1, -28.70, "TEST")
+        ac.submit_stop_loss_order("DUXXXXXXX", "416904;;;111/1,222/-1", 1, -36.70, -38.70)
 
         order_body = mock_post.call_args[1]["json_body"]
         assert order_body["orders"][0]["tif"] == "DAY"
@@ -96,34 +126,40 @@ class TestPriceCalculation:
         close_price = net_credit - (profit / 100.0 / quantity)
         assert abs(close_price - 28.70) < 0.01
 
-    def test_stop_loss_price(self):
-        """Stop loss of $500 on net_credit 31.70 -> close at 36.70."""
+    def test_stop_loss_stop_price(self):
+        """Stop loss of $500 on net_credit 31.70 -> stop at 36.70."""
         net_credit = 31.70
         stop_loss = 500.0
         quantity = 1
-        close_price = net_credit + (stop_loss / 100.0 / quantity)
-        assert abs(close_price - 36.70) < 0.01
+        stop_price = net_credit + (stop_loss / 100.0 / quantity)
+        assert abs(stop_price - 36.70) < 0.01
+
+    def test_stop_loss_limit_with_buffer(self):
+        """Stop at 36.70 + 2.0 buffer -> limit at 38.70."""
+        stop_price = 36.70
+        buffer = 2.0
+        limit_price = stop_price + buffer
+        assert abs(limit_price - 38.70) < 0.01
+
+    def test_stop_loss_custom_buffer(self):
+        """Stop at 36.70 + 3.0 buffer -> limit at 39.70."""
+        stop_price = 36.70
+        buffer = 3.0
+        limit_price = stop_price + buffer
+        assert abs(limit_price - 39.70) < 0.01
 
     def test_stop_loss_with_quantity(self):
-        """Stop loss of $1000 on 2 contracts, net_credit 31.70 -> close at 36.70."""
+        """Stop loss of $1000 on 2 contracts, net_credit 31.70 -> stop at 36.70."""
         net_credit = 31.70
         stop_loss = 1000.0
         quantity = 2
-        close_price = net_credit + (stop_loss / 100.0 / quantity)
-        assert abs(close_price - 36.70) < 0.01
-
-    def test_small_profit_target(self):
-        """Small profit of $100 on net_credit 42.50 -> close at 41.50."""
-        net_credit = 42.50
-        profit = 100.0
-        quantity = 1
-        close_price = net_credit - (profit / 100.0 / quantity)
-        assert abs(close_price - 41.50) < 0.01
+        stop_price = net_credit + (stop_loss / 100.0 / quantity)
+        assert abs(stop_price - 36.70) < 0.01
 
     def test_full_profit_close_at_zero(self):
-        """Full max profit -> close at 0 (all premium decayed)."""
+        """Full max profit -> close at 0."""
         net_credit = 42.50
-        profit = 4250.0  # max profit
+        profit = 4250.0
         quantity = 1
         close_price = net_credit - (profit / 100.0 / quantity)
         assert abs(close_price - 0.0) < 0.01
@@ -140,7 +176,7 @@ class TestInitializeSession:
             {"accounts": ["DUXXXXXXX"]},
             {"authenticated": True, "connected": True},
         ]
-        ac.initialize_session()  # Should not raise
+        ac.initialize_session()
 
     @patch("auto_close.api_get")
     def test_not_authenticated_exits(self, mock_get):

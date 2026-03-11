@@ -242,10 +242,10 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/auto_close.py iron_butterfly_2026-03-11.js
 ```
 
 - Takes the same JSON file output by `iron_butterfly.py` (needs `metadata.net_credit`)
-- Calculates closing limit price from target dollars and net credit
-- Submits standing LMT orders — IBKR handles execution
-- Profit: close price = net_credit - (target / 100 / quantity)
-- Stop-loss: close price = net_credit + (loss / 100 / quantity)
+- **Profit target:** standing LMT order at `net_credit - (target$ / 100 / qty)`
+- **Stop-loss:** STP_LIMIT order — triggers at `net_credit + (loss$ / 100 / qty)`, fills at stop + buffer
+- `--stop-buffer` controls the gap between stop trigger and limit fill (default: $2.00/spread)
+- IBKR handles execution — no polling needed
 
 ### JSON Order Format
 

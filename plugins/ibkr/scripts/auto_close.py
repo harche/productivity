@@ -2,16 +2,17 @@
 """
 Auto-close for IBKR combo positions via Client Portal Gateway API.
 
-Calculates the closing limit price from a profit target or stop-loss,
-then submits a standing limit order. IBKR handles execution automatically.
+Submits standing orders for profit target and/or stop-loss.
+IBKR handles execution automatically — no polling needed.
 
-For profit target: closing price = net_credit - (target$ / 100 / quantity)
-For stop-loss: closing price = net_credit + (loss$ / 100 / quantity)
+Profit target: LMT order at net_credit - (target$ / 100 / quantity)
+Stop-loss: STP_LIMIT order — triggers at stop price, fills at stop + buffer
 
 Usage:
     python auto_close.py iron_butterfly_2026-03-11.json --profit 300
     python auto_close.py iron_butterfly_2026-03-11.json --stop-loss 500
     python auto_close.py iron_butterfly_2026-03-11.json --profit 300 --stop-loss 500
+    python auto_close.py iron_butterfly_2026-03-11.json --stop-loss 500 --stop-buffer 3.0
 """
 
 import argparse
@@ -96,8 +97,8 @@ def handle_order_response(resp):
     return None
 
 
-def submit_closing_order(account_id, conidex, quantity, limit_price, label):
-    """Submit a standing limit order to close the combo."""
+def submit_profit_order(account_id, conidex, quantity, limit_price):
+    """Submit a standing limit order for profit target."""
     order = {
         "orders": [{
             "conidex": conidex,
@@ -109,7 +110,26 @@ def submit_closing_order(account_id, conidex, quantity, limit_price, label):
         }]
     }
 
-    print(f"  Submitting {label}: SELL {quantity}x combo LMT @ {limit_price:.2f} ...")
+    print(f"  Submitting PROFIT TARGET: SELL {quantity}x combo LMT @ {limit_price:.2f} ...")
+    resp = api_post(f"/iserver/account/{account_id}/orders", json_body=order)
+    return handle_order_response(resp)
+
+
+def submit_stop_loss_order(account_id, conidex, quantity, stop_price, limit_price):
+    """Submit a stop-limit order for stop-loss. Triggers at stop_price, fills at limit_price."""
+    order = {
+        "orders": [{
+            "conidex": conidex,
+            "orderType": "STP_LIMIT",
+            "side": "SELL",
+            "price": limit_price,
+            "auxPrice": stop_price,
+            "quantity": quantity,
+            "tif": "DAY",
+        }]
+    }
+
+    print(f"  Submitting STOP LOSS: SELL {quantity}x combo STP_LIMIT stop={stop_price:.2f} limit={limit_price:.2f} ...")
     resp = api_post(f"/iserver/account/{account_id}/orders", json_body=order)
     return handle_order_response(resp)
 
@@ -123,6 +143,8 @@ def main():
                         help="Target profit in dollars (e.g., 300)")
     parser.add_argument("--stop-loss", type=float, metavar="DOLLARS",
                         help="Max loss in dollars (e.g., 500)")
+    parser.add_argument("--stop-buffer", type=float, default=2.0, metavar="DOLLARS",
+                        help="Buffer between stop and limit price in $/spread (default: 2.0)")
     args = parser.parse_args()
 
     if args.profit is None and args.stop_loss is None:
@@ -161,20 +183,23 @@ def main():
         close_price = round(close_price, 2)
         print(f"  Profit target: ${args.profit:,.2f}")
         print(f"  Close price:   {close_price:.2f} (net_credit {net_credit} - {args.profit/100/quantity:.2f})")
-        oid = submit_closing_order(account_id, conidex, quantity, -close_price, "PROFIT TARGET")
+        oid = submit_profit_order(account_id, conidex, quantity, -close_price)
         if oid:
-            orders_submitted.append(("Profit target", oid))
+            orders_submitted.append(("Profit target (LMT)", oid))
         print()
 
     if args.stop_loss is not None:
-        # To cap loss at $stop_loss, we close at: net_credit + (stop_loss / 100 / quantity)
-        close_price = net_credit + (args.stop_loss / 100.0 / quantity)
-        close_price = round(close_price, 2)
+        # Stop triggers at: net_credit + (stop_loss / 100 / quantity)
+        # Limit fills at: stop + buffer (gives room to fill)
+        stop_price = net_credit + (args.stop_loss / 100.0 / quantity)
+        stop_price = round(stop_price, 2)
+        limit_price = round(stop_price + args.stop_buffer, 2)
         print(f"  Stop loss:     ${args.stop_loss:,.2f}")
-        print(f"  Close price:   {close_price:.2f} (net_credit {net_credit} + {args.stop_loss/100/quantity:.2f})")
-        oid = submit_closing_order(account_id, conidex, quantity, -close_price, "STOP LOSS")
+        print(f"  Stop price:    {stop_price:.2f} (triggers when cost to close hits this)")
+        print(f"  Limit price:   {limit_price:.2f} (stop + {args.stop_buffer:.2f} buffer)")
+        oid = submit_stop_loss_order(account_id, conidex, quantity, -stop_price, -limit_price)
         if oid:
-            orders_submitted.append(("Stop loss", oid))
+            orders_submitted.append(("Stop loss (STP_LIMIT)", oid))
         print()
 
     if orders_submitted:
