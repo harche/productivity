@@ -36,7 +36,23 @@ curl -sk "https://localhost:5000/v1/api/trsrv/secdef/schedule?assetClass=STK&sym
 | SPY | 756733 | SPDR S&P 500 ETF |
 | QQQ | 320227571 | Invesco QQQ Trust |
 
-Use `/trsrv/stocks` to look up conids for any symbol.
+Use `/trsrv/stocks` to look up conids for any symbol. The response nests conid inside `contracts`:
+
+```json
+{
+    "AAPL": [
+        {
+            "name": "APPLE INC",
+            "assetClass": "STK",
+            "contracts": [
+                { "conid": 265598, "exchange": "NASDAQ", "isUS": true }
+            ]
+        }
+    ]
+}
+```
+
+Extract conid via: `data['SYMBOL'][0]['contracts'][0]['conid']`
 
 ## Market Data Snapshot
 
