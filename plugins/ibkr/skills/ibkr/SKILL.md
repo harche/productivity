@@ -228,24 +228,24 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/monitor.py -s SPX -w 15
 
 ### 4. Auto-Close: `auto_close.py`
 
-Monitors a position and automatically closes it at a profit target or stop-loss.
+Submits standing limit orders to close a combo position at a profit target or stop-loss. IBKR executes automatically when the price hits — no polling needed.
 
 ```bash
-# Close at 50% of max profit
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/auto_close.py iron_butterfly_2026-03-11.json --profit-target 50
+# Close at $300 profit
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/auto_close.py iron_butterfly_2026-03-11.json --profit 300
 
-# Close at 80% of max loss
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/auto_close.py iron_butterfly_2026-03-11.json --stop-loss 80
+# Close at $500 max loss
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/auto_close.py iron_butterfly_2026-03-11.json --stop-loss 500
 
-# Both, checking every 30 seconds
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/auto_close.py iron_butterfly_2026-03-11.json --profit-target 50 --stop-loss 80 --poll 30
+# Both profit target and stop-loss
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/auto_close.py iron_butterfly_2026-03-11.json --profit 300 --stop-loss 500
 ```
 
-- Takes the same JSON file output by `iron_butterfly.py` (needs `metadata.legs`, `max_profit`, `max_loss`)
-- When target is hit, checks if the combo has valid asks on all legs
-  - **If yes:** closes the full combo as a single MKT order
-  - **If no** (e.g., long wings worthless late in 0DTE): closes only the short legs individually
-- `--poll` controls check interval (default: 60s)
+- Takes the same JSON file output by `iron_butterfly.py` (needs `metadata.net_credit`)
+- Calculates closing limit price from target dollars and net credit
+- Submits standing LMT orders — IBKR handles execution
+- Profit: close price = net_credit - (target / 100 / quantity)
+- Stop-loss: close price = net_credit + (loss / 100 / quantity)
 
 ### JSON Order Format
 
