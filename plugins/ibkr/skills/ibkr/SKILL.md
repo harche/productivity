@@ -202,6 +202,29 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/submit_order.py --account DUXXXXXXX \
     --side BUY --quantity 1 --order-type LMT --price -35.00 --tif DAY
 ```
 
+### 3. Position Monitor: `monitor.py`
+
+Displays all open positions with live P/L, market value, and price data.
+
+```bash
+# Show all positions (one-shot)
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/monitor.py
+
+# Filter by symbol
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/monitor.py --symbol SPX
+
+# Auto-refresh every 30 seconds
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/monitor.py --watch 30
+
+# Combine: watch SPX positions every 15 seconds
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/monitor.py -s SPX -w 15
+```
+
+- Groups positions by asset class (OPTIONS, STOCKS, etc.)
+- Shows position size, market price, market value, unrealized P/L, and % P/L
+- Displays portfolio totals
+- `--watch` mode clears screen and refreshes on interval
+
 ### JSON Order Format
 
 Strategy builders output JSON in this format, consumed by `submit_order.py`:

@@ -54,7 +54,7 @@
       "source": "./plugins/ibkr",
       "description": "Interactive Brokers Web API for trading, market data, and portfolio management",
       "category": "misc",
-      "version": "1.2.0"
+      "version": "1.2.1"
     },
     {
       "name": "context-keeper",
