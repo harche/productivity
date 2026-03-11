@@ -118,20 +118,42 @@ def compute_combo_pnl(legs, prices):
     return combo_value
 
 
-def check_combo_ask(legs, prices):
-    """Check if all legs have valid bid/ask — i.e. the combo can be closed as a unit."""
-    for leg in legs:
-        cid = leg["conid"]
-        p = prices.get(cid, {})
-        if leg["action"] == "SELL":
-            # To close a short, we buy — need an ask
-            if p.get("ask") is None or p["ask"] <= 0:
-                return False
-        else:
-            # To close a long, we sell — need a bid
-            if p.get("bid") is None:
-                return False
-    return True
+def get_combo_quote(conidex):
+    """Get the combo order's own bid/ask as a single instrument."""
+    # Parse conidex: "416904;;;conid1/1,conid2/-1,conid3/-1,conid4/1"
+    parts = conidex.split(";;;")
+    underlying_conid = int(parts[0])
+    leg_defs = []
+    for lp in parts[1].split(","):
+        cid, ratio = lp.split("/")
+        leg_defs.append({"conid": int(cid), "ratio": int(ratio)})
+
+    # Register combo to get a combo conid
+    combo_resp = api_post("/iserver/secdef/combo", json_body={
+        "conid": underlying_conid,
+        "legs": leg_defs,
+    })
+
+    combo_conid = None
+    if isinstance(combo_resp, dict):
+        combo_conid = combo_resp.get("conid")
+    elif isinstance(combo_resp, list) and combo_resp:
+        combo_conid = combo_resp[0].get("conid")
+
+    if not combo_conid:
+        return None
+
+    # Snapshot the combo conid for bid/ask
+    params = {"conids": str(combo_conid), "fields": "84,86"}
+    api_get("/iserver/marketdata/snapshot", params=params)
+    time.sleep(2.5)
+    data = api_get("/iserver/marketdata/snapshot", params=params)
+
+    snap = data[0] if isinstance(data, list) and data else data
+    return {
+        "bid": parse_price(snap.get("84")),
+        "ask": parse_price(snap.get("86")),
+    }
 
 
 def submit_combo_close(account_id, order_data, quantity):
@@ -305,10 +327,12 @@ def main():
             if triggered:
                 print(f"\n  >>> {triggered} HIT! P/L: {pnl_str} <<<\n")
 
-                has_combo_ask = check_combo_ask(legs, prices)
+                conidex = order_data["orders"][0]["conidex"]
+                combo_quote = get_combo_quote(conidex)
 
-                if has_combo_ask:
-                    print("  Combo has valid asks — closing full combo.")
+                has_ask = combo_quote and combo_quote.get("ask") is not None
+                if has_ask:
+                    print(f"  Combo bid={combo_quote.get('bid')} ask={combo_quote.get('ask')} — closing full combo.")
                     oid = submit_combo_close(account_id, order_data, quantity)
                     if oid:
                         print(f"\n  Full combo close submitted (Order ID: {oid}).")
@@ -317,7 +341,7 @@ def main():
                         oids = submit_short_legs_close(account_id, legs, quantity)
                         print(f"\n  Short legs closed ({len(oids)} orders).")
                 else:
-                    print("  Combo has no valid asks — closing short legs only.")
+                    print("  Combo has no ask — closing short legs only (in parallel).")
                     oids = submit_short_legs_close(account_id, legs, quantity)
                     print(f"\n  Short legs closed ({len(oids)} orders).")
 
