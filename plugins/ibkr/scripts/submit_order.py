@@ -320,7 +320,7 @@ def main():
     parser.add_argument("--side", choices=["BUY", "SELL"], help="Order side")
     parser.add_argument("--quantity", type=int, help="Number of shares/contracts")
     parser.add_argument("--order-type", default="LMT",
-                        choices=["MKT", "LMT", "STP", "STP_LIMIT", "MIDPRICE", "MOC", "LOC"],
+                        choices=["LMT", "STP", "STP_LIMIT", "MIDPRICE", "LOC"],
                         help="Order type (default: LMT)")
     parser.add_argument("--price", type=float, help="Limit price")
     parser.add_argument("--aux-price", type=float, help="Stop/aux price")
