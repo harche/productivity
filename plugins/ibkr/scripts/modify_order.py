@@ -14,25 +14,7 @@ import sys
 from typing import Optional
 
 from ibkr_client import initialize_session, get_account_id, get_order_status, get_live_orders, modify_order
-
-
-# Map IBKR status response field values to modify API values
-ORDER_TYPE_MAP: dict[str, str] = {
-    "LIMIT": "LMT", "Limit": "LMT", "LMT": "LMT",
-    "MARKET": "MKT", "Market": "MKT", "MKT": "MKT",
-    "STP LMT": "STP LMT", "Stop Limit": "STP LMT",
-    "STOP": "STP", "Stop": "STP", "STP": "STP",
-    "MIDPRICE": "MIDPRICE", "MidPrice": "MIDPRICE",
-}
-
-SIDE_MAP: dict[str, str] = {
-    "B": "BUY", "BUY": "BUY", "Buy": "BUY",
-    "S": "SELL", "SELL": "SELL", "Sell": "SELL",
-}
-
-TIF_MAP: dict[str, str] = {
-    "CLOSE": "DAY", "DAY": "DAY", "GTC": "GTC", "IOC": "IOC", "OPG": "OPG",
-}
+from ibkr_constants import ORDER_TYPE_MAP, SIDE_MAP, TIF_MAP
 
 
 def find_order_in_live_orders(order_id: str) -> Optional[dict]:

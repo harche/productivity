@@ -10,6 +10,10 @@ SCRIPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "scripts")
 sys.path.insert(0, SCRIPTS_DIR)
 
 
+def pytest_configure(config: pytest.Config) -> None:
+    config.addinivalue_line("markers", "live: tests that require a live IBKR gateway")
+
+
 @pytest.fixture
 def sample_order_data():
     """A realistic iron butterfly order JSON."""
