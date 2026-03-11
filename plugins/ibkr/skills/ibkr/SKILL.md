@@ -133,9 +133,11 @@ Detailed command references:
 
 ## Automation Scripts
 
-Scripts are in the plugin at `scripts/` (relative to the plugin root). The `requests` module is auto-installed if missing.
+Scripts are in the plugin at `scripts/` (relative to the plugin root). All scripts import from the shared `ibkr_client.py` module. The `requests` module is auto-installed if missing.
 
 Use `${CLAUDE_PLUGIN_ROOT}/scripts/` to reference scripts at runtime — this resolves to the plugin's root directory automatically.
+
+**Shared client module:** `ibkr_client.py` — provides `api_get`, `api_post`, `initialize_session`, `get_account_id`, `get_market_snapshot`, `check_staleness`, `parse_price`, `handle_order_response`, `submit_order`, `cancel_order`, `modify_order`, `search_contract`, `get_option_contract`, etc. All scripts import from here — no duplicated API code.
 
 ### 0. Gateway Starter: `start_gateway.py`
 
@@ -219,10 +221,15 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/monitor.py --watch 30
 
 # Combine: watch SPX positions every 15 seconds
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/monitor.py -s SPX -w 15
+
+# Show Greeks (delta, theta, IV) for option positions
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/monitor.py --greeks
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/monitor.py -s SPX -g
 ```
 
 - Groups positions by asset class (OPTIONS, STOCKS, etc.)
 - Shows position size, market price, market value, unrealized P/L, and % P/L
+- `--greeks` / `-g` adds delta, theta, and implied volatility columns for options
 - Displays portfolio totals
 - `--watch` mode clears screen and refreshes on interval
 
@@ -246,6 +253,39 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/auto_close.py iron_butterfly_2026-03-11.js
 - **Stop-loss:** STP_LIMIT order — triggers at `net_credit + (loss$ / 100 / qty)`, fills at stop + buffer
 - `--stop-buffer` controls the gap between stop trigger and limit fill (default: $2.00/spread)
 - IBKR handles execution — no polling needed
+
+### 5. Cancel Orders: `cancel_order.py`
+
+Cancel one or more IBKR orders.
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/cancel_order.py 3212818              # cancel single
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/cancel_order.py 3212818 3212819      # cancel multiple
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/cancel_order.py --all                # cancel all open
+```
+
+### 6. Modify Orders: `modify_order.py`
+
+Modify an existing order's price or quantity.
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/modify_order.py 3212818 --price -25.50
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/modify_order.py 3212818 --quantity 2
+```
+
+- Shows current order details before and after modification
+- Carries forward required fields (conid, orderType, side, tif)
+
+### 7. Account Summary: `account_summary.py`
+
+Display account financials at a glance.
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/account_summary.py
+```
+
+- Net Liquidation Value, Equity, Available Funds, Buying Power
+- Maintenance/Initial Margin, Cushion, Day Trades Remaining
 
 ### JSON Order Format
 

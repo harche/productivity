@@ -15,91 +15,21 @@ Usage:
     python auto_close.py iron_butterfly_2026-03-11.json --stop-loss 500 --stop-buffer 3.0
 """
 
+from __future__ import annotations
+
 import argparse
 import json
-import subprocess
 import sys
-import time
+from typing import Optional
 
-import warnings
-warnings.filterwarnings("ignore")
-
-try:
-    import requests
-    from requests.packages.urllib3.exceptions import InsecureRequestWarning
-    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-except ImportError:
-    print("Installing requests ...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", "requests"])
-    import requests
-    from requests.packages.urllib3.exceptions import InsecureRequestWarning
-    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-
-BASE_URL = "https://localhost:5000/v1/api"
+from ibkr_client import initialize_session, submit_order
 
 
-def api_get(path, params=None, retries=2):
-    url = f"{BASE_URL}{path}"
-    for attempt in range(retries + 1):
-        resp = requests.get(url, params=params, verify=False, timeout=15)
-        if resp.status_code >= 500 and attempt < retries:
-            time.sleep(1)
-            continue
-        resp.raise_for_status()
-        return resp.json()
-
-
-def api_post(path, json_body=None, retries=2):
-    url = f"{BASE_URL}{path}"
-    for attempt in range(retries + 1):
-        resp = requests.post(url, json=json_body, verify=False, timeout=15)
-        if resp.status_code >= 500 and attempt < retries:
-            time.sleep(1)
-            continue
-        resp.raise_for_status()
-        return resp.json()
-
-
-def initialize_session():
-    api_get("/iserver/accounts")
-    status = api_get("/iserver/auth/status")
-    if not status.get("authenticated"):
-        sys.exit("ERROR: Not authenticated. Ensure the Client Portal Gateway is running and logged in.")
-
-
-def handle_order_response(resp):
-    """Handle IBKR order response with confirmation chain."""
-    max_confirmations = 5
-    for _ in range(max_confirmations):
-        if not isinstance(resp, list) or not resp:
-            break
-
-        first = resp[0]
-        oid = first.get("order_id") or first.get("orderId")
-        if oid:
-            status = first.get("order_status") or first.get("orderStatus")
-            print(f"  Order ID: {oid}, Status: {status}")
-            return oid
-
-        reply_id = first.get("id")
-        if reply_id and first.get("message"):
-            for msg in first.get("message", []):
-                print(f"  Confirm: {msg}")
-            resp = api_post(f"/iserver/reply/{reply_id}", json_body={"confirmed": True})
-            continue
-
-        if first.get("error"):
-            print(f"  ERROR: {first['error']}")
-            return None
-
-        break
-
-    return None
-
-
-def submit_profit_order(account_id, conidex, quantity, limit_price):
+def submit_profit_order(
+    account_id: str, conidex: str, quantity: int, limit_price: float
+) -> Optional[str]:
     """Submit a standing limit order for profit target."""
-    order = {
+    order: dict = {
         "orders": [{
             "conidex": conidex,
             "orderType": "LMT",
@@ -111,13 +41,14 @@ def submit_profit_order(account_id, conidex, quantity, limit_price):
     }
 
     print(f"  Submitting PROFIT TARGET: SELL {quantity}x combo LMT @ {limit_price:.2f} ...")
-    resp = api_post(f"/iserver/account/{account_id}/orders", json_body=order)
-    return handle_order_response(resp)
+    return submit_order(account_id, order)
 
 
-def submit_stop_loss_order(account_id, conidex, quantity, stop_price, limit_price):
+def submit_stop_loss_order(
+    account_id: str, conidex: str, quantity: int, stop_price: float, limit_price: float
+) -> Optional[str]:
     """Submit a stop-limit order for stop-loss. Triggers at stop_price, fills at limit_price."""
-    order = {
+    order: dict = {
         "orders": [{
             "conidex": conidex,
             "orderType": "STP_LIMIT",
@@ -130,11 +61,10 @@ def submit_stop_loss_order(account_id, conidex, quantity, stop_price, limit_pric
     }
 
     print(f"  Submitting STOP LOSS: SELL {quantity}x combo STP_LIMIT stop={stop_price:.2f} limit={limit_price:.2f} ...")
-    resp = api_post(f"/iserver/account/{account_id}/orders", json_body=order)
-    return handle_order_response(resp)
+    return submit_order(account_id, order)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Submit standing limit orders to auto-close IBKR combo positions."
     )
@@ -151,15 +81,15 @@ def main():
         parser.error("Must specify at least one of --profit or --stop-loss")
 
     with open(args.file) as f:
-        order_data = json.load(f)
+        order_data: dict = json.load(f)
 
-    meta = order_data.get("metadata", {})
-    net_credit = meta.get("net_credit")
-    max_profit = meta.get("max_profit")
-    max_loss = meta.get("max_loss")
-    account_id = order_data.get("account_id")
-    conidex = order_data["orders"][0].get("conidex")
-    quantity = order_data["orders"][0].get("quantity", 1)
+    meta: dict = order_data.get("metadata", {})
+    net_credit: Optional[float] = meta.get("net_credit")
+    max_profit: Optional[float] = meta.get("max_profit")
+    max_loss: Optional[float] = meta.get("max_loss")
+    account_id: Optional[str] = order_data.get("account_id")
+    conidex: Optional[str] = order_data["orders"][0].get("conidex")
+    quantity: int = order_data["orders"][0].get("quantity", 1)
 
     if net_credit is None or conidex is None:
         sys.exit("ERROR: Order file missing metadata (net_credit) or conidex.")
@@ -175,11 +105,11 @@ def main():
 
     initialize_session()
 
-    orders_submitted = []
+    orders_submitted: list[tuple[str, str]] = []
 
     if args.profit is not None:
         # To keep $profit, we close at: net_credit - (profit / 100 / quantity)
-        close_price = net_credit - (args.profit / 100.0 / quantity)
+        close_price: float = net_credit - (args.profit / 100.0 / quantity)
         close_price = round(close_price, 2)
         print(f"  Profit target: ${args.profit:,.2f}")
         print(f"  Close price:   {close_price:.2f} (net_credit {net_credit} - {args.profit/100/quantity:.2f})")
@@ -191,9 +121,9 @@ def main():
     if args.stop_loss is not None:
         # Stop triggers at: net_credit + (stop_loss / 100 / quantity)
         # Limit fills at: stop + buffer (gives room to fill)
-        stop_price = net_credit + (args.stop_loss / 100.0 / quantity)
+        stop_price: float = net_credit + (args.stop_loss / 100.0 / quantity)
         stop_price = round(stop_price, 2)
-        limit_price = round(stop_price + args.stop_buffer, 2)
+        limit_price: float = round(stop_price + args.stop_buffer, 2)
         print(f"  Stop loss:     ${args.stop_loss:,.2f}")
         print(f"  Stop price:    {stop_price:.2f} (triggers when cost to close hits this)")
         print(f"  Limit price:   {limit_price:.2f} (stop + {args.stop_buffer:.2f} buffer)")

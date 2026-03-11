@@ -5,13 +5,13 @@ Iron Butterfly/Condor Strategy Builder for SPX via IBKR Client Portal Gateway AP
 Selects ATM strikes, calculates wing widths for max_loss = 2x max_profit,
 and outputs an order JSON file that can be submitted via submit_order.py.
 
-Requires: pip install requests
-
 Usage:
     python iron_butterfly.py today
     python iron_butterfly.py tomorrow --quantity 2
     python iron_butterfly.py 2026-03-10 --output my_order.json
 """
+
+from __future__ import annotations
 
 import argparse
 import json
@@ -20,21 +20,18 @@ import os
 import subprocess
 import sys
 import time
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
-import warnings
-warnings.filterwarnings("ignore")
-
-try:
-    import requests
-    from requests.packages.urllib3.exceptions import InsecureRequestWarning
-    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-except ImportError:
-    print("Installing requests ...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", "requests"])
-    import requests
-    from requests.packages.urllib3.exceptions import InsecureRequestWarning
-    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+from ibkr_client import (
+    api_get,
+    api_post,
+    check_staleness,
+    get_account_id as _client_get_account_id,
+    get_market_snapshot,
+    get_option_contract as _client_get_option_contract,
+    initialize_session as _client_initialize_session,
+    parse_price,
+)
 
 BASE_URL = "https://localhost:5000/v1/api"
 SPX_CONID = 416904
@@ -47,33 +44,11 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 # Helpers
 # ---------------------------------------------------------------------------
 
-def api_get(path, params=None, retries=2):
-    url = f"{BASE_URL}{path}"
-    for attempt in range(retries + 1):
-        resp = requests.get(url, params=params, verify=False, timeout=15)
-        if resp.status_code >= 500 and attempt < retries:
-            time.sleep(1)
-            continue
-        resp.raise_for_status()
-        return resp.json()
-
-
-def api_post(path, json_body=None, retries=2):
-    url = f"{BASE_URL}{path}"
-    for attempt in range(retries + 1):
-        resp = requests.post(url, json=json_body, verify=False, timeout=15)
-        if resp.status_code >= 500 and attempt < retries:
-            time.sleep(1)
-            continue
-        resp.raise_for_status()
-        return resp.json()
-
-
-def round_to_strike(value):
+def round_to_strike(value: float) -> int:
     return int(round(value / STRIKE_INCREMENT) * STRIKE_INCREMENT)
 
 
-def parse_expiry(expiry_arg):
+def parse_expiry(expiry_arg: str) -> date:
     today = datetime.now().date()
     if expiry_arg.lower() == "today":
         return today
@@ -83,55 +58,33 @@ def parse_expiry(expiry_arg):
         return datetime.strptime(expiry_arg, "%Y-%m-%d").date()
 
 
-def month_code(dt):
+def month_code(dt: date) -> str:
     return dt.strftime("%b%y").upper()
 
 
-def maturity_str(dt):
+def maturity_str(dt: date) -> str:
     return dt.strftime("%Y%m%d")
-
-
-def parse_price(field_val):
-    if field_val is None:
-        return None
-    if isinstance(field_val, (int, float)):
-        return float(field_val)
-    if isinstance(field_val, str):
-        cleaned = field_val.lstrip("CHch")
-        try:
-            return float(cleaned)
-        except ValueError:
-            return None
-    return None
 
 
 # ---------------------------------------------------------------------------
 # API interactions
 # ---------------------------------------------------------------------------
 
-def initialize_session():
+def initialize_session() -> None:
     print("[1/9] Initializing session ...")
-    accounts = api_get("/iserver/accounts")
-    acct_list = accounts.get("accounts", [])
-    print(f"       Accounts: {acct_list}")
-    time.sleep(REQUEST_DELAY)
-
-    status = api_get("/iserver/auth/status")
-    print(f"       Auth: authenticated={status.get('authenticated')}, connected={status.get('connected')}")
-    if not status.get("authenticated"):
-        sys.exit("ERROR: Session is not authenticated. Ensure the Client Portal Gateway is running and logged in.")
+    _client_initialize_session()
+    print("       Session authenticated.")
     time.sleep(REQUEST_DELAY)
 
 
-def get_account_id():
-    accounts = api_get("/portfolio/accounts")
-    account_id = accounts[0]["accountId"]
+def get_account_id() -> str:
+    account_id = _client_get_account_id()
     print(f"       Account ID: {account_id}")
     time.sleep(REQUEST_DELAY)
     return account_id
 
 
-def get_spx_price():
+def get_spx_price() -> float:
     print("[2/9] Fetching SPX price ...")
     data = api_get("/iserver/marketdata/history", params={
         "conid": SPX_CONID, "period": "1d", "bar": "1h",
@@ -139,47 +92,45 @@ def get_spx_price():
     bars = data.get("data", [])
     if not bars:
         raise RuntimeError("No historical data returned for SPX")
-    price = bars[-1]["c"]
+    price: float = bars[-1]["c"]
     print(f"       SPX: {price}")
     time.sleep(REQUEST_DELAY)
     return price
 
 
-def get_option_contract(strike, right, expiry_date):
+def get_option_contract_for_expiry(strike: float, right: str, expiry_date: date) -> dict:
+    """Fetch a specific option contract via ibkr_client, deriving month/maturity from expiry_date."""
     month = month_code(expiry_date)
-    target = maturity_str(expiry_date)
-    contracts = api_get("/iserver/secdef/info", params={
-        "conid": SPX_CONID, "sectype": "OPT", "month": month,
-        "exchange": "SMART", "strike": str(strike), "right": right,
-    })
+    maturity = maturity_str(expiry_date)
+    return _client_get_option_contract(
+        underlying_conid=SPX_CONID,
+        strike=strike,
+        right=right,
+        month=month,
+        maturity=maturity,
+        exchange="SMART",
+    )
+
+
+def get_option_prices(conids: list[int]) -> dict[int, dict]:
+    """Get bid/ask/last for multiple conids via ibkr_client.get_market_snapshot.
+
+    Warns if any snapshot data is stale.
+    Returns {conid: {"bid": float|None, "ask": float|None, "last": float|None}}.
+    """
+    snapshots = get_market_snapshot(conids)
     time.sleep(REQUEST_DELAY)
 
-    matched = [c for c in contracts if c.get("maturityDate") == target]
-    if not matched:
-        raise RuntimeError(f"No contract for strike={strike} right={right} maturity={target}")
+    stale = check_staleness(snapshots)
+    if stale:
+        print(f"  WARNING: Stale market data for conids: {stale}")
 
-    spxw = [c for c in matched if c.get("tradingClass") == "SPXW"]
-    return spxw[0] if spxw else matched[0]
-
-
-def get_option_prices(conids):
-    """Get bid/ask/last for multiple conids in one batch (prime + read)."""
-    conid_str = ",".join(str(c) for c in conids)
-    params = {"conids": conid_str, "fields": "31,84,86"}
-
-    api_get("/iserver/marketdata/snapshot", params=params)
-    time.sleep(2.5)
-    data = api_get("/iserver/marketdata/snapshot", params=params)
-    time.sleep(REQUEST_DELAY)
-
-    results = {}
-    for snap in (data if isinstance(data, list) else [data]):
-        cid = snap.get("conid")
+    results: dict[int, dict] = {}
+    for cid, snap_data in snapshots.items():
         results[cid] = {
-            "conid": cid,
-            "last": parse_price(snap.get("31")),
-            "bid": parse_price(snap.get("84")),
-            "ask": parse_price(snap.get("86")),
+            "bid": snap_data.get("bid"),
+            "ask": snap_data.get("ask"),
+            "last": snap_data.get("last"),
         }
     return results
 
@@ -188,15 +139,15 @@ def get_option_prices(conids):
 # Strategy construction
 # ---------------------------------------------------------------------------
 
-def build_strategy(spx_price, expiry_date, ratio=2.0):
+def build_strategy(spx_price: float, expiry_date: date, ratio: float = 2.0) -> dict:
     print("[3/9] Finding ATM strikes ...")
     lower = int(math.floor(spx_price / STRIKE_INCREMENT) * STRIKE_INCREMENT)
     upper = lower + STRIKE_INCREMENT
     print(f"       SPX={spx_price:.2f} -> Short Put @ {lower}, Short Call @ {upper}")
 
     print("[4/9] Fetching ATM option contracts ...")
-    sp_contract = get_option_contract(lower, "P", expiry_date)
-    sc_contract = get_option_contract(upper, "C", expiry_date)
+    sp_contract = get_option_contract_for_expiry(lower, "P", expiry_date)
+    sc_contract = get_option_contract_for_expiry(upper, "C", expiry_date)
     print(f"       Short Put  conid={sp_contract['conid']} ({sp_contract.get('tradingClass', '?')})")
     print(f"       Short Call conid={sc_contract['conid']} ({sc_contract.get('tradingClass', '?')})")
 
@@ -223,8 +174,8 @@ def build_strategy(spx_price, expiry_date, ratio=2.0):
     print(f"       Wing width: {wing_width} -> Long Put @ {lp_strike}, Long Call @ {lc_strike}")
 
     print("[7/9] Fetching wing option contracts ...")
-    lp_contract = get_option_contract(lp_strike, "P", expiry_date)
-    lc_contract = get_option_contract(lc_strike, "C", expiry_date)
+    lp_contract = get_option_contract_for_expiry(lp_strike, "P", expiry_date)
+    lc_contract = get_option_contract_for_expiry(lc_strike, "C", expiry_date)
     print(f"       Long Put  conid={lp_contract['conid']}")
     print(f"       Long Call conid={lc_contract['conid']}")
 
@@ -267,7 +218,7 @@ def build_strategy(spx_price, expiry_date, ratio=2.0):
     }
 
 
-def display_strategy(strategy, quantity):
+def display_strategy(strategy: dict, quantity: int) -> None:
     s = strategy
     print("\n" + "=" * 70)
     print("  SPX IRON BUTTERFLY / CONDOR STRATEGY")
@@ -293,7 +244,7 @@ def display_strategy(strategy, quantity):
     print("=" * 70)
 
 
-def build_order_json(account_id, strategy, quantity):
+def build_order_json(account_id: str, strategy: dict, quantity: int) -> dict:
     """Build the order JSON that submit_order.py can consume."""
     legs = strategy["legs"]
     conidex_parts = []
@@ -329,7 +280,7 @@ def build_order_json(account_id, strategy, quantity):
     }
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Build an SPX Iron Butterfly order and save to JSON for submission."
     )
@@ -362,7 +313,6 @@ def main():
     print(f"\nOrder saved to: {output_file}")
 
     if args.submit:
-        import subprocess
         submit_script = os.path.join(SCRIPT_DIR, "submit_order.py")
         print("\nSubmitting order ...")
         result = subprocess.run([sys.executable, submit_script, output_file, "-y"])

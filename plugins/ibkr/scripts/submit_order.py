@@ -37,84 +37,18 @@ JSON file format:
 }
 """
 
+from __future__ import annotations
+
 import argparse
 import json
-import subprocess
 import sys
 import time
+from typing import Any, Optional
 
-import warnings
-warnings.filterwarnings("ignore")
-
-try:
-    import requests
-    from requests.packages.urllib3.exceptions import InsecureRequestWarning
-    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-except ImportError:
-    print("Installing requests ...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", "requests"])
-    import requests
-    from requests.packages.urllib3.exceptions import InsecureRequestWarning
-    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-
-BASE_URL = "https://localhost:5000/v1/api"
-REQUEST_DELAY = 0.15
+import ibkr_client
 
 
-def api_get(path, params=None, retries=2):
-    url = f"{BASE_URL}{path}"
-    for attempt in range(retries + 1):
-        resp = requests.get(url, params=params, verify=False, timeout=15)
-        if resp.status_code >= 500 and attempt < retries:
-            time.sleep(1)
-            continue
-        resp.raise_for_status()
-        return resp.json()
-
-
-def api_post(path, json_body=None, retries=2):
-    url = f"{BASE_URL}{path}"
-    for attempt in range(retries + 1):
-        resp = requests.post(url, json=json_body, verify=False, timeout=15)
-        if resp.status_code >= 500 and attempt < retries:
-            time.sleep(1)
-            continue
-        resp.raise_for_status()
-        return resp.json()
-
-
-def api_delete(path):
-    url = f"{BASE_URL}{path}"
-    resp = requests.delete(url, verify=False, timeout=15)
-    resp.raise_for_status()
-    return resp.json()
-
-
-def parse_price(field_val):
-    if field_val is None:
-        return None
-    if isinstance(field_val, (int, float)):
-        return float(field_val)
-    if isinstance(field_val, str):
-        cleaned = field_val.lstrip("CHch")
-        try:
-            return float(cleaned)
-        except ValueError:
-            return None
-    return None
-
-
-def initialize_session():
-    print("[1/3] Initializing session ...")
-    api_get("/iserver/accounts")
-    status = api_get("/iserver/auth/status")
-    if not status.get("authenticated"):
-        sys.exit("ERROR: Not authenticated. Ensure the Client Portal Gateway is running and logged in.")
-    print(f"       Authenticated: {status.get('authenticated')}, Connected: {status.get('connected')}")
-    time.sleep(REQUEST_DELAY)
-
-
-def display_order(order_data):
+def display_order(order_data: dict[str, Any]) -> None:
     """Display the order details before submission."""
     print("\n" + "=" * 60)
     print("  ORDER DETAILS")
@@ -160,7 +94,7 @@ def display_order(order_data):
     print("=" * 60)
 
 
-def fetch_live_prices(order_data):
+def fetch_live_prices(order_data: dict[str, Any]) -> None:
     """On dry run, fetch live prices for combo legs and compare to order."""
     meta = order_data.get("metadata", {})
     legs = meta.get("legs", [])
@@ -171,25 +105,14 @@ def fetch_live_prices(order_data):
     if not conids:
         return
 
-    conid_str = ",".join(str(c) for c in conids)
-    params = {"conids": conid_str, "fields": "31,84,86"}
-
     try:
-        api_get("/iserver/marketdata/snapshot", params=params)
-        time.sleep(2.5)
-        data = api_get("/iserver/marketdata/snapshot", params=params)
+        snapshots = ibkr_client.get_market_snapshot(conids)
+        stale_conids = ibkr_client.check_staleness(snapshots)
+        if stale_conids:
+            print(f"\n  [Warning: stale data for conids {stale_conids}]")
     except Exception:
         print("\n  [Could not fetch live prices]")
         return
-
-    live = {}
-    for snap in (data if isinstance(data, list) else [data]):
-        cid = snap.get("conid")
-        live[cid] = {
-            "bid": parse_price(snap.get("84")),
-            "ask": parse_price(snap.get("86")),
-            "last": parse_price(snap.get("31")),
-        }
 
     print(f"\n  {'LIVE PRICES':^56}")
     print(f"  {'-' * 56}")
@@ -197,7 +120,7 @@ def fetch_live_prices(order_data):
     print(f"  {'-' * 56}")
     for leg in legs:
         cid = leg.get("conid")
-        lp = live.get(cid, {})
+        lp = snapshots.get(cid, {})
         saved_bid = f"{leg['bid']:.2f}" if leg.get("bid") is not None else "N/A"
         live_bid = f"{lp['bid']:.2f}" if lp.get("bid") is not None else "N/A"
         live_ask = f"{lp['ask']:.2f}" if lp.get("ask") is not None else "N/A"
@@ -206,56 +129,12 @@ def fetch_live_prices(order_data):
     print(f"  {'-' * 56}")
 
 
-def submit_order(order_data):
-    """Submit the order to IBKR and handle confirmations."""
-    account_id = order_data["account_id"]
-    orders_body = {"orders": order_data["orders"]}
-
-    print(f"\n[2/3] Submitting order to account {account_id} ...")
-    resp = api_post(f"/iserver/account/{account_id}/orders", json_body=orders_body)
-
-    # Handle confirmation chain — IBKR may return multiple confirmation prompts
-    order_id = None
-    max_confirmations = 5
-    for _ in range(max_confirmations):
-        if not isinstance(resp, list) or not resp:
-            break
-
-        first = resp[0]
-
-        # Check if we got an order ID back (success)
-        oid = first.get("order_id") or first.get("orderId")
-        if oid:
-            order_id = oid
-            order_status = first.get("order_status") or first.get("orderStatus")
-            print(f"       Order ID: {order_id}, Status: {order_status}")
-            break
-
-        # Check if it's a confirmation prompt
-        reply_id = first.get("id")
-        if reply_id and first.get("message"):
-            messages = first.get("message", [])
-            for msg in messages:
-                print(f"       Confirm: {msg}")
-            resp = api_post(f"/iserver/reply/{reply_id}", json_body={"confirmed": True})
-            continue
-
-        # Check for error
-        if first.get("error"):
-            print(f"       ERROR: {first['error']}")
-            return None
-
-        break
-
-    return order_id
-
-
-def verify_order(order_id):
+def verify_order(order_id: str) -> None:
     """Check and display the final order status."""
     print(f"\n[3/3] Verifying order {order_id} ...")
     time.sleep(1.5)
     try:
-        status = api_get(f"/iserver/account/order/status/{order_id}")
+        status = ibkr_client.get_order_status(order_id)
         print(f"       Status:      {status.get('order_status', 'N/A')}")
         print(f"       Description: {status.get('order_description_with_contract', status.get('order_description', 'N/A'))}")
         print(f"       Filled:      {status.get('size_and_fills', 'N/A')}")
@@ -270,15 +149,15 @@ def verify_order(order_id):
         print(f"       Could not verify: {e}")
 
 
-def load_from_file(filepath):
+def load_from_file(filepath: str) -> dict[str, Any]:
     """Load order data from a JSON file."""
     with open(filepath) as f:
         return json.load(f)
 
 
-def build_from_args(args):
+def build_from_args(args: argparse.Namespace) -> dict[str, Any]:
     """Build order data from CLI arguments."""
-    order = {
+    order: dict[str, Any] = {
         "orderType": args.order_type,
         "side": args.side,
         "quantity": args.quantity,
@@ -305,7 +184,7 @@ def build_from_args(args):
     }
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Submit any IBKR order (individual or combo) from JSON file or CLI args."
     )
@@ -342,7 +221,10 @@ def main():
         print("\nProvide either a JSON file or all required inline arguments.")
         sys.exit(1)
 
-    initialize_session()
+    print("[1/3] Initializing session ...")
+    status = ibkr_client.initialize_session()
+    print(f"       Authenticated: {status.get('authenticated')}, Connected: {status.get('connected')}")
+
     display_order(order_data)
 
     if args.dry_run:
@@ -356,7 +238,12 @@ def main():
             print("Order cancelled.")
             return
 
-    order_id = submit_order(order_data)
+    account_id = order_data["account_id"]
+    orders_body = {"orders": order_data["orders"]}
+
+    print(f"\n[2/3] Submitting order to account {account_id} ...")
+    order_id = ibkr_client.submit_order(account_id, orders_body)
+
     if order_id:
         verify_order(order_id)
         print("\nDone.")

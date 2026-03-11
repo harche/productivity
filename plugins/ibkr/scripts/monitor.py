@@ -10,59 +10,44 @@ Usage:
     python monitor.py --symbol SPX     # filter by symbol
 """
 
+from __future__ import annotations
+
 import argparse
 import os
-import subprocess
 import sys
 import time
 from datetime import datetime
+from typing import Optional
 
-import warnings
-warnings.filterwarnings("ignore")
-
-try:
-    import requests
-    from requests.packages.urllib3.exceptions import InsecureRequestWarning
-    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-except ImportError:
-    print("Installing requests ...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", "requests"])
-    import requests
-    from requests.packages.urllib3.exceptions import InsecureRequestWarning
-    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-
-BASE_URL = "https://localhost:5000/v1/api"
+from ibkr_client import get_account_id, get_market_snapshot, get_positions, initialize_session, parse_price
 
 
-def api_get(path, params=None, retries=2):
-    url = f"{BASE_URL}{path}"
-    for attempt in range(retries + 1):
-        resp = requests.get(url, params=params, verify=False, timeout=15)
-        if resp.status_code >= 500 and attempt < retries:
-            time.sleep(1)
-            continue
-        resp.raise_for_status()
-        return resp.json()
+def format_currency(value: Optional[float]) -> str:
+    if value is None:
+        return "N/A"
+    return f"${value:,.2f}"
 
 
-def initialize_session():
-    api_get("/iserver/accounts")
-    status = api_get("/iserver/auth/status")
-    if not status.get("authenticated"):
-        sys.exit("ERROR: Not authenticated. Ensure the Client Portal Gateway is running and logged in.")
-    return status
+def format_pnl(value: Optional[float]) -> str:
+    if value is None:
+        return "N/A"
+    sign = "+" if value >= 0 else ""
+    return f"{sign}${value:,.2f}"
 
 
-def get_account_id():
-    accounts = api_get("/portfolio/accounts")
-    return accounts[0]["accountId"]
+def format_pct(value: Optional[float]) -> str:
+    if value is None:
+        return "N/A"
+    sign = "+" if value >= 0 else ""
+    return f"{sign}{value:.2f}%"
 
 
-def get_positions(account_id, symbol_filter=None):
-    positions = []
+def _fetch_all_positions(account_id: str, symbol_filter: Optional[str] = None) -> list[dict]:
+    """Fetch all position pages, optionally filtering by symbol."""
+    positions: list[dict] = []
     page = 0
     while True:
-        page_data = api_get(f"/portfolio/{account_id}/positions/{page}")
+        page_data = get_positions(account_id, page=page)
         if not page_data:
             break
         positions.extend(page_data)
@@ -79,27 +64,48 @@ def get_positions(account_id, symbol_filter=None):
     return positions
 
 
-def format_currency(value):
-    if value is None:
-        return "N/A"
-    return f"${value:,.2f}"
+def _fetch_greeks(positions: list[dict]) -> dict[int, dict]:
+    """Fetch Greeks for option positions via market data snapshot."""
+    opt_conids = [
+        p.get("conid") for p in positions
+        if p.get("assetClass") == "OPT" and p.get("conid") and p.get("position", 0) != 0
+    ]
+    if not opt_conids:
+        return {}
+
+    # Fields: 7308=delta, 7309=gamma, 7310=theta, 7311=vega, 7633=IV
+    snapshots = get_market_snapshot(opt_conids, fields="7308,7309,7310,7311,7633")
+
+    greeks: dict[int, dict] = {}
+    for cid, snap in snapshots.items():
+        greeks[cid] = {
+            "delta": parse_price(snap.get("bid")),   # field mapping differs in snapshot
+            "gamma": parse_price(snap.get("ask")),
+            "theta": parse_price(snap.get("last")),
+            "vega": None,
+            "iv": None,
+        }
+
+    # Re-fetch with raw field access since get_market_snapshot maps to bid/ask/last
+    # We need the raw fields directly
+    conid_str = ",".join(str(c) for c in opt_conids)
+    from ibkr_client import api_get
+    data = api_get("/iserver/marketdata/snapshot", params={"conids": conid_str, "fields": "7308,7309,7310,7311,7633"})
+
+    for snap in (data if isinstance(data, list) else [data]):
+        cid = snap.get("conid")
+        greeks[cid] = {
+            "delta": parse_price(snap.get("7308")),
+            "gamma": parse_price(snap.get("7309")),
+            "theta": parse_price(snap.get("7310")),
+            "vega": parse_price(snap.get("7311")),
+            "iv": snap.get("7633"),
+        }
+
+    return greeks
 
 
-def format_pnl(value):
-    if value is None:
-        return "N/A"
-    sign = "+" if value >= 0 else ""
-    return f"{sign}${value:,.2f}"
-
-
-def format_pct(value):
-    if value is None:
-        return "N/A"
-    sign = "+" if value >= 0 else ""
-    return f"{sign}{value:.2f}%"
-
-
-def display_positions(positions, account_id):
+def display_positions(positions: list[dict], account_id: str, greeks: Optional[dict[int, dict]] = None) -> None:
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"\n{'=' * 90}")
     print(f"  POSITIONS — {account_id}    {now}")
@@ -111,40 +117,52 @@ def display_positions(positions, account_id):
         return
 
     # Group by asset class
-    groups = {}
+    groups: dict[str, list[dict]] = {}
     for p in positions:
         asset = p.get("assetClass", "OTHER")
         groups.setdefault(asset, []).append(p)
 
-    total_mktval = 0
-    total_unrealized = 0
+    total_mktval: float = 0
+    total_unrealized: float = 0
 
     for asset_class in sorted(groups.keys()):
         group = groups[asset_class]
         label = {"OPT": "OPTIONS", "STK": "STOCKS", "FUT": "FUTURES",
                  "CASH": "CASH", "WAR": "WARRANTS", "BOND": "BONDS"}.get(asset_class, asset_class)
         print(f"\n  --- {label} ---")
-        print(f"  {'Description':<36} {'Pos':>6} {'Mkt Price':>10} {'Mkt Value':>12} {'Unrealized':>12} {'% P/L':>8}")
-        print(f"  {'-' * 86}")
+        if greeks:
+            print(f"  {'Description':<36} {'Pos':>6} {'Mkt Price':>10} {'Unrealized':>12} {'Delta':>7} {'Theta':>7} {'IV':>7}")
+            print(f"  {'-' * 88}")
+        else:
+            print(f"  {'Description':<36} {'Pos':>6} {'Mkt Price':>10} {'Mkt Value':>12} {'Unrealized':>12} {'% P/L':>8}")
+            print(f"  {'-' * 86}")
 
         for p in sorted(group, key=lambda x: x.get("ticker", "")):
-            desc = p.get("contractDesc", p.get("ticker", "???"))
+            desc: str = p.get("contractDesc", p.get("ticker", "???"))
             if len(desc) > 35:
                 desc = desc[:32] + "..."
-            pos = p.get("position", 0)
-            mkt_price = p.get("mktPrice", None)
-            mkt_value = p.get("mktValue", None)
-            unrealized = p.get("unrealizedPnl", None)
-            avg_cost = p.get("avgCost", None)
+            pos: float = p.get("position", 0)
+            mkt_price: Optional[float] = p.get("mktPrice", None)
+            mkt_value: Optional[float] = p.get("mktValue", None)
+            unrealized: Optional[float] = p.get("unrealizedPnl", None)
+            avg_cost: Optional[float] = p.get("avgCost", None)
 
-            pct = None
+            pct: Optional[float] = None
             if unrealized is not None and avg_cost is not None and pos != 0:
                 cost_basis = avg_cost * abs(pos)
                 if cost_basis != 0:
                     pct = (unrealized / cost_basis) * 100
 
             price_str = f"{mkt_price:.2f}" if mkt_price is not None else "N/A"
-            print(f"  {desc:<36} {pos:>6.0f} {price_str:>10} {format_currency(mkt_value):>12} {format_pnl(unrealized):>12} {format_pct(pct):>8}")
+            if greeks:
+                cid = p.get("conid")
+                g = greeks.get(cid, {}) if cid else {}
+                delta_s = f"{g['delta']:.3f}" if g.get("delta") is not None else "N/A"
+                theta_s = f"{g['theta']:.3f}" if g.get("theta") is not None else "N/A"
+                iv_s = str(g.get("iv", "N/A"))
+                print(f"  {desc:<36} {pos:>6.0f} {price_str:>10} {format_pnl(unrealized):>12} {delta_s:>7} {theta_s:>7} {iv_s:>7}")
+            else:
+                print(f"  {desc:<36} {pos:>6.0f} {price_str:>10} {format_currency(mkt_value):>12} {format_pnl(unrealized):>12} {format_pct(pct):>8}")
 
             if mkt_value is not None:
                 total_mktval += mkt_value
@@ -157,29 +175,33 @@ def display_positions(positions, account_id):
     print(f"{'=' * 90}")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Monitor IBKR positions with live P/L.")
     parser.add_argument("--symbol", "-s", help="Filter positions by symbol (e.g., SPX, AAPL)")
     parser.add_argument("--watch", "-w", type=int, metavar="SECS",
                         help="Refresh every N seconds (default: one-shot)")
+    parser.add_argument("--greeks", "-g", action="store_true",
+                        help="Show Greeks (delta, theta, IV) for option positions")
     args = parser.parse_args()
 
     initialize_session()
-    account_id = get_account_id()
+    account_id: str = get_account_id()
 
     if args.watch:
         try:
             while True:
                 os.system("clear" if os.name != "nt" else "cls")
-                positions = get_positions(account_id, args.symbol)
-                display_positions(positions, account_id)
+                positions = _fetch_all_positions(account_id, args.symbol)
+                greeks = _fetch_greeks(positions) if args.greeks else None
+                display_positions(positions, account_id, greeks)
                 print(f"\n  Refreshing every {args.watch}s ... (Ctrl+C to stop)")
                 time.sleep(args.watch)
         except KeyboardInterrupt:
             print("\nStopped.")
     else:
-        positions = get_positions(account_id, args.symbol)
-        display_positions(positions, account_id)
+        positions = _fetch_all_positions(account_id, args.symbol)
+        greeks = _fetch_greeks(positions) if args.greeks else None
+        display_positions(positions, account_id, greeks)
 
 
 if __name__ == "__main__":
