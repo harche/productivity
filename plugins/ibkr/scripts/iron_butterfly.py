@@ -365,7 +365,7 @@ def main():
         import subprocess
         submit_script = os.path.join(SCRIPT_DIR, "submit_order.py")
         print("\nSubmitting order ...")
-        result = subprocess.run([sys.executable, submit_script, output_file])
+        result = subprocess.run([sys.executable, submit_script, output_file, "-y"])
         sys.exit(result.returncode)
     else:
         print(f"To submit:  python3 {os.path.join(SCRIPT_DIR, 'submit_order.py')} {output_file}")
