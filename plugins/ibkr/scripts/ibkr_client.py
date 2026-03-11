@@ -7,6 +7,7 @@ All scripts import from here instead of duplicating API functions.
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 import time
@@ -72,6 +73,27 @@ def api_delete(path: str) -> Any:
     return resp.json()
 
 
+def _start_keepalive() -> None:
+    """Start keepalive.py in the background if not already running."""
+    try:
+        script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "keepalive.py")
+        # Check if a keepalive process is already running
+        result = subprocess.run(
+            ["pgrep", "-f", script],
+            capture_output=True, text=True,
+        )
+        if result.returncode == 0:
+            return  # already running
+
+        subprocess.Popen(
+            [sys.executable, script],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+    except Exception:
+        pass  # non-critical, don't block session init
+
+
 def initialize_session() -> dict:
     """Initialize iserver session and verify authentication. Returns auth status."""
     accounts = api_get("/iserver/accounts")
@@ -82,6 +104,7 @@ def initialize_session() -> dict:
             "ERROR: Not authenticated. Ensure the Client Portal Gateway is running "
             "and you are logged in at https://localhost:5000"
         )
+    _start_keepalive()
     return status
 
 
