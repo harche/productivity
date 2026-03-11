@@ -1,7 +1,7 @@
 ---
 name: ibkr
 description: Interact with Interactive Brokers (IBKR) Web API for trading, market data, portfolio management, and account information. Use when the user asks about stocks, options, orders, positions, portfolio, or anything related to their brokerage account.
-allowed-tools: Bash(curl:*),Bash(${CLAUDE_PLUGIN_ROOT}/scripts/*)
+allowed-tools: Bash(curl:*),Bash(python3:*),Bash(${CLAUDE_PLUGIN_ROOT}/scripts/*)
 ---
 
 # IBKR Web API (Client Portal API)
@@ -12,12 +12,22 @@ Interact with Interactive Brokers using the official Client Portal Web API via `
 
 The IBKR Client Portal Gateway must be running locally. This is a Java-based gateway that handles authentication and proxies API requests to IBKR servers.
 
-### Starting the Gateway
+### Auto-Starting the Gateway
+
+**IMPORTANT:** Before making any API calls, check if the gateway is running by calling `curl -sk https://localhost:5000/v1/api/iserver/auth/status`. If the connection is refused or the gateway is not running, automatically start it using `start_gateway.py` before proceeding:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/start_gateway.py
+```
+
+This script searches common locations (`~/ibkr`, `~/clientportal.gw`, etc.), starts the gateway, and waits for port 5000. After starting, the user must log in at `https://localhost:5000` in their browser.
+
+### Manual Start
 
 ```bash
 # Download from: https://www.interactivebrokers.com/en/trading/ib-api.php
 # Unzip and run:
-cd ~/clientportal.gw && bin/run.sh root/conf.yaml
+cd ~/ibkr && bin/run.sh root/conf.yaml
 
 # Then open https://localhost:5000 in a browser to log in
 ```
@@ -122,26 +132,45 @@ Detailed command references:
 
 ## Automation Scripts
 
-Scripts are in the plugin at `scripts/` (relative to the plugin root). They require `requests` (`pip install requests`).
+Scripts are in the plugin at `scripts/` (relative to the plugin root). The `requests` module is auto-installed if missing.
 
 Use `${CLAUDE_PLUGIN_ROOT}/scripts/` to reference scripts at runtime — this resolves to the plugin's root directory automatically.
 
-### 1. Iron Butterfly Builder: `iron_butterfly.py`
+### 0. Gateway Starter: `start_gateway.py`
 
-Builds an SPX iron butterfly order (max_loss = 2x max_profit) and saves it as a JSON file.
+Finds the IBKR Client Portal Gateway on the local machine and starts it.
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py <expiry> [--quantity N] [--output FILE] [--submit]
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/start_gateway.py
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/start_gateway.py --path /custom/path
+```
+
+- Searches `~/ibkr`, `~/clientportal.gw`, `~/clientportal`, `~/ib_gateway`, `~/IBKR`
+- If already running, reports auth status
+- Waits up to 30s for the gateway to start
+- No dependencies (uses stdlib only)
+
+### 1. Iron Butterfly Builder: `iron_butterfly.py`
+
+Builds an SPX iron butterfly order and saves it as a JSON file.
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py <expiry> [--quantity N] [--ratio R] [--output FILE] [--submit]
 ```
 
 - `expiry`: "today", "tomorrow", or YYYY-MM-DD
 - **IMPORTANT**: When the user asks for an iron butterfly with a relative date like "1 day expiry" or "tomorrow", first determine the actual calendar date, then pass it to the script. If today is a Friday, "tomorrow" would be Saturday (no market) — confirm with the user.
+- `--ratio`: Target max_loss/max_profit ratio (default: 2.0). Lower = tighter wings, less capital.
 - `--submit`: immediately pipes the output to `submit_order.py`
 - Output: JSON file (default: `iron_butterfly_<date>.json`)
+- Retries on transient 5xx API errors (up to 2 retries)
 
 ```bash
 # Build order for tomorrow
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py tomorrow
+
+# Build with custom risk/reward ratio
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --ratio 2.0
 
 # Build and immediately submit
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py 2026-03-10 --quantity 2 --submit
@@ -150,12 +179,14 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py 2026-03-10 --quantity 2 
 ### 2. Order Submitter: `submit_order.py`
 
 Generic order submitter — works with **any ticker, any price, individual or combo orders**.
+- Retries on transient 5xx API errors (up to 2 retries)
+- **Dry run shows live prices** alongside saved prices so you can see if the market has moved since the order was built
 
 ```bash
 # From JSON file (output of iron_butterfly.py or any strategy builder)
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/submit_order.py iron_butterfly_2026-03-06.json
 
-# Dry run — show order details without submitting
+# Dry run — show order details AND live price comparison
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/submit_order.py iron_butterfly_2026-03-06.json --dry-run
 
 # Skip confirmation prompt

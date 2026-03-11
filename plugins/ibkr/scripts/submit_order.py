@@ -39,32 +39,48 @@ JSON file format:
 
 import argparse
 import json
+import subprocess
 import sys
 import time
 
 import warnings
 warnings.filterwarnings("ignore")
 
-import requests
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+try:
+    import requests
+    from requests.packages.urllib3.exceptions import InsecureRequestWarning
+    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+except ImportError:
+    print("Installing requests ...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", "requests"])
+    import requests
+    from requests.packages.urllib3.exceptions import InsecureRequestWarning
+    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 BASE_URL = "https://localhost:5000/v1/api"
 REQUEST_DELAY = 0.15
 
 
-def api_get(path, params=None):
+def api_get(path, params=None, retries=2):
     url = f"{BASE_URL}{path}"
-    resp = requests.get(url, params=params, verify=False, timeout=15)
-    resp.raise_for_status()
-    return resp.json()
+    for attempt in range(retries + 1):
+        resp = requests.get(url, params=params, verify=False, timeout=15)
+        if resp.status_code >= 500 and attempt < retries:
+            time.sleep(1)
+            continue
+        resp.raise_for_status()
+        return resp.json()
 
 
-def api_post(path, json_body=None):
+def api_post(path, json_body=None, retries=2):
     url = f"{BASE_URL}{path}"
-    resp = requests.post(url, json=json_body, verify=False, timeout=15)
-    resp.raise_for_status()
-    return resp.json()
+    for attempt in range(retries + 1):
+        resp = requests.post(url, json=json_body, verify=False, timeout=15)
+        if resp.status_code >= 500 and attempt < retries:
+            time.sleep(1)
+            continue
+        resp.raise_for_status()
+        return resp.json()
 
 
 def api_delete(path):
@@ -72,6 +88,20 @@ def api_delete(path):
     resp = requests.delete(url, verify=False, timeout=15)
     resp.raise_for_status()
     return resp.json()
+
+
+def parse_price(field_val):
+    if field_val is None:
+        return None
+    if isinstance(field_val, (int, float)):
+        return float(field_val)
+    if isinstance(field_val, str):
+        cleaned = field_val.lstrip("CHch")
+        try:
+            return float(cleaned)
+        except ValueError:
+            return None
+    return None
 
 
 def initialize_session():
@@ -128,6 +158,52 @@ def display_order(order_data):
                 print(f"    {leg['action']:>4}  {leg.get('strike', ''):>7}  {leg.get('right', ''):>1}  {label}")
 
     print("=" * 60)
+
+
+def fetch_live_prices(order_data):
+    """On dry run, fetch live prices for combo legs and compare to order."""
+    meta = order_data.get("metadata", {})
+    legs = meta.get("legs", [])
+    if not legs:
+        return
+
+    conids = [leg["conid"] for leg in legs if "conid" in leg]
+    if not conids:
+        return
+
+    conid_str = ",".join(str(c) for c in conids)
+    params = {"conids": conid_str, "fields": "31,84,86"}
+
+    try:
+        api_get("/iserver/marketdata/snapshot", params=params)
+        time.sleep(2.5)
+        data = api_get("/iserver/marketdata/snapshot", params=params)
+    except Exception:
+        print("\n  [Could not fetch live prices]")
+        return
+
+    live = {}
+    for snap in (data if isinstance(data, list) else [data]):
+        cid = snap.get("conid")
+        live[cid] = {
+            "bid": parse_price(snap.get("84")),
+            "ask": parse_price(snap.get("86")),
+            "last": parse_price(snap.get("31")),
+        }
+
+    print(f"\n  {'LIVE PRICES':^56}")
+    print(f"  {'-' * 56}")
+    print(f"  {'Leg':<22} {'Saved Bid':>9} {'Live Bid':>9} {'Live Ask':>9}")
+    print(f"  {'-' * 56}")
+    for leg in legs:
+        cid = leg.get("conid")
+        lp = live.get(cid, {})
+        saved_bid = f"{leg['bid']:.2f}" if leg.get("bid") is not None else "N/A"
+        live_bid = f"{lp['bid']:.2f}" if lp.get("bid") is not None else "N/A"
+        live_ask = f"{lp['ask']:.2f}" if lp.get("ask") is not None else "N/A"
+        label = leg.get("label", f"{leg.get('strike')} {leg.get('right')}")
+        print(f"  {label:<22} {saved_bid:>9} {live_bid:>9} {live_ask:>9}")
+    print(f"  {'-' * 56}")
 
 
 def submit_order(order_data):
@@ -270,6 +346,7 @@ def main():
     display_order(order_data)
 
     if args.dry_run:
+        fetch_live_prices(order_data)
         print("\n[DRY RUN] Order not submitted.")
         return
 

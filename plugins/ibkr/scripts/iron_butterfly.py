@@ -17,6 +17,7 @@ import argparse
 import json
 import math
 import os
+import subprocess
 import sys
 import time
 from datetime import datetime, timedelta
@@ -24,9 +25,16 @@ from datetime import datetime, timedelta
 import warnings
 warnings.filterwarnings("ignore")
 
-import requests
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+try:
+    import requests
+    from requests.packages.urllib3.exceptions import InsecureRequestWarning
+    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+except ImportError:
+    print("Installing requests ...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", "requests"])
+    import requests
+    from requests.packages.urllib3.exceptions import InsecureRequestWarning
+    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 BASE_URL = "https://localhost:5000/v1/api"
 SPX_CONID = 416904
@@ -39,18 +47,26 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 # Helpers
 # ---------------------------------------------------------------------------
 
-def api_get(path, params=None):
+def api_get(path, params=None, retries=2):
     url = f"{BASE_URL}{path}"
-    resp = requests.get(url, params=params, verify=False, timeout=15)
-    resp.raise_for_status()
-    return resp.json()
+    for attempt in range(retries + 1):
+        resp = requests.get(url, params=params, verify=False, timeout=15)
+        if resp.status_code >= 500 and attempt < retries:
+            time.sleep(1)
+            continue
+        resp.raise_for_status()
+        return resp.json()
 
 
-def api_post(path, json_body=None):
+def api_post(path, json_body=None, retries=2):
     url = f"{BASE_URL}{path}"
-    resp = requests.post(url, json=json_body, verify=False, timeout=15)
-    resp.raise_for_status()
-    return resp.json()
+    for attempt in range(retries + 1):
+        resp = requests.post(url, json=json_body, verify=False, timeout=15)
+        if resp.status_code >= 500 and attempt < retries:
+            time.sleep(1)
+            continue
+        resp.raise_for_status()
+        return resp.json()
 
 
 def round_to_strike(value):
@@ -172,7 +188,7 @@ def get_option_prices(conids):
 # Strategy construction
 # ---------------------------------------------------------------------------
 
-def build_strategy(spx_price, expiry_date):
+def build_strategy(spx_price, expiry_date, ratio=2.0):
     print("[3/9] Finding ATM strikes ...")
     lower = int(math.floor(spx_price / STRIKE_INCREMENT) * STRIKE_INCREMENT)
     upper = lower + STRIKE_INCREMENT
@@ -196,7 +212,8 @@ def build_strategy(spx_price, expiry_date):
 
     print("[6/9] Calculating wing strikes ...")
     net_credit_shorts = sp_price["bid"] + sc_price["bid"]
-    wing_width = round_to_strike(3.0 * net_credit_shorts)
+    # wing_width = net_credit * (ratio + 1) to achieve max_loss = ratio * max_profit
+    wing_width = round_to_strike((ratio + 1.0) * net_credit_shorts)
     if wing_width < STRIKE_INCREMENT:
         wing_width = STRIKE_INCREMENT
 
@@ -318,6 +335,8 @@ def main():
     )
     parser.add_argument("expiry", help='"today", "tomorrow", or YYYY-MM-DD')
     parser.add_argument("--quantity", type=int, default=1, help="Number of contracts (default: 1)")
+    parser.add_argument("--ratio", type=float, default=2.0,
+                        help="Target max_loss/max_profit ratio (default: 2.0). Lower = tighter wings.")
     parser.add_argument("--output", "-o", default=None,
                         help="Output JSON file path (default: iron_butterfly_<date>.json)")
     parser.add_argument("--submit", action="store_true",
@@ -334,7 +353,7 @@ def main():
     initialize_session()
     account_id = get_account_id()
     spx_price = get_spx_price()
-    strategy = build_strategy(spx_price, expiry_date)
+    strategy = build_strategy(spx_price, expiry_date, ratio=args.ratio)
     display_strategy(strategy, args.quantity)
 
     order_json = build_order_json(account_id, strategy, args.quantity)
