@@ -115,39 +115,50 @@ AND NOT (filter = "Node Green Team" OR filter = "Node Blue Team")
 | Escape Reason | `cf[12321444]` | text field |
 | Special Handling | `cf[12320040]` | `contract-priority` |
 
-## Team Members
+## User Lookup
 
-**Always use the email form** (`"name@redhat.com"`) for `assignee =` queries via PAT. Short Jira IDs (e.g., `pehunt`) silently return zero results.
+To find a team member's Jira username from their display name, use the user search API:
 
-| Name | Assignee (for JQL) |
-|------|--------------------|
-| Abu Kashem | REDACTED |
-| Adrian Reber | REDACTED |
-| Aravindh Puthiyaparambil | REDACTED |
-| Damien Grisonnet | REDACTED |
-| David Vossel | rhn-engineering-dvossel |
-| Fabio Bertinatto | REDACTED |
-| Francesco Giudici | REDACTED |
-| Francesco Romani | REDACTED |
-| Gal Ben Haim | REDACTED |
-| Giuseppe Scrivano | REDACTED |
-| Harshal Patil | harpatil@redhat.com |
-| Jindrich Novy | REDACTED |
-| Jiri Mencak | REDACTED |
-| Joel Smith | joelsmith.redhat |
-| Kirill Kolyshkin | REDACTED |
-| Martin Sivak | REDACTED |
-| Michael Burke | REDACTED |
-| Min Li | REDACTED |
-| Mrunal Patel | REDACTED |
-| Peter Hunt | REDACTED |
-| Piotr Aleszczyk | REDACTED |
-| Qi Wang | REDACTED |
-| Ryan Phillips | REDACTED |
-| Sascha Grunert | JIRAUSER156599 |
-| Sohan Kunkerkar | REDACTED |
-| Swati Sehgal | REDACTED |
-| Vadim Rutkovsky | REDACTED |
+```bash
+JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w 2>/dev/null || secret-tool lookup service jira key JIRA_API_TOKEN) && \
+curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" \
+  "https://issues.redhat.com/rest/api/2/user/search?username=First+Last" \
+  | python3 -c "
+import sys, json
+for u in json.load(sys.stdin):
+    print(f'{u[\"displayName\"]:<30} {u[\"name\"]}')"
+```
+
+Use the `name` field from the result in `assignee =` JQL clauses.
+
+To list all current Node team assignees (derived from the base filter):
+
+```bash
+JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w 2>/dev/null || secret-tool lookup service jira key JIRA_API_TOKEN) && \
+curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" \
+  "https://issues.redhat.com/rest/api/2/search" \
+  --data-urlencode "jql=(filter = \"Node Components\" AND (project = OCPBUGS OR project = RHOCPPRIO) AND issueType in (Bug, Task, Vulnerability, Weakness) OR project = OCPNODE AND issueType = Bug) AND status not in (Obsolete, \"Won't Fix / Obsolete\") AND status not in (Done, CLOSED, Obsolete, \"Won't Fix / Obsolete\", Verified) AND assignee is not EMPTY" \
+  --data-urlencode "maxResults=200" \
+  --data-urlencode "fields=assignee" \
+  -G | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+seen = {}
+for issue in data['issues']:
+    a = issue['fields'].get('assignee')
+    if a and a['name'] not in seen:
+        seen[a['name']] = a['displayName']
+for name, display in sorted(seen.items(), key=lambda x: x[1]):
+    print(f'{display:<30} {name}')"
+```
+
+To find your own Jira username:
+
+```bash
+JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w 2>/dev/null || secret-tool lookup service jira key JIRA_API_TOKEN) && \
+curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" \
+  "https://issues.redhat.com/rest/auth/1/session" | python3 -c "import sys,json; print(json.load(sys.stdin)['name'])"
+```
 
 ## Example Queries
 

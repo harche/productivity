@@ -162,6 +162,21 @@ curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" \
   -d '"username@redhat.com"'
 ```
 
+## User Search
+
+Resolve a display name to a Jira username (for use in `assignee =` JQL clauses):
+
+```bash
+curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" \
+  "https://issues.redhat.com/rest/api/2/user/search?username=First+Last" \
+  | python3 -c "
+import sys, json
+for u in json.load(sys.stdin):
+    print(f'{u[\"displayName\"]:<30} {u[\"name\"]}')"
+```
+
+The `name` field is the Jira username. Use it in JQL: `assignee = "username"`.
+
 ## JQL Search
 
 ```bash
