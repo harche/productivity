@@ -225,6 +225,27 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/monitor.py -s SPX -w 15
 - Displays portfolio totals
 - `--watch` mode clears screen and refreshes on interval
 
+### 4. Auto-Close: `auto_close.py`
+
+Monitors a position and automatically closes it at a profit target or stop-loss.
+
+```bash
+# Close at 50% of max profit
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/auto_close.py iron_butterfly_2026-03-11.json --profit-target 50
+
+# Close at 80% of max loss
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/auto_close.py iron_butterfly_2026-03-11.json --stop-loss 80
+
+# Both, checking every 30 seconds
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/auto_close.py iron_butterfly_2026-03-11.json --profit-target 50 --stop-loss 80 --poll 30
+```
+
+- Takes the same JSON file output by `iron_butterfly.py` (needs `metadata.legs`, `max_profit`, `max_loss`)
+- When target is hit, checks if the combo has valid asks on all legs
+  - **If yes:** closes the full combo as a single MKT order
+  - **If no** (e.g., long wings worthless late in 0DTE): closes only the short legs individually
+- `--poll` controls check interval (default: 60s)
+
 ### JSON Order Format
 
 Strategy builders output JSON in this format, consumed by `submit_order.py`:
