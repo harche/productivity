@@ -165,23 +165,26 @@ class TestHandleOrderResponse:
 
 class TestSubmitComboClose:
     @patch("auto_close.api_post")
-    def test_submits_sell_order(self, mock_post, sample_order_data):
+    def test_submits_limit_sell_order(self, mock_post, sample_order_data):
         mock_post.return_value = [{"order_id": "99999", "order_status": "Filled"}]
+        combo_quote = {"bid": 1.50, "ask": 2.00}
 
-        oid = ac.submit_combo_close("DUXXXXXXX", sample_order_data, 1)
+        oid = ac.submit_combo_close("DUXXXXXXX", sample_order_data, 1, combo_quote)
 
         assert oid == "99999"
         call_args = mock_post.call_args
         order_body = call_args[1]["json_body"]
         assert order_body["orders"][0]["side"] == "SELL"
-        assert order_body["orders"][0]["orderType"] == "MKT"
+        assert order_body["orders"][0]["orderType"] == "LMT"
+        assert order_body["orders"][0]["price"] == 2.00
         assert order_body["orders"][0]["quantity"] == 1
 
     @patch("auto_close.api_post")
     def test_passes_quantity(self, mock_post, sample_order_data):
         mock_post.return_value = [{"order_id": "99999", "order_status": "Filled"}]
+        combo_quote = {"bid": 1.50, "ask": 2.00}
 
-        ac.submit_combo_close("DUXXXXXXX", sample_order_data, 3)
+        ac.submit_combo_close("DUXXXXXXX", sample_order_data, 3, combo_quote)
 
         order_body = mock_post.call_args[1]["json_body"]
         assert order_body["orders"][0]["quantity"] == 3
@@ -193,29 +196,34 @@ class TestSubmitComboClose:
 
 class TestSubmitShortLegsClose:
     @patch("auto_close.api_post")
-    def test_closes_only_short_legs(self, mock_post, sample_order_data):
+    def test_closes_only_short_legs_at_limit(self, mock_post, sample_order_data):
         mock_post.return_value = [{"order_id": "11111", "order_status": "Filled"}]
         legs = sample_order_data["metadata"]["legs"]
+        prices = {
+            851292423: {"bid": 20.0, "ask": 20.2},
+            852416651: {"bid": 21.0, "ask": 21.2},
+        }
 
-        oids = ac.submit_short_legs_close("DUXXXXXXX", legs, 1)
+        oids = ac.submit_short_legs_close("DUXXXXXXX", legs, 1, prices)
 
         # Should only close 2 short legs (SELL legs)
         assert len(oids) == 2
-        # Each call should be a BUY (to close the short)
+        # Each call should be a BUY LMT (to close the short)
         for c in mock_post.call_args_list:
             order = c[1]["json_body"]["orders"][0]
             assert order["side"] == "BUY"
-            assert order["orderType"] == "MKT"
+            assert order["orderType"] == "LMT"
+            assert order["price"] is not None
 
     @patch("auto_close.api_post")
     def test_parallel_execution(self, mock_post, sample_order_data):
         """Short legs should close in parallel (ThreadPoolExecutor)."""
         mock_post.return_value = [{"order_id": "11111", "order_status": "Filled"}]
         legs = sample_order_data["metadata"]["legs"]
+        prices = {851292423: {"bid": 20.0, "ask": 20.2}, 852416651: {"bid": 21.0, "ask": 21.2}}
 
-        oids = ac.submit_short_legs_close("DUXXXXXXX", legs, 1)
+        oids = ac.submit_short_legs_close("DUXXXXXXX", legs, 1, prices)
 
-        # Both short legs should have orders submitted
         assert len(oids) == 2
         assert mock_post.call_count == 2
 
@@ -227,8 +235,9 @@ class TestSubmitShortLegsClose:
             [{"error": "Failed"}],
         ]
         legs = sample_order_data["metadata"]["legs"]
+        prices = {851292423: {"bid": 20.0, "ask": 20.2}, 852416651: {"bid": 21.0, "ask": 21.2}}
 
-        oids = ac.submit_short_legs_close("DUXXXXXXX", legs, 1)
+        oids = ac.submit_short_legs_close("DUXXXXXXX", legs, 1, prices)
 
         assert len(oids) == 1
         assert oids[0] == "11111"

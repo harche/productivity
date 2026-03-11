@@ -118,6 +118,7 @@ Detailed command references:
 
 ## Important
 
+- **NEVER use market orders (MKT) for options, especially 0DTE. ALWAYS use limit orders (LMT).** Market orders on options can fill at terrible prices due to wide spreads. Match the ask price to ensure a fill with price protection. The user can always adjust the limit if needed.
 - **Always confirm with the user before placing, modifying, or cancelling orders.**
 - **ALWAYS call `/iserver/accounts` FIRST before any market data or trading calls.** Without this, market data snapshots return empty field values. This is non-negotiable.
 - **Use `/iserver/marketdata/snapshot` for market data** (NOT `/md/snapshot`). The `/md/snapshot` endpoint may not return field values reliably.

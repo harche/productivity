@@ -156,45 +156,49 @@ def get_combo_quote(conidex):
     }
 
 
-def submit_combo_close(account_id, order_data, quantity):
-    """Close the full combo order."""
+def submit_combo_close(account_id, order_data, quantity, combo_quote):
+    """Close the full combo order at limit (match the ask to ensure fill)."""
     original_order = order_data["orders"][0]
     conidex = original_order["conidex"]
+    limit_price = combo_quote.get("ask")
 
-    # Reverse: original was BUY (to open a credit spread), close is SELL
     close_order = {
         "orders": [{
             "conidex": conidex,
-            "orderType": "MKT",
+            "orderType": "LMT",
             "side": "SELL",
+            "price": limit_price,
             "quantity": quantity,
             "tif": "DAY",
         }]
     }
 
-    print(f"  Submitting COMBO close (SELL {quantity}x full combo at MKT) ...")
+    print(f"  Submitting COMBO close (SELL {quantity}x full combo LMT @ {limit_price}) ...")
     resp = api_post(f"/iserver/account/{account_id}/orders", json_body=close_order)
     return handle_order_response(resp)
 
 
-def submit_short_legs_close(account_id, legs, quantity):
-    """Close only the short legs in parallel at market."""
+def submit_short_legs_close(account_id, legs, quantity, prices):
+    """Close only the short legs in parallel at limit (match the ask)."""
     import concurrent.futures
 
     short_legs = [leg for leg in legs if leg["action"] == "SELL"]
 
     def close_leg(leg):
+        cid = leg["conid"]
+        ask = prices.get(cid, {}).get("ask")
         order = {
             "orders": [{
-                "conid": leg["conid"],
-                "orderType": "MKT",
+                "conid": cid,
+                "orderType": "LMT",
                 "side": "BUY",
+                "price": ask,
                 "quantity": quantity,
                 "tif": "DAY",
             }]
         }
         label = f"{leg.get('strike', '?')} {leg.get('right', '?')}"
-        print(f"  Closing short leg: BUY {quantity}x {label} (conid {leg['conid']}) at MKT ...")
+        print(f"  Closing short leg: BUY {quantity}x {label} (conid {cid}) LMT @ {ask} ...")
         resp = api_post(f"/iserver/account/{account_id}/orders", json_body=order)
         return handle_order_response(resp)
 
@@ -332,17 +336,17 @@ def main():
 
                 has_ask = combo_quote and combo_quote.get("ask") is not None
                 if has_ask:
-                    print(f"  Combo bid={combo_quote.get('bid')} ask={combo_quote.get('ask')} — closing full combo.")
-                    oid = submit_combo_close(account_id, order_data, quantity)
+                    print(f"  Combo bid={combo_quote.get('bid')} ask={combo_quote.get('ask')} — closing full combo at LMT.")
+                    oid = submit_combo_close(account_id, order_data, quantity, combo_quote)
                     if oid:
                         print(f"\n  Full combo close submitted (Order ID: {oid}).")
                     else:
                         print("\n  Combo close failed. Falling back to short legs only.")
-                        oids = submit_short_legs_close(account_id, legs, quantity)
+                        oids = submit_short_legs_close(account_id, legs, quantity, prices)
                         print(f"\n  Short legs closed ({len(oids)} orders).")
                 else:
-                    print("  Combo has no ask — closing short legs only (in parallel).")
-                    oids = submit_short_legs_close(account_id, legs, quantity)
+                    print("  Combo has no ask — closing short legs only at LMT (in parallel).")
+                    oids = submit_short_legs_close(account_id, legs, quantity, prices)
                     print(f"\n  Short legs closed ({len(oids)} orders).")
 
                 print("  Auto-close complete.")
