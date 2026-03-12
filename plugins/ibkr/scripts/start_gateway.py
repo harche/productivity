@@ -26,7 +26,7 @@ SEARCH_PATHS = [
 ]
 
 PORT = 5000
-STARTUP_TIMEOUT = 30
+STARTUP_TIMEOUT = 60
 
 
 def find_gateway():
@@ -105,10 +105,10 @@ def main():
     conf = os.path.join(gw_path, "root", "conf.yaml")
     print(f"Found gateway at: {gw_path}")
 
-    # Start gateway
+    # Start gateway (must use relative paths — run.sh prepends ../ to config_file)
     print("Starting gateway ...")
     subprocess.Popen(
-        [run_sh, conf],
+        ["bin/run.sh", "root/conf.yaml"],
         cwd=gw_path,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,

@@ -20,48 +20,53 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 from typing import Optional
 
 from ibkr_client import initialize_session, submit_order
 
 
 def submit_profit_order(
-    account_id: str, conidex: str, quantity: int, limit_price: float
+    account_id: str, conidex: str, quantity: int, limit_price: float,
+    oca_group: Optional[str] = None,
 ) -> Optional[str]:
     """Submit a standing limit order for profit target."""
-    order: dict = {
-        "orders": [{
-            "conidex": conidex,
-            "orderType": "LMT",
-            "side": "SELL",
-            "price": limit_price,
-            "quantity": quantity,
-            "tif": "DAY",
-        }]
+    order_fields: dict = {
+        "conidex": conidex,
+        "orderType": "LMT",
+        "side": "SELL",
+        "price": limit_price,
+        "quantity": quantity,
+        "tif": "DAY",
     }
+    if oca_group:
+        order_fields["ocaGroup"] = oca_group
+        order_fields["ocaType"] = 1  # 1 = cancel remaining on fill
 
     print(f"  Submitting PROFIT TARGET: SELL {quantity}x combo LMT @ {limit_price:.2f} ...")
-    return submit_order(account_id, order)
+    return submit_order(account_id, {"orders": [order_fields]})
 
 
 def submit_stop_loss_order(
-    account_id: str, conidex: str, quantity: int, stop_price: float, limit_price: float
+    account_id: str, conidex: str, quantity: int, stop_price: float, limit_price: float,
+    oca_group: Optional[str] = None,
 ) -> Optional[str]:
     """Submit a stop-limit order for stop-loss. Triggers at stop_price, fills at limit_price."""
-    order: dict = {
-        "orders": [{
-            "conidex": conidex,
-            "orderType": "STP LMT",
-            "side": "SELL",
-            "price": limit_price,
-            "auxPrice": stop_price,
-            "quantity": quantity,
-            "tif": "DAY",
-        }]
+    order_fields: dict = {
+        "conidex": conidex,
+        "orderType": "STP LMT",
+        "side": "SELL",
+        "price": limit_price,
+        "auxPrice": stop_price,
+        "quantity": quantity,
+        "tif": "DAY",
     }
+    if oca_group:
+        order_fields["ocaGroup"] = oca_group
+        order_fields["ocaType"] = 1  # 1 = cancel remaining on fill
 
     print(f"  Submitting STOP LOSS: SELL {quantity}x combo STP LMT stop={stop_price:.2f} limit={limit_price:.2f} ...")
-    return submit_order(account_id, order)
+    return submit_order(account_id, {"orders": [order_fields]})
 
 
 def main() -> None:
@@ -105,6 +110,13 @@ def main() -> None:
 
     initialize_session()
 
+    # Generate OCA group name when both profit and stop-loss are specified
+    oca_group: Optional[str] = None
+    if args.profit is not None and args.stop_loss is not None:
+        oca_group = f"oca_{meta.get('symbol', 'combo')}_{int(time.time())}"
+        print(f"  OCA Group:     {oca_group} (one cancels the other)")
+        print()
+
     orders_submitted: list[tuple[str, str]] = []
 
     if args.profit is not None:
@@ -113,7 +125,7 @@ def main() -> None:
         close_price = round(close_price, 2)
         print(f"  Profit target: ${args.profit:,.2f}")
         print(f"  Close price:   {close_price:.2f} (net_credit {net_credit} - {args.profit/100/quantity:.2f})")
-        oid = submit_profit_order(account_id, conidex, quantity, -close_price)
+        oid = submit_profit_order(account_id, conidex, quantity, -close_price, oca_group=oca_group)
         if oid:
             orders_submitted.append(("Profit target (LMT)", oid))
         print()
@@ -127,7 +139,7 @@ def main() -> None:
         print(f"  Stop loss:     ${args.stop_loss:,.2f}")
         print(f"  Stop price:    {stop_price:.2f} (triggers when cost to close hits this)")
         print(f"  Limit price:   {limit_price:.2f} (stop + {args.stop_buffer:.2f} buffer)")
-        oid = submit_stop_loss_order(account_id, conidex, quantity, -stop_price, -limit_price)
+        oid = submit_stop_loss_order(account_id, conidex, quantity, -stop_price, -limit_price, oca_group=oca_group)
         if oid:
             orders_submitted.append(("Stop loss (STP LMT)", oid))
         print()
@@ -136,6 +148,9 @@ def main() -> None:
         print("Standing orders submitted:")
         for label, oid in orders_submitted:
             print(f"  {label}: Order ID {oid}")
+        if oca_group:
+            print(f"\n  OCA Group: {oca_group}")
+            print("  When one fills, IBKR will automatically cancel the other.")
         print("\nIBKR will execute automatically when the price hits. Done.")
     else:
         print("No orders submitted.")
