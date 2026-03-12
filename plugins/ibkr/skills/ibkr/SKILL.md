@@ -191,7 +191,6 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py <expiry> [--quantity N] 
 - `--ratio`: Target max_loss/max_profit ratio (default: 2.0). Lower = tighter wings, less capital.
 - `--submit`: immediately pipes the output to `submit_order.py`
 - `--bracket PROFIT STOP_LOSS`: Attach bracket orders (profit target + stop-loss in dollars). IBKR submits all 3 as a group — children activate after the parent fills, and are OCA-linked so one cancels the other.
-- `--stop-buffer`: Buffer between stop trigger and limit fill price (default: 2.0)
 - Output: JSON file (default: `iron_butterfly_<date>.json`)
 - Retries on transient 5xx API errors (up to 2 retries)
 
@@ -302,8 +301,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/auto_close.py iron_butterfly_2026-03-11.js
 
 - Takes the same JSON file output by `iron_butterfly.py` (needs `metadata.net_credit`)
 - **Profit target:** standing LMT order at `net_credit - (target$ / 100 / qty)`
-- **Stop-loss:** STP LMT order — triggers at `net_credit + (loss$ / 100 / qty)`, fills at stop + buffer
-- `--stop-buffer` controls the gap between stop trigger and limit fill (default: $2.00/spread)
+- **Stop-loss:** STP order — becomes market order when `net_credit + (loss$ / 100 / qty)` is hit
 - IBKR handles execution — no polling needed
 
 ### 5. Cancel Orders: `cancel_order.py`

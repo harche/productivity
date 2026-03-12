@@ -282,7 +282,7 @@ def build_order_json(account_id: str, strategy: dict, quantity: int) -> dict:
 
 def _submit_bracket(
     account_id: str, strategy: dict, quantity: int,
-    bracket_profit: float, bracket_stop: float, stop_buffer: float,
+    bracket_profit: float, bracket_stop: float,
 ) -> None:
     """Submit entry order, then attach OCA-linked profit target + stop-loss.
 
@@ -326,11 +326,10 @@ def _submit_bracket(
 
     # Step 3: Submit stop-loss with same OCA group
     stop_price = round(net_credit + (bracket_stop / 100.0 / quantity), 2)
-    stop_limit = round(stop_price + stop_buffer, 2)
-    print(f"  [3/3] Submitting stop-loss: SELL combo STP LMT stop={-stop_price} limit={-stop_limit} (OCA: {oca_group}) ...")
+    print(f"  [3/3] Submitting stop-loss: SELL combo STP @ {-stop_price} (OCA: {oca_group}) ...")
     stop_body = {"orders": [{
-        "conidex": conidex, "orderType": "STP LMT", "side": "SELL",
-        "price": round(-stop_limit, 2), "auxPrice": round(-stop_price, 2),
+        "conidex": conidex, "orderType": "STP", "side": "SELL",
+        "auxPrice": round(-stop_price, 2),
         "quantity": quantity, "tif": "DAY",
         "ocaGroup": oca_group, "ocaType": 1,
     }]}
@@ -359,8 +358,6 @@ def main() -> None:
                         help="Immediately submit the order via submit_order.py after building")
     parser.add_argument("--bracket", nargs=2, type=float, metavar=("PROFIT", "STOP_LOSS"),
                         help="Submit entry + bracket orders: profit target and stop-loss in dollars (e.g., --bracket 2000 4000). Implies --submit.")
-    parser.add_argument("--stop-buffer", type=float, default=2.0,
-                        help="Buffer between stop trigger and limit fill price (default: 2.0)")
     args = parser.parse_args()
 
     expiry_date = parse_expiry(args.expiry)
@@ -386,7 +383,7 @@ def main() -> None:
         bracket_profit = args.bracket[0]
         bracket_stop = args.bracket[1]
         print(f"\n  Bracket mode: entry + profit target (${bracket_profit:,.0f}) + stop-loss (${bracket_stop:,.0f})")
-        _submit_bracket(account_id, strategy, args.quantity, bracket_profit, bracket_stop, args.stop_buffer)
+        _submit_bracket(account_id, strategy, args.quantity, bracket_profit, bracket_stop)
     elif args.submit:
         submit_script = os.path.join(SCRIPT_DIR, "submit_order.py")
         print("\nSubmitting order ...")
