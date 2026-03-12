@@ -35,19 +35,18 @@ class TestSubmitStopLossOrder:
     def test_submits_stop_limit(self, mock_post: MagicMock) -> None:
         mock_post.return_value = [{"order_id": "88888", "order_status": "PreSubmitted"}]
 
-        oid = ac.submit_stop_loss_order("DUXXXXXXX", "416904;;;111/1,222/-1", 1, -36.70, -38.70)
+        oid = ac.submit_stop_loss_order("DUXXXXXXX", "416904;;;111/1,222/-1", 1, -36.70)
 
         assert oid == "88888"
         order_body = mock_post.call_args[1]["json_body"]
-        assert order_body["orders"][0]["orderType"] == "STP LMT"
-        assert order_body["orders"][0]["auxPrice"] == -36.70
-        assert order_body["orders"][0]["price"] == -38.70
+        assert order_body["orders"][0]["orderType"] == "LMT"
+        assert order_body["orders"][0]["price"] == -36.70
 
     @patch("ibkr_client.api_post")
     def test_passes_quantity(self, mock_post: MagicMock) -> None:
         mock_post.return_value = [{"order_id": "88888", "order_status": "PreSubmitted"}]
 
-        ac.submit_stop_loss_order("DUXXXXXXX", "416904;;;111/1,222/-1", 2, -36.70, -38.70)
+        ac.submit_stop_loss_order("DUXXXXXXX", "416904;;;111/1,222/-1", 2, -36.70)
 
         order_body = mock_post.call_args[1]["json_body"]
         assert order_body["orders"][0]["quantity"] == 2
@@ -56,7 +55,7 @@ class TestSubmitStopLossOrder:
     def test_uses_day_tif(self, mock_post: MagicMock) -> None:
         mock_post.return_value = [{"order_id": "88888", "order_status": "PreSubmitted"}]
 
-        ac.submit_stop_loss_order("DUXXXXXXX", "416904;;;111/1,222/-1", 1, -36.70, -38.70)
+        ac.submit_stop_loss_order("DUXXXXXXX", "416904;;;111/1,222/-1", 1, -36.70)
 
         order_body = mock_post.call_args[1]["json_body"]
         assert order_body["orders"][0]["tif"] == "DAY"
