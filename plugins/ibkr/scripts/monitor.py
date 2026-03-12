@@ -65,14 +65,41 @@ def _fetch_all_positions(account_id: str, symbol_filter: Optional[str] = None) -
 
 
 def _refresh_prices(positions: list[dict]) -> None:
-    """Fetch live market data snapshots and update position prices in-place.
+    """Fetch live market data snapshots and update prices for single-leg positions.
 
     The /portfolio/positions endpoint returns cached prices that can be minutes
-    old. This function primes /iserver/marketdata/snapshot, waits for fresh
-    data, and overwrites mktPrice/mktValue/unrealizedPnl on each active
-    position so the monitor always shows real-time numbers.
+    old. This function fetches fresh data from /iserver/marketdata/snapshot and
+    updates mktPrice/mktValue/unrealizedPnl in-place.
+
+    Only single-leg positions (stocks, individual options) are refreshed.
+    Combo/multi-leg positions (e.g. iron butterflies) are left unchanged
+    because individual leg prices don't reflect the actual combo market —
+    IBKR's portfolio P/L is more accurate for those.
     """
-    active = [p for p in positions if p.get("position", 0) != 0 and p.get("conid")]
+    # Only refresh single-leg positions (STK, individual OPT, FUT, etc.)
+    # Detect combo legs: if multiple positions share the same ticker and
+    # asset class OPT with the same expiry, they're likely part of a combo.
+    # A simpler heuristic: count how many OPT positions exist per ticker.
+    # If a ticker has >1 OPT position with non-zero qty, treat all its
+    # options as combo legs and skip them.
+    from collections import Counter
+    opt_ticker_counts: Counter[str] = Counter()
+    for p in positions:
+        if p.get("assetClass") == "OPT" and p.get("position", 0) != 0:
+            ticker = p.get("ticker", "")
+            opt_ticker_counts[ticker] += 1
+
+    combo_tickers = {t for t, c in opt_ticker_counts.items() if c > 1}
+
+    active = []
+    for p in positions:
+        if p.get("position", 0) == 0 or not p.get("conid"):
+            continue
+        # Skip combo legs
+        if p.get("assetClass") == "OPT" and p.get("ticker", "") in combo_tickers:
+            continue
+        active.append(p)
+
     if not active:
         return
 
