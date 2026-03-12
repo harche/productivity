@@ -235,6 +235,28 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/submit_order.py --account DUXXXXXXX \
     --side BUY --quantity 1 --order-type LMT --price -35.00 --tif DAY
 ```
 
+### 2b. Close Position: `close_position.py`
+
+Closes a combo position and cancels related standing orders (profit target, stop-loss). Fetches live prices, calculates the correct close price with buffer, and submits.
+
+```bash
+# Close position from order file (fetches live prices, calculates close price)
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/close_position.py iron_butterfly_2026-03-12.json
+
+# With larger buffer for faster fill
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/close_position.py iron_butterfly_2026-03-12.json --buffer 1.0
+
+# Skip confirmation
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/close_position.py iron_butterfly_2026-03-12.json -y
+```
+
+- Reads leg data from the JSON file to calculate close cost
+- Fetches live bid/ask for each leg
+- Uses ask for legs being bought back, bid for legs being sold
+- Adds configurable buffer (default: $0.50) for fill certainty
+- Submits reverse combo limit order
+- Automatically cancels any standing orders on the same combo (profit target, stop-loss)
+
 ### 3. Position Monitor: `monitor.py`
 
 Displays all open positions with live P/L, market value, and price data.
