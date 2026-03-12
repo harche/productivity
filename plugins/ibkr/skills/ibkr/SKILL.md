@@ -190,7 +190,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py <expiry> [--quantity N] 
 - **IMPORTANT**: When the user asks for an iron butterfly with a relative date like "1 day expiry" or "tomorrow", first determine the actual calendar date, then pass it to the script. If today is a Friday, "tomorrow" would be Saturday (no market) — confirm with the user.
 - `--ratio`: Target max_loss/max_profit ratio (default: 2.0). Lower = tighter wings, less capital.
 - `--submit`: immediately pipes the output to `submit_order.py`
-- `--bracket PROFIT STOP_LOSS`: Attach bracket orders (profit target + stop-loss in dollars). IBKR submits all 3 as a group — children activate after the parent fills, and are OCA-linked so one cancels the other.
+- `--bracket PROFIT STOP_LOSS`: Attach bracket orders (profit target + stop-loss in dollars). Requires `--submit`. Submits entry first, waits for fill, then submits OCA-linked profit target (LMT) and stop-loss (STP LMT) on the combo. One exit cancels the other on fill. If the stop-loss combo can't fill, use `close_position.py` which falls back to closing individual legs at market.
 - Output: JSON file (default: `iron_butterfly_<date>.json`)
 - Retries on transient 5xx API errors (up to 2 retries)
 

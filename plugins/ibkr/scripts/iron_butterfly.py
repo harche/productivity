@@ -311,7 +311,21 @@ def _submit_bracket(
 
     # Wait for fill
     print(f"  Waiting for entry fill (order {entry_oid}) ...")
-    time.sleep(3)
+    from ibkr_client import get_order_status
+    for _ in range(20):
+        time.sleep(2)
+        try:
+            status = get_order_status(entry_oid)
+            order_status = status.get("order_status", "").lower()
+            fills = status.get("size_and_fills", "")
+            if order_status == "filled":
+                print(f"  Entry filled! ({fills})")
+                break
+            print(f"  ... {order_status} ({fills})")
+        except Exception:
+            pass
+    else:
+        print("  Entry not filled after 40s. Submitting exit orders anyway.")
 
     # Step 2: Submit profit target with OCA group
     close_price = round(net_credit - (bracket_profit / 100.0 / quantity), 2)
@@ -324,12 +338,13 @@ def _submit_bracket(
     }]}
     profit_oid = submit_order(account_id, profit_body)
 
-    # Step 3: Submit stop-loss with same OCA group (LMT — IBKR doesn't support STP on combos)
+    # Step 3: Submit stop-loss with same OCA group (STP LMT on combo)
     stop_price = round(net_credit + (bracket_stop / 100.0 / quantity), 2)
-    print(f"  [3/3] Submitting stop-loss: SELL combo LMT @ {-stop_price} (OCA: {oca_group}) ...")
+    stop_limit = round(stop_price + 2, 2)
+    print(f"  [3/3] Submitting stop-loss: SELL combo STP LMT stop={-stop_price} limit={-stop_limit} (OCA: {oca_group}) ...")
     stop_body = {"orders": [{
-        "conidex": conidex, "orderType": "LMT", "side": "SELL",
-        "price": round(-stop_price, 2),
+        "conidex": conidex, "orderType": "STP LMT", "side": "SELL",
+        "auxPrice": round(-stop_price, 2), "price": round(-stop_limit, 2),
         "quantity": quantity, "tif": "DAY",
         "ocaGroup": oca_group, "ocaType": 1,
     }]}
