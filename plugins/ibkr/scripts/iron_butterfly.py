@@ -280,6 +280,71 @@ def build_order_json(account_id: str, strategy: dict, quantity: int) -> dict:
     }
 
 
+def _submit_bracket(
+    account_id: str, strategy: dict, quantity: int,
+    bracket_profit: float, bracket_stop: float, stop_buffer: float,
+) -> None:
+    """Submit entry order, then attach OCA-linked profit target + stop-loss.
+
+    Submits the entry first, waits for fill, then submits profit target and
+    stop-loss with a shared OCA group so one cancels the other on fill.
+    """
+    from ibkr_client import submit_order
+
+    legs = strategy["legs"]
+    conidex_parts = [f"{leg['conid']}/{1 if leg['action'] == 'BUY' else -1}" for leg in legs]
+    conidex = f"{SPX_CONID};;;{','.join(conidex_parts)}"
+    net_credit = strategy["net_credit"]
+    oca_group = f"oca_SPX_{int(time.time())}"
+
+    # Step 1: Submit entry order
+    entry_price = round(-net_credit, 2)
+    print(f"\n  [1/3] Submitting entry order: BUY combo LMT @ {entry_price} ...")
+    entry_body = {"orders": [{
+        "conidex": conidex, "orderType": "LMT", "side": "BUY",
+        "price": entry_price, "quantity": quantity, "tif": "DAY",
+    }]}
+    entry_oid = submit_order(account_id, entry_body)
+    if not entry_oid:
+        print("  ERROR: Entry order failed.")
+        sys.exit(1)
+
+    # Wait for fill
+    print(f"  Waiting for entry fill (order {entry_oid}) ...")
+    time.sleep(3)
+
+    # Step 2: Submit profit target with OCA group
+    close_price = round(net_credit - (bracket_profit / 100.0 / quantity), 2)
+    profit_price = round(-close_price, 2)
+    print(f"  [2/3] Submitting profit target: SELL combo LMT @ {profit_price} (OCA: {oca_group}) ...")
+    profit_body = {"orders": [{
+        "conidex": conidex, "orderType": "LMT", "side": "SELL",
+        "price": profit_price, "quantity": quantity, "tif": "DAY",
+        "ocaGroup": oca_group, "ocaType": 1,
+    }]}
+    profit_oid = submit_order(account_id, profit_body)
+
+    # Step 3: Submit stop-loss with same OCA group
+    stop_price = round(net_credit + (bracket_stop / 100.0 / quantity), 2)
+    stop_limit = round(stop_price + stop_buffer, 2)
+    print(f"  [3/3] Submitting stop-loss: SELL combo STP LMT stop={-stop_price} limit={-stop_limit} (OCA: {oca_group}) ...")
+    stop_body = {"orders": [{
+        "conidex": conidex, "orderType": "STP LMT", "side": "SELL",
+        "price": round(-stop_limit, 2), "auxPrice": round(-stop_price, 2),
+        "quantity": quantity, "tif": "DAY",
+        "ocaGroup": oca_group, "ocaType": 1,
+    }]}
+    stop_oid = submit_order(account_id, stop_body)
+
+    print(f"\n  Bracket submitted:")
+    print(f"    Entry:         Order {entry_oid}")
+    print(f"    Profit target: Order {profit_oid or 'FAILED'} (${bracket_profit:,.0f})")
+    print(f"    Stop loss:     Order {stop_oid or 'FAILED'} (${bracket_stop:,.0f})")
+    print(f"    OCA Group:     {oca_group}")
+    if profit_oid and stop_oid:
+        print(f"  When profit target or stop-loss fills, the other is automatically cancelled.")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Build an SPX Iron Butterfly order and save to JSON for submission."
@@ -292,6 +357,10 @@ def main() -> None:
                         help="Output JSON file path (default: iron_butterfly_<date>.json)")
     parser.add_argument("--submit", action="store_true",
                         help="Immediately submit the order via submit_order.py after building")
+    parser.add_argument("--bracket", nargs=2, type=float, metavar=("PROFIT", "STOP_LOSS"),
+                        help="Submit entry + bracket orders: profit target and stop-loss in dollars (e.g., --bracket 2000 4000). Implies --submit.")
+    parser.add_argument("--stop-buffer", type=float, default=2.0,
+                        help="Buffer between stop trigger and limit fill price (default: 2.0)")
     args = parser.parse_args()
 
     expiry_date = parse_expiry(args.expiry)
@@ -308,11 +377,17 @@ def main() -> None:
     display_strategy(strategy, args.quantity)
 
     order_json = build_order_json(account_id, strategy, args.quantity)
+
     with open(output_file, "w") as f:
         json.dump(order_json, f, indent=2)
     print(f"\nOrder saved to: {output_file}")
 
-    if args.submit:
+    if args.bracket:
+        bracket_profit = args.bracket[0]
+        bracket_stop = args.bracket[1]
+        print(f"\n  Bracket mode: entry + profit target (${bracket_profit:,.0f}) + stop-loss (${bracket_stop:,.0f})")
+        _submit_bracket(account_id, strategy, args.quantity, bracket_profit, bracket_stop, args.stop_buffer)
+    elif args.submit:
         submit_script = os.path.join(SCRIPT_DIR, "submit_order.py")
         print("\nSubmitting order ...")
         result = subprocess.run([sys.executable, submit_script, output_file, "-y"])

@@ -159,7 +159,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/start_gateway.py --path /custom/path
 - Searches `~/ibkr`, `~/clientportal.gw`, `~/clientportal`, `~/ib_gateway`, `~/IBKR`
 - If already running, reports auth status
 - `--login` triggers auto-login via `login_gateway.py` after the gateway is ready
-- Waits up to 30s for the gateway to start
+- Waits up to 60s for the gateway to start
 - No dependencies (uses stdlib only)
 
 ### 0b. Gateway Login: `login_gateway.py`
@@ -183,13 +183,15 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/login_gateway.py --account live    # live
 Builds an SPX iron butterfly order and saves it as a JSON file.
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py <expiry> [--quantity N] [--ratio R] [--output FILE] [--submit]
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py <expiry> [--quantity N] [--ratio R] [--output FILE] [--submit] [--bracket PROFIT STOP_LOSS]
 ```
 
 - `expiry`: "today", "tomorrow", or YYYY-MM-DD
 - **IMPORTANT**: When the user asks for an iron butterfly with a relative date like "1 day expiry" or "tomorrow", first determine the actual calendar date, then pass it to the script. If today is a Friday, "tomorrow" would be Saturday (no market) — confirm with the user.
 - `--ratio`: Target max_loss/max_profit ratio (default: 2.0). Lower = tighter wings, less capital.
 - `--submit`: immediately pipes the output to `submit_order.py`
+- `--bracket PROFIT STOP_LOSS`: Attach bracket orders (profit target + stop-loss in dollars). IBKR submits all 3 as a group — children activate after the parent fills, and are OCA-linked so one cancels the other.
+- `--stop-buffer`: Buffer between stop trigger and limit fill price (default: 2.0)
 - Output: JSON file (default: `iron_butterfly_<date>.json`)
 - Retries on transient 5xx API errors (up to 2 retries)
 
@@ -202,6 +204,9 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --ratio 2.0
 
 # Build and immediately submit
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py 2026-03-10 --quantity 2 --submit
+
+# Build with bracket: $2000 profit target, $4000 stop-loss
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --bracket 2000 4000 --submit
 ```
 
 ### 2. Order Submitter: `submit_order.py`
