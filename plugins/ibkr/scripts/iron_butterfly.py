@@ -324,12 +324,12 @@ def _submit_bracket(
     }]}
     profit_oid = submit_order(account_id, profit_body)
 
-    # Step 3: Submit stop-loss with same OCA group
+    # Step 3: Submit stop-loss with same OCA group (LMT — IBKR doesn't support STP on combos)
     stop_price = round(net_credit + (bracket_stop / 100.0 / quantity), 2)
-    print(f"  [3/3] Submitting stop-loss: SELL combo STP @ {-stop_price} (OCA: {oca_group}) ...")
+    print(f"  [3/3] Submitting stop-loss: SELL combo LMT @ {-stop_price} (OCA: {oca_group}) ...")
     stop_body = {"orders": [{
-        "conidex": conidex, "orderType": "STP", "side": "SELL",
-        "auxPrice": round(-stop_price, 2),
+        "conidex": conidex, "orderType": "LMT", "side": "SELL",
+        "price": round(-stop_price, 2),
         "quantity": quantity, "tif": "DAY",
         "ocaGroup": oca_group, "ocaType": 1,
     }]}
@@ -383,7 +383,10 @@ def main() -> None:
         bracket_profit = args.bracket[0]
         bracket_stop = args.bracket[1]
         print(f"\n  Bracket mode: entry + profit target (${bracket_profit:,.0f}) + stop-loss (${bracket_stop:,.0f})")
-        _submit_bracket(account_id, strategy, args.quantity, bracket_profit, bracket_stop)
+        if args.submit:
+            _submit_bracket(account_id, strategy, args.quantity, bracket_profit, bracket_stop)
+        else:
+            print("  [DRY RUN] Bracket order not submitted. Add --submit to execute.")
     elif args.submit:
         submit_script = os.path.join(SCRIPT_DIR, "submit_order.py")
         print("\nSubmitting order ...")

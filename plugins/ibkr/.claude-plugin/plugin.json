@@ -1,5 +1,5 @@
 {
   "name": "ibkr",
   "description": "Interactive Brokers Web API for trading, market data, and portfolio management",
-  "version": "2.5.0"
+  "version": "2.5.1"
 }

@@ -6,7 +6,7 @@ Submits standing orders for profit target and/or stop-loss.
 IBKR handles execution automatically — no polling needed.
 
 Profit target: LMT order at net_credit - (target$ / 100 / quantity)
-Stop-loss: STP order — becomes market order when stop price is hit
+Stop-loss: LMT order (IBKR doesn't support STP on combos)
 
 Usage:
     python auto_close.py iron_butterfly_2026-03-11.json --profit 300
@@ -50,12 +50,12 @@ def submit_stop_loss_order(
     account_id: str, conidex: str, quantity: int, stop_price: float,
     oca_group: Optional[str] = None,
 ) -> Optional[str]:
-    """Submit a stop order for stop-loss. Becomes market order when stop price is hit."""
+    """Submit a limit order for stop-loss. IBKR doesn't support STP on combos."""
     order_fields: dict = {
         "conidex": conidex,
-        "orderType": "STP",
+        "orderType": "LMT",
         "side": "SELL",
-        "auxPrice": stop_price,
+        "price": stop_price,
         "quantity": quantity,
         "tif": "DAY",
     }
@@ -63,7 +63,7 @@ def submit_stop_loss_order(
         order_fields["ocaGroup"] = oca_group
         order_fields["ocaType"] = 1  # 1 = cancel remaining on fill
 
-    print(f"  Submitting STOP LOSS: SELL {quantity}x combo STP @ {stop_price:.2f} ...")
+    print(f"  Submitting STOP LOSS: SELL {quantity}x combo LMT @ {stop_price:.2f} ...")
     return submit_order(account_id, {"orders": [order_fields]})
 
 
@@ -131,10 +131,10 @@ def main() -> None:
         stop_price: float = net_credit + (args.stop_loss / 100.0 / quantity)
         stop_price = round(stop_price, 2)
         print(f"  Stop loss:     ${args.stop_loss:,.2f}")
-        print(f"  Stop price:    {stop_price:.2f} (becomes market order when hit)")
+        print(f"  Stop price:    {stop_price:.2f} (LMT — fills when combo price reaches this level)")
         oid = submit_stop_loss_order(account_id, conidex, quantity, -stop_price, oca_group=oca_group)
         if oid:
-            orders_submitted.append(("Stop loss (STP)", oid))
+            orders_submitted.append(("Stop loss (LMT)", oid))
         print()
 
     if orders_submitted:
