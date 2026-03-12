@@ -19,7 +19,7 @@ import time
 from datetime import datetime
 from typing import Optional
 
-from ibkr_client import get_account_id, get_market_snapshot, get_positions, initialize_session, parse_price
+from ibkr_client import api_get, get_account_id, get_market_snapshot, get_positions, initialize_session, parse_price
 
 
 def format_currency(value: Optional[float]) -> str:
@@ -62,6 +62,71 @@ def _fetch_all_positions(account_id: str, symbol_filter: Optional[str] = None) -
                      or filt in (p.get("contractDesc", "") or "").upper()]
 
     return positions
+
+
+def _refresh_prices(positions: list[dict]) -> None:
+    """Fetch live market data snapshots and update position prices in-place.
+
+    The /portfolio/positions endpoint returns cached prices that can be minutes
+    old. This function primes /iserver/marketdata/snapshot, waits for fresh
+    data, and overwrites mktPrice/mktValue/unrealizedPnl on each active
+    position so the monitor always shows real-time numbers.
+    """
+    active = [p for p in positions if p.get("position", 0) != 0 and p.get("conid")]
+    if not active:
+        return
+
+    conids = [p["conid"] for p in active]
+    conid_str = ",".join(str(c) for c in conids)
+
+    # Prime the snapshot subscription
+    api_get("/iserver/marketdata/snapshot", params={"conids": conid_str, "fields": "31,84,86"})
+    time.sleep(2.5)
+    # Read fresh data
+    data = api_get("/iserver/marketdata/snapshot", params={"conids": conid_str, "fields": "31,84,86"})
+
+    snapshots: dict[int, dict] = {}
+    for snap in (data if isinstance(data, list) else [data]):
+        cid = snap.get("conid")
+        snapshots[cid] = {
+            "bid": parse_price(snap.get("84")),
+            "ask": parse_price(snap.get("86")),
+            "last": parse_price(snap.get("31")),
+        }
+
+    for p in active:
+        cid = p.get("conid")
+        snap = snapshots.get(cid)
+        if not snap:
+            continue
+
+        last = snap.get("last")
+        bid = snap.get("bid")
+        ask = snap.get("ask")
+
+        if last is not None:
+            fresh_price = last
+        elif bid is not None and ask is not None:
+            fresh_price = (bid + ask) / 2
+        else:
+            continue
+
+        pos = p.get("position", 0)
+        multiplier = p.get("multiplier")
+        if multiplier is None:
+            multiplier = 1.0
+        elif isinstance(multiplier, str):
+            try:
+                multiplier = float(multiplier)
+            except ValueError:
+                multiplier = 1.0
+        else:
+            multiplier = float(multiplier)
+        avg_cost = p.get("avgCost", 0)
+
+        p["mktPrice"] = fresh_price
+        p["mktValue"] = fresh_price * pos * multiplier
+        p["unrealizedPnl"] = (fresh_price * pos * multiplier) - (avg_cost * pos)
 
 
 def _fetch_greeks(positions: list[dict]) -> dict[int, dict]:
@@ -192,6 +257,7 @@ def main() -> None:
             while True:
                 os.system("clear" if os.name != "nt" else "cls")
                 positions = _fetch_all_positions(account_id, args.symbol)
+                _refresh_prices(positions)
                 greeks = _fetch_greeks(positions) if args.greeks else None
                 display_positions(positions, account_id, greeks)
                 print(f"\n  Refreshing every {args.watch}s ... (Ctrl+C to stop)")
@@ -200,6 +266,7 @@ def main() -> None:
             print("\nStopped.")
     else:
         positions = _fetch_all_positions(account_id, args.symbol)
+        _refresh_prices(positions)
         greeks = _fetch_greeks(positions) if args.greeks else None
         display_positions(positions, account_id, greeks)
 
