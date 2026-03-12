@@ -60,9 +60,22 @@ def check_auth():
         return None
 
 
+def auto_login(account):
+    """Attempt automated login via login_gateway.py."""
+    script = os.path.join(os.path.dirname(__file__), "login_gateway.py")
+    if not os.path.isfile(script):
+        return
+    print(f"\nAttempting auto-login ({account}) ...")
+    subprocess.call([sys.executable, script, "--account", account])
+
+
 def main():
     parser = argparse.ArgumentParser(description="Start the IBKR Client Portal Gateway.")
     parser.add_argument("--path", help="Path to gateway root directory (contains bin/run.sh)")
+    parser.add_argument(
+        "--login", nargs="?", const="paper", choices=["paper", "live"],
+        help="Auto-login after start (default: paper)",
+    )
     args = parser.parse_args()
 
     # Check if already running
@@ -73,7 +86,10 @@ def main():
             auth = status.get("authenticated", False)
             print(f"  Authenticated: {auth}")
             if not auth:
-                print(f"  Log in at: https://localhost:{PORT}")
+                if args.login:
+                    auto_login(args.login)
+                else:
+                    print(f"  Log in at: https://localhost:{PORT}")
         return
 
     # Find gateway
@@ -104,7 +120,10 @@ def main():
     while time.time() - start < STARTUP_TIMEOUT:
         if is_port_open(PORT):
             print(" ready.")
-            print(f"\nGateway is running. Log in at: https://localhost:{PORT}")
+            if args.login:
+                auto_login(args.login)
+            else:
+                print(f"\nGateway is running. Log in at: https://localhost:{PORT}")
             return
         print(".", end="", flush=True)
         time.sleep(1)

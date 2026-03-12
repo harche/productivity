@@ -14,23 +14,29 @@ The IBKR Client Portal Gateway must be running locally. This is a Java-based gat
 
 ### Auto-Starting the Gateway
 
-**IMPORTANT:** Before making any API calls, check if the gateway is running by calling `curl -sk https://localhost:5000/v1/api/iserver/auth/status`. If the connection is refused or the gateway is not running, automatically start it using `start_gateway.py` before proceeding:
+**IMPORTANT:** Before making any API calls, check if the gateway is running and authenticated by calling `curl -sk https://localhost:5000/v1/api/iserver/auth/status`. If the gateway is not running or not authenticated, start and login automatically:
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/start_gateway.py
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/start_gateway.py --login
 ```
 
-This script searches common locations (`~/ibkr`, `~/clientportal.gw`, etc.), starts the gateway, and waits for port 5000. After starting, the user must log in at `https://localhost:5000` in their browser.
+This script searches common locations (`~/ibkr`, `~/clientportal.gw`, etc.), starts the gateway, and waits for port 5000.
 
-### Manual Start
+With `--login`, it automatically logs in after starting (no manual browser login needed):
 
 ```bash
-# Download from: https://www.interactivebrokers.com/en/trading/ib-api.php
-# Unzip and run:
-cd ~/ibkr && bin/run.sh root/conf.yaml
-
-# Then open https://localhost:5000 in a browser to log in
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/start_gateway.py --login          # paper account (default)
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/start_gateway.py --login live     # live account
 ```
+
+Or login separately after the gateway is running:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/login_gateway.py                  # paper account (default)
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/login_gateway.py --account live   # live account
+```
+
+Login credentials are stored in macOS Keychain (`ibkr-paper-username`, `ibkr-paper-password`, `ibkr-live-username`, `ibkr-live-password`). The login script uses `playwright-cli` (headless) for browser automation. If 2FA is required (live accounts), it submits credentials and prompts to approve via IB Key app.
 
 After login, the gateway maintains a session that the API uses. No API key or token is needed — authentication is session-based via the gateway.
 
@@ -145,13 +151,32 @@ Finds the IBKR Client Portal Gateway on the local machine and starts it.
 
 ```bash
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/start_gateway.py
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/start_gateway.py --login           # start + auto-login (paper)
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/start_gateway.py --login live      # start + auto-login (live)
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/start_gateway.py --path /custom/path
 ```
 
 - Searches `~/ibkr`, `~/clientportal.gw`, `~/clientportal`, `~/ib_gateway`, `~/IBKR`
 - If already running, reports auth status
+- `--login` triggers auto-login via `login_gateway.py` after the gateway is ready
 - Waits up to 30s for the gateway to start
 - No dependencies (uses stdlib only)
+
+### 0b. Gateway Login: `login_gateway.py`
+
+Automates the browser login via `playwright-cli`. Fetches credentials from macOS Keychain.
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/login_gateway.py                   # paper (default)
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/login_gateway.py --account live    # live
+```
+
+- Credentials stored in Keychain: `ibkr-{paper,live}-username`, `ibkr-{paper,live}-password`
+- Handles the Live/Paper account toggle automatically
+- If 2FA is required, submits credentials and prompts to approve via IB Key app
+- Skips if already authenticated
+- Headless browser — opens, logs in, closes automatically
+- Requires `playwright-cli`
 
 ### 1. Iron Butterfly Builder: `iron_butterfly.py`
 

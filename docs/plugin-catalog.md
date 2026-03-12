@@ -46,7 +46,7 @@ claude plugin install --scope local context-keeper@productivity-tools
 
 | Plugin | Description | Dependencies |
 |--------|-------------|--------------|
-| `ibkr` | Interactive Brokers Web API for trading, market data, and portfolio management | — |
+| `ibkr` | Interactive Brokers Web API for trading, market data, and portfolio management | `playwright-cli` |
 | `twitter` | Read, search, and post on Twitter (X) via browser session | — |
 | `youtube` | Fetch YouTube transcripts, metadata, comments, search, and browse channels/playlists | — |
 | `polymarket` | Browse and analyze Polymarket prediction markets, events, prices, and leaderboards | — |
@@ -135,6 +135,6 @@ See the full examples in the [README](../README.md#authentication--secrets).
 | `twitter` | Extracted automatically from Chrome cookies |
 | `youtube` | No auth required (public API) |
 | `polymarket` | No auth required (public API) |
-| `ibkr` | Session-based via IBKR Client Portal Gateway |
+| `ibkr` | Auto-login via `playwright-cli` (headless); credentials from Keychain (`ibkr-paper-*`, `ibkr-live-*`) |
 | `playwright-cli` | No auth required |
 | `context-keeper` | Uses other plugins' auth |
