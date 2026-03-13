@@ -80,8 +80,24 @@ cpi() {
       for p in "${to_rm[@]}"; do reversed=("$p" "${reversed[@]}"); done
       for p in "${reversed[@]}"; do $rm "$p"; done
       ;;
+    list)
+      local all_plugins=(github slack google redhat-detective context-keeper cluster-installer playwright-cli
+                         ibkr twitter youtube polymarket dev-digest market-news)
+      local installed=$(claude plugin list --json 2>/dev/null | jq -r --arg pwd "$PWD" \
+        '.[] | select(.projectPath == $pwd and (.id | endswith("@productivity-tools"))) | "\(.id | split("@")[0])\t\(if .enabled then "✔" else "✘" end)\t\(.version)"')
+      for p in "${all_plugins[@]}"; do
+        local match=$(echo "$installed" | grep "^${p}	")
+        if [[ -n "$match" ]]; then
+          local st=$(echo "$match" | cut -f2)
+          local ver=$(echo "$match" | cut -f3)
+          printf "  %-20s %s  %s\n" "$p" "$st" "$ver"
+        else
+          printf "  %s\n" "$p"
+        fi
+      done
+      ;;
     *)
-      echo "Usage: cpi <add|remove> <plugin> [plugin...]"
+      echo "Usage: cpi <add|remove|list> <plugin> [plugin...]"
       echo ""
       echo "Plugins:"
       echo "  github  slack  google  redhat-detective  context-keeper"
@@ -97,7 +113,7 @@ _cpi() {
   local plugins=(github slack google redhat-detective context-keeper cluster-installer playwright-cli
                  ibkr twitter youtube polymarket dev-digest market-news all)
   if (( CURRENT == 2 )); then
-    compadd add remove
+    compadd add remove list
   else
     compadd "${plugins[@]}"
   fi
@@ -110,6 +126,7 @@ Then reload: `source ~/.zshrc`
 **Usage:**
 
 ```bash
+cpi list                            # show all plugins, mark installed ones
 cpi add github                      # install one plugin
 cpi add redhat-detective github     # install multiple (deps resolved automatically)
 cpi add all                         # install everything
