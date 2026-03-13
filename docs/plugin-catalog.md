@@ -40,7 +40,6 @@ claude plugin install --scope local context-keeper@productivity-tools
 |--------|-------------|--------------|
 | `cluster-installer` | Create, manage, and destroy clusters (kind, GKE, OpenShift on GCP) | — |
 | `playwright-cli` | Browser automation: navigate, interact, screenshot, scrape | — |
-| `plugin-installer` | Install and manage plugins from this marketplace | — |
 
 ### Misc
 

@@ -97,13 +97,6 @@
       "description": "Generate developer attention briefings from Jira issues, GitHub PRs, and GitHub issues",
       "category": "workflow",
       "version": "0.1.0"
-    },
-    {
-      "name": "plugin-installer",
-      "source": "./plugins/plugin-installer",
-      "description": "Install and manage plugins from the productivity-tools marketplace",
-      "category": "infra",
-      "version": "0.2.0"
     }
   ]
 }

@@ -7,32 +7,118 @@ Claude Code plugin marketplace — Jira, GitHub, Slack, Kubernetes/OpenShift doc
 ```bash
 # Add the marketplace (one-time)
 claude plugin marketplace add harche/productivity
-
-# Install the plugin installer, then use it to set up everything else
-claude plugin install --scope local plugin-installer@productivity-tools
 ```
 
-Once `plugin-installer` is installed, start Claude Code and ask it to install what you need:
-
-```
-/plugin-installer install redhat-detective and github
-```
-
-It will resolve dependencies, check for missing CLI tools, offer to install them, warn about missing API tokens, and run the install commands for you.
-
-> **Tip:** Once you're done installing plugins, you can remove `plugin-installer` to keep things tidy — you can always add it back later:
-> ```bash
-> claude plugin uninstall plugin-installer@productivity-tools --scope local
-> ```
-
-### Manual Install
-
-You can also install plugins directly without the installer:
+Then install plugins with:
 
 ```bash
-claude plugin install --scope local redhat-detective@productivity-tools
-claude plugin install --scope local github@productivity-tools
+claude plugin install --scope local <name>@productivity-tools
 ```
+
+Or use the **`cpi` helper** for faster installs with automatic dependency resolution — see [Shell Helper](#shell-helper-cpi) below.
+
+## Shell Helper (`cpi`)
+
+A shell function that wraps `claude plugin install/uninstall` with short names, dependency resolution, deduplication, and tab completion.
+
+**Add to your `~/.zshrc`:**
+
+```bash
+# ── Productivity Plugin Installer ────────────────────────────────────
+cpi() {
+  local add="claude plugin install --scope local"
+  local rm="claude plugin uninstall"
+
+  _cpi_resolve() {
+    case "$1" in
+      github)            echo "github@productivity-tools" ;;
+      slack)             echo "playwright-cli@productivity-tools slack@productivity-tools" ;;
+      google)            echo "google@productivity-tools" ;;
+      redhat-detective)  echo "redhat-detective@productivity-tools" ;;
+      context-keeper)    echo "playwright-cli@productivity-tools slack@productivity-tools google@productivity-tools redhat-detective@productivity-tools github@productivity-tools context-keeper@productivity-tools" ;;
+      cluster-installer) echo "cluster-installer@productivity-tools" ;;
+      playwright-cli)    echo "playwright-cli@productivity-tools" ;;
+      ibkr)              echo "playwright-cli@productivity-tools ibkr@productivity-tools" ;;
+      twitter)           echo "playwright-cli@productivity-tools twitter@productivity-tools" ;;
+      youtube)           echo "youtube@productivity-tools" ;;
+      polymarket)        echo "polymarket@productivity-tools" ;;
+      dev-digest)        echo "redhat-detective@productivity-tools github@productivity-tools dev-digest@productivity-tools" ;;
+      market-news)       echo "polymarket@productivity-tools playwright-cli@productivity-tools twitter@productivity-tools market-news@productivity-tools" ;;
+      *) echo ""; return 1 ;;
+    esac
+  }
+
+  _cpi_collect() {
+    local names=("$@") seen=() result=()
+    for name in "${names[@]}"; do
+      if [[ "$name" == "all" ]]; then
+        _cpi_collect github slack google redhat-detective context-keeper cluster-installer playwright-cli \
+                     ibkr twitter youtube polymarket dev-digest market-news
+        return
+      fi
+      local plugins=$(_cpi_resolve "$name") || { echo "Unknown plugin: $name"; continue; }
+      for p in $plugins; do
+        if [[ ! " ${seen[*]} " =~ " $p " ]]; then
+          seen+=("$p")
+          result+=("$p")
+        fi
+      done
+    done
+    echo "${result[@]}"
+  }
+
+  case "$1" in
+    add)
+      shift
+      local to_add=($(_cpi_collect "$@"))
+      for p in "${to_add[@]}"; do $add "$p" || return 1; done
+      ;;
+    remove)
+      shift
+      local to_rm=($(_cpi_collect "$@"))
+      local reversed=()
+      for p in "${to_rm[@]}"; do reversed=("$p" "${reversed[@]}"); done
+      for p in "${reversed[@]}"; do $rm "$p"; done
+      ;;
+    *)
+      echo "Usage: cpi <add|remove> <plugin> [plugin...]"
+      echo ""
+      echo "Plugins:"
+      echo "  github  slack  google  redhat-detective  context-keeper"
+      echo "  cluster-installer  playwright-cli"
+      echo "  ibkr  twitter  youtube  polymarket"
+      echo "  dev-digest  market-news"
+      echo "  all"
+      ;;
+  esac
+}
+
+_cpi() {
+  local plugins=(github slack google redhat-detective context-keeper cluster-installer playwright-cli
+                 ibkr twitter youtube polymarket dev-digest market-news all)
+  if (( CURRENT == 2 )); then
+    compadd add remove
+  else
+    compadd "${plugins[@]}"
+  fi
+}
+compdef _cpi cpi
+```
+
+Then reload: `source ~/.zshrc`
+
+**Usage:**
+
+```bash
+cpi add github                      # install one plugin
+cpi add redhat-detective github     # install multiple (deps resolved automatically)
+cpi add all                         # install everything
+cpi remove slack                    # remove a plugin and its deps
+cpi remove all                      # remove everything
+cpi                                 # show help
+```
+
+Tab completion works at every position — type `cpi add red<TAB>` to complete `redhat-detective`.
 
 ## Available Plugins
 
@@ -80,16 +166,16 @@ cat pull-secret.json | python3 -c 'import sys,json; print(json.dumps(json.load(s
 ## Example Workflows
 
 **Investigate a support case — Jira, KB, docs, and metrics in one plugin:**
-```
-/plugin-installer install redhat-detective and github
+```bash
+cpi add redhat-detective github
 ```
 
 **Get a daily developer briefing — what needs your attention across Jira and GitHub:**
-```
-/plugin-installer install dev-digest, redhat-detective, and github
+```bash
+cpi add dev-digest
 ```
 
 **Spin up a cluster and start working:**
-```
-/plugin-installer install cluster-installer, redhat-detective, and github
+```bash
+cpi add cluster-installer redhat-detective github
 ```
