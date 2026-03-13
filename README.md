@@ -26,9 +26,6 @@ A shell function that wraps `claude plugin install/uninstall` with short names, 
 ```bash
 # ── Productivity Plugin Installer ────────────────────────────────────
 cpi() {
-  local add="claude plugin install --scope local"
-  local rm="claude plugin uninstall"
-
   _cpi_resolve() {
     case "$1" in
       github)            echo "github@productivity-tools" ;;
@@ -68,17 +65,17 @@ cpi() {
   }
 
   case "$1" in
-    add)
+    install|i)
       shift
       local to_add=($(_cpi_collect "$@"))
-      for p in "${to_add[@]}"; do $add "$p" || return 1; done
+      for p in "${to_add[@]}"; do claude plugin install --scope local "$p" || return 1; done
       ;;
-    remove)
+    uninstall|remove)
       shift
       local to_rm=($(_cpi_collect "$@"))
       local reversed=()
       for p in "${to_rm[@]}"; do reversed=("$p" "${reversed[@]}"); done
-      for p in "${reversed[@]}"; do $rm "$p"; done
+      for p in "${reversed[@]}"; do claude plugin uninstall --scope local "$p"; done
       ;;
     list)
       local all_plugins=(github slack google redhat-detective context-keeper cluster-installer playwright-cli
@@ -97,7 +94,7 @@ cpi() {
       done
       ;;
     *)
-      echo "Usage: cpi <add|remove|list> <plugin> [plugin...]"
+      echo "Usage: cpi <install|uninstall|list> <plugin> [plugin...]"
       echo ""
       echo "Plugins:"
       echo "  github  slack  google  redhat-detective  context-keeper"
@@ -113,7 +110,7 @@ _cpi() {
   local plugins=(github slack google redhat-detective context-keeper cluster-installer playwright-cli
                  ibkr twitter youtube polymarket dev-digest market-news all)
   if (( CURRENT == 2 )); then
-    compadd add remove list
+    compadd install uninstall list
   else
     compadd "${plugins[@]}"
   fi
@@ -126,16 +123,16 @@ Then reload: `source ~/.zshrc`
 **Usage:**
 
 ```bash
-cpi list                            # show all plugins, mark installed ones
-cpi add github                      # install one plugin
-cpi add redhat-detective github     # install multiple (deps resolved automatically)
-cpi add all                         # install everything
-cpi remove slack                    # remove a plugin and its deps
-cpi remove all                      # remove everything
+cpi list                                # show all plugins, mark installed ones
+cpi install github                      # install one plugin
+cpi install redhat-detective github     # install multiple (deps resolved automatically)
+cpi install all                         # install everything
+cpi uninstall slack                     # remove a plugin and its deps
+cpi uninstall all                       # remove everything
 cpi                                 # show help
 ```
 
-Tab completion works at every position — type `cpi add red<TAB>` to complete `redhat-detective`.
+Tab completion works at every position — type `cpi install red<TAB>` to complete `redhat-detective`.
 
 ## Available Plugins
 
@@ -184,15 +181,15 @@ cat pull-secret.json | python3 -c 'import sys,json; print(json.dumps(json.load(s
 
 **Investigate a support case — Jira, KB, docs, and metrics in one plugin:**
 ```bash
-cpi add redhat-detective github
+cpi install redhat-detective github
 ```
 
 **Get a daily developer briefing — what needs your attention across Jira and GitHub:**
 ```bash
-cpi add dev-digest
+cpi install dev-digest
 ```
 
 **Spin up a cluster and start working:**
 ```bash
-cpi add cluster-installer redhat-detective github
+cpi install cluster-installer redhat-detective github
 ```
