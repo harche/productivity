@@ -41,6 +41,10 @@ cpi() {
       polymarket)        echo "polymarket@productivity-tools" ;;
       dev-digest)        echo "redhat-detective@productivity-tools github@productivity-tools dev-digest@productivity-tools" ;;
       market-news)       echo "polymarket@productivity-tools playwright-cli@productivity-tools twitter@productivity-tools market-news@productivity-tools" ;;
+      reddit)            echo "reddit@productivity-tools" ;;
+      hackernews)        echo "hackernews@productivity-tools" ;;
+      sec-edgar)         echo "sec-edgar@productivity-tools" ;;
+      fred)              echo "fred@productivity-tools" ;;
       *) echo ""; return 1 ;;
     esac
   }
@@ -50,7 +54,7 @@ cpi() {
     for name in "${names[@]}"; do
       if [[ "$name" == "all" ]]; then
         _cpi_collect github slack google redhat-detective context-keeper cluster-installer playwright-cli \
-                     ibkr twitter youtube polymarket dev-digest market-news
+                     ibkr twitter youtube polymarket dev-digest market-news reddit hackernews sec-edgar fred
         return
       fi
       local plugins=$(_cpi_resolve "$name") || { echo "Unknown plugin: $name"; continue; }
@@ -79,7 +83,7 @@ cpi() {
       ;;
     list)
       local all_plugins=(github slack google redhat-detective context-keeper cluster-installer playwright-cli
-                         ibkr twitter youtube polymarket dev-digest market-news)
+                         ibkr twitter youtube polymarket dev-digest market-news reddit hackernews sec-edgar fred)
       local installed=$(claude plugin list --json 2>/dev/null | jq -r --arg pwd "$PWD" \
         '.[] | select(.projectPath == $pwd and (.id | endswith("@productivity-tools"))) | "\(.id | split("@")[0])\t\(if .enabled then "✔" else "✘" end)\t\(.version)"')
       for p in "${all_plugins[@]}"; do
@@ -99,8 +103,8 @@ cpi() {
       echo "Plugins:"
       echo "  github  slack  google  redhat-detective  context-keeper"
       echo "  cluster-installer  playwright-cli"
-      echo "  ibkr  twitter  youtube  polymarket"
-      echo "  dev-digest  market-news"
+      echo "  ibkr  twitter  youtube  polymarket  reddit  hackernews"
+      echo "  sec-edgar  fred  dev-digest  market-news"
       echo "  all"
       ;;
   esac
@@ -108,7 +112,7 @@ cpi() {
 
 _cpi() {
   local plugins=(github slack google redhat-detective context-keeper cluster-installer playwright-cli
-                 ibkr twitter youtube polymarket dev-digest market-news all)
+                 ibkr twitter youtube polymarket dev-digest market-news reddit hackernews sec-edgar fred all)
   if (( CURRENT == 2 )); then
     compadd install uninstall list
   else
@@ -156,6 +160,9 @@ security add-generic-password -a "$USER" -s "RH_API_OFFLINE_TOKEN" -w "your-offl
 # OpenShift pull secret (compact JSON)
 security add-generic-password -a "$USER" -s "OCP_PULL_SECRET" \
   -w "$(cat pull-secret.json | python3 -c 'import sys,json; print(json.dumps(json.load(sys.stdin), separators=(",",":")))')" -U
+
+# FRED API key (free from https://fred.stlouisfed.org/docs/api/api_key.html)
+security add-generic-password -s "fred-api-key" -a "fred" -w "your-fred-api-key" -U
 ```
 
 **Linux (secret-tool / libsecret):**

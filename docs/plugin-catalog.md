@@ -49,6 +49,10 @@ claude plugin install --scope local context-keeper@productivity-tools
 | `twitter` | Read, search, and post on Twitter (X) via browser session | — |
 | `youtube` | Fetch YouTube transcripts, metadata, comments, search, and browse channels/playlists | — |
 | `polymarket` | Browse and analyze Polymarket prediction markets, events, prices, and leaderboards | — |
+| `reddit` | Browse and search Reddit via Chrome session | — |
+| `hackernews` | Browse, search, and read Hacker News stories, comments, and user profiles | — |
+| `sec-edgar` | Search SEC EDGAR for company filings, financials, and insider transactions | — |
+| `fred` | Federal Reserve economic data (GDP, CPI, interest rates, unemployment) | — |
 
 ## Agent Plugins
 
@@ -106,6 +110,7 @@ External CLI tools and API tokens required by specific plugins. Only install wha
 | `JIRA_API_TOKEN` | `redhat-detective` | [Create a PAT](https://issues.redhat.com) — Profile → Personal Access Tokens |
 | `RH_API_OFFLINE_TOKEN` | `redhat-detective` | [Generate an offline token](https://access.redhat.com/management/api) for the Customer Portal API |
 | `OCP_PULL_SECRET` | `cluster-installer` | [Download from console.redhat.com](https://console.redhat.com/openshift/install/pull-secret) |
+| `fred-api-key` | `fred` | [Get a free API key](https://fred.stlouisfed.org/docs/api/api_key.html) (instant approval) |
 
 ### Storing Tokens
 
@@ -136,4 +141,8 @@ See the full examples in the [README](../README.md#authentication--secrets).
 | `polymarket` | No auth required (public API) |
 | `ibkr` | Auto-login via `playwright-cli` (headless); credentials from Keychain (`ibkr-paper-*`, `ibkr-live-*`) |
 | `playwright-cli` | No auth required |
+| `reddit` | Extracted automatically from Chrome cookies |
+| `hackernews` | No auth required (public API) |
+| `sec-edgar` | No auth required (User-Agent header only) |
+| `fred` | API key from Keychain (`fred-api-key`) |
 | `context-keeper` | Uses other plugins' auth |
