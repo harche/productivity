@@ -97,6 +97,13 @@
       "description": "Generate developer attention briefings from Jira issues, GitHub PRs, and GitHub issues",
       "category": "workflow",
       "version": "0.1.0"
+    },
+    {
+      "name": "reddit",
+      "source": "./plugins/reddit",
+      "description": "Browse and search Reddit via Chrome session",
+      "category": "misc",
+      "version": "0.1.0"
     }
   ]
 }
