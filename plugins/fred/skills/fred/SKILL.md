@@ -12,18 +12,12 @@ Access 800,000+ economic time series from the Federal Reserve Bank of St. Louis.
 
 ## Setup
 
-1. Get a free API key at https://fred.stlouisfed.org/docs/api/api_key.html (requires free account)
-2. Store it:
-
-```bash
-mkdir -p ~/.config/fred
-echo "YOUR_API_KEY" > ~/.config/fred/api_key
-```
+API key is stored in macOS Keychain under service `fred-api-key`.
 
 All examples below use:
 
 ```bash
-FRED_KEY=$(cat ~/.config/fred/api_key)
+FRED_KEY=$(security find-generic-password -s "fred-api-key" -w)
 ```
 
 ---
@@ -162,7 +156,7 @@ curl -sf "https://api.stlouisfed.org/fred/series/search?search_text=housing%20st
 
 ## Important
 
-- **API key required** — free, instant approval at https://fred.stlouisfed.org/docs/api/api_key.html
+- **API key stored in macOS Keychain** (service: `fred-api-key`). Retrieve with `security find-generic-password -s "fred-api-key" -w`.
 - Rate limit: 120 requests/minute.
 - Always include `file_type=json` for JSON responses (default is XML).
 - Use `units=pc1` for year-over-year percent change (useful for CPI/inflation).
