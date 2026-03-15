@@ -1,5 +1,5 @@
 {
   "name": "slack",
-  "description": "Read/search/send Slack messages via browser session",
-  "version": "2.0.1"
+  "description": "Read/search/send Slack messages via Chrome extension",
+  "version": "2.1.0"
 }

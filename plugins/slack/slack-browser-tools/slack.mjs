@@ -22,28 +22,18 @@ import { dirname, join } from "path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// --- Backend selection: Chrome (direct) vs Playwright (fallback) ---
+// --- Backend: always use Playwright Chrome extension ---
 
-let backend = null; // "chrome" or "playwright"
-let chromeSession = null;
+let backend = null;
 
 async function ensureBackend() {
   if (backend) return;
 
-  try {
-    const mod = await import("./chrome-session.mjs");
-    chromeSession = mod.getSlackSession();
-    backend = "chrome";
-    return;
-  } catch (e) {
-    // Chrome extraction failed — fall back to Playwright
-  }
-
   const check = spawnSync("which", ["playwright-cli"], { encoding: "utf-8" });
   if (check.status !== 0) {
     throw new Error(
-      "Could not extract Slack session from Chrome, and playwright-cli is not installed.\n" +
-        "Either log into Slack in Chrome, or run: playwright-cli open --extension"
+      "playwright-cli is not installed.\n" +
+        "Run: playwright-cli open --extension"
     );
   }
 

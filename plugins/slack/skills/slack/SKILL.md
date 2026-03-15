@@ -1,18 +1,24 @@
 ---
 name: slack
 description: Fetch Slack messages, channels, and threads from the user's browser session. Use when the user shares a Slack URL, asks about Slack content, or wants to interact with Slack (read messages, search channels, read threads, check DMs, send messages).
-allowed-tools: Bash(node:*)
+allowed-tools: Bash(node:*),Bash(playwright-cli:*)
 ---
 
 # Slack CLI
 
-Read and interact with Slack using the user's Chrome session. Auth tokens are extracted directly from Chrome's local storage — no browser automation or Slack app required.
+Read and interact with Slack using the user's Chrome session via the Playwright Chrome extension.
 
 ## Prerequisite
 
-The user must be logged into Slack in Google Chrome. The tool reads the session token and cookie directly from Chrome's storage files on disk.
+The user must be logged into Slack in Google Chrome, and the browser must be connected via the Playwright extension.
 
-If Chrome extraction fails (e.g., different browser, locked DB), the tool automatically falls back to Playwright browser injection. For the fallback, Slack must be open in Chrome and connected via `playwright-cli open --extension`.
+**Before any Slack command, always ensure the Chrome extension is connected:**
+
+```bash
+playwright-cli open --extension
+```
+
+This connects to the user's running Chrome and allows the tool to interact with Slack using the active session.
 
 ## Commands
 
@@ -88,8 +94,7 @@ This workspace runs on Slack Enterprise Grid, which restricts certain API method
 
 ## Error Handling
 
-- If Chrome extraction fails, the tool falls back to Playwright automatically
-- If both Chrome and Playwright fail, you'll get a clear error about what's needed
+- If the Chrome extension is not connected, run `playwright-cli open --extension` first
 - Rate limiting (429) is handled automatically with retry
 - 800-1500ms random delay between API calls
 - `enterprise_is_restricted` — see Enterprise Grid Restrictions above
@@ -97,5 +102,4 @@ This workspace runs on Slack Enterprise Grid, which restricts certain API method
 ## Important
 
 - **Always confirm with the user before sending messages or reactions.**
-- All actions happen as the logged-in Chrome user.
-- Token is extracted from Chrome's LevelDB localStorage; `d` cookie is decrypted from Chrome's Cookies DB. Falls back to Playwright if needed.
+- All actions happen as the logged-in Chrome user via the Playwright extension.
