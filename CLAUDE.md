@@ -27,6 +27,8 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 - `polymarket` — Browse and analyze Polymarket prediction markets, events, prices, and leaderboards
 - `reddit` — Browse and search Reddit via Chrome session
 - `hackernews` — Browse, search, and read Hacker News stories, comments, and user profiles
+- `sec-edgar` — Search SEC EDGAR for company filings, financials, and insider transactions
+- `fred` — Federal Reserve economic data (GDP, CPI, interest rates, unemployment)
 
 **agents** (orchestrate other plugins, no tools of their own)
 - `dev-digest` — Developer attention briefing from Jira + GitHub (depends on `redhat-detective`, `github`)

@@ -111,6 +111,20 @@
       "description": "Browse, search, and read Hacker News stories, comments, and user profiles",
       "category": "misc",
       "version": "0.1.0"
+    },
+    {
+      "name": "sec-edgar",
+      "source": "./plugins/sec-edgar",
+      "description": "Search SEC EDGAR for company filings, financials, and insider transactions",
+      "category": "misc",
+      "version": "0.1.0"
+    },
+    {
+      "name": "fred",
+      "source": "./plugins/fred",
+      "description": "Federal Reserve economic data — GDP, CPI, interest rates, unemployment, and 800k+ time series",
+      "category": "misc",
+      "version": "0.1.0"
     }
   ]
 }
