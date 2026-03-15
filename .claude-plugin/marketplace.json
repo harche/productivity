@@ -104,6 +104,20 @@
       "description": "Browse and search Reddit via Chrome session",
       "category": "misc",
       "version": "0.1.0"
+    },
+    {
+      "name": "hackernews",
+      "source": "./plugins/hackernews",
+      "description": "Browse, search, and read Hacker News stories, comments, and user profiles",
+      "category": "misc",
+      "version": "0.1.0"
+    },
+    {
+      "name": "gdelt",
+      "source": "./plugins/gdelt",
+      "description": "Search global news, events, and TV coverage via GDELT APIs",
+      "category": "misc",
+      "version": "0.1.0"
     }
   ]
 }
