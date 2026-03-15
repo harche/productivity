@@ -27,7 +27,6 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 - `polymarket` — Browse and analyze Polymarket prediction markets, events, prices, and leaderboards
 - `reddit` — Browse and search Reddit via Chrome session
 - `hackernews` — Browse, search, and read Hacker News stories, comments, and user profiles
-- `gdelt` — Search global news, events, and TV coverage via GDELT APIs
 
 **agents** (orchestrate other plugins, no tools of their own)
 - `dev-digest` — Developer attention briefing from Jira + GitHub (depends on `redhat-detective`, `github`)
