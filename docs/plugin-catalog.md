@@ -13,17 +13,15 @@ claude plugin install --scope local <name>@productivity-tools
 | Plugin | Description | Dependencies |
 |--------|-------------|--------------|
 | `github` | GitHub repos, PRs, issues, and actions via `gh` CLI | — |
-| `slack` | Read, search, and send Slack messages via browser session | — |
 | `google` | Gmail, Google Calendar, Drive, and Docs via `gog` CLI | — |
 | `redhat-detective` | Red Hat debugging/investigation toolkit: Jira, Knowledge Base, support cases, platform docs (k8s + OpenShift), and Prometheus metrics | — |
-| `context-keeper` | Capture project state as structured markdown notes from Slack, Docs, Jira, and other sources | `slack`, `google`, `redhat-detective`, `github` (all optional) |
+| `context-keeper` | Capture project state as structured markdown notes from Slack, Docs, Jira, and other sources | `google`, `redhat-detective`, `github` (all optional) |
 
 <details>
 <summary><b>context-keeper</b> — full install</summary>
 
 ```sh
 # Source plugins (install whichever you use)
-claude plugin install --scope local slack@productivity-tools
 claude plugin install --scope local google@productivity-tools
 claude plugin install --scope local redhat-detective@productivity-tools
 claude plugin install --scope local github@productivity-tools
@@ -46,10 +44,8 @@ claude plugin install --scope local context-keeper@productivity-tools
 | Plugin | Description | Dependencies |
 |--------|-------------|--------------|
 | `ibkr` | Interactive Brokers Web API for trading, market data, and portfolio management | `playwright-cli` |
-| `twitter` | Read, search, and post on Twitter (X) via browser session | — |
 | `youtube` | Fetch YouTube transcripts, metadata, comments, search, and browse channels/playlists | — |
 | `polymarket` | Browse and analyze Polymarket prediction markets, events, prices, and leaderboards | — |
-| `reddit` | Browse and search Reddit via Chrome session | — |
 | `hackernews` | Browse, search, and read Hacker News stories, comments, and user profiles | — |
 | `sec-edgar` | Search SEC EDGAR for company filings, financials, and insider transactions | — |
 | `fred` | Federal Reserve economic data (GDP, CPI, interest rates, unemployment) | — |
@@ -61,8 +57,6 @@ Agent plugins orchestrate other plugins to produce a complete deliverable. They 
 | Agent | Description | Dependencies |
 |-------|-------------|--------------|
 | `dev-digest` | Developer attention briefing from Jira issues, GitHub PRs, and GitHub issues — highlights what needs your action right now | `redhat-detective`, `github` |
-| `market-news` | News briefing from Polymarket prediction markets, cross-referenced with Twitter for context | `polymarket`, `twitter` |
-
 <details>
 <summary><b>dev-digest</b> — full install</summary>
 
@@ -77,20 +71,6 @@ claude plugin install --scope local dev-digest@productivity-tools
 
 </details>
 
-<details>
-<summary><b>market-news</b> — full install</summary>
-
-```sh
-# Dependencies
-claude plugin install --scope local polymarket@productivity-tools
-claude plugin install --scope local twitter@productivity-tools
-
-# The agent
-claude plugin install --scope local market-news@productivity-tools
-```
-
-</details>
-
 ## Prerequisites
 
 External CLI tools and API tokens required by specific plugins. Only install what you need. Plugins not listed here have no external prerequisites.
@@ -101,7 +81,7 @@ External CLI tools and API tokens required by specific plugins. Only install wha
 |------|---------|-------|-------|
 | [`gh`](https://cli.github.com/) | `github` | `brew install gh` | `dnf install gh` / `apt install gh` |
 | [`gog`](https://github.com/steipete/gogcli) | `google` | See [repo README](https://github.com/steipete/gogcli) | See [repo README](https://github.com/steipete/gogcli) |
-| [`playwright-cli`](https://github.com/microsoft/playwright-cli) | `slack`, `twitter`, `playwright-cli` | `npm install -g @playwright/cli@latest` | `npm install -g @playwright/cli@latest` |
+| [`playwright-cli`](https://github.com/microsoft/playwright-cli) | `playwright-cli` | `npm install -g @playwright/cli@latest` | `npm install -g @playwright/cli@latest` |
 
 ### API Tokens
 
@@ -135,13 +115,10 @@ See the full examples in the [README](../README.md#authentication--secrets).
 |--------|-------------|
 | `github` | `gh auth login` (GitHub CLI handles OAuth) |
 | `google` | `gog` CLI (OAuth flow) |
-| `slack` | Extracted automatically from Chrome session |
-| `twitter` | Extracted automatically from Chrome cookies |
 | `youtube` | No auth required (public API) |
 | `polymarket` | No auth required (public API) |
 | `ibkr` | Auto-login via `playwright-cli` (headless); credentials from Keychain (`ibkr-paper-*`, `ibkr-live-*`) |
 | `playwright-cli` | No auth required |
-| `reddit` | Extracted automatically from Chrome cookies |
 | `hackernews` | No auth required (public API) |
 | `sec-edgar` | No auth required (User-Agent header only) |
 | `fred` | API key from Keychain (`fred-api-key`) |

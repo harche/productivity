@@ -1,6 +1,6 @@
 # Productivity Assistant
 
-Claude Code plugin marketplace — Jira, GitHub, Slack, Kubernetes/OpenShift docs, Red Hat support cases, Red Hat Knowledge Base, OpenShift cluster management, and more.
+Claude Code plugin marketplace — Jira, GitHub, Kubernetes/OpenShift docs, Red Hat support cases, Red Hat Knowledge Base, OpenShift cluster management, and more.
 
 ## Quick Start
 
@@ -19,124 +19,44 @@ Or use the **`cpi` helper** for faster installs with automatic dependency resolu
 
 ## Shell Helper (`cpi`)
 
-A shell function that wraps `claude plugin install/uninstall` with short names, dependency resolution, deduplication, and tab completion.
+A Python CLI that manages plugins across multiple Claude Code marketplaces. It reads each marketplace's `marketplace.json` to auto-discover plugins and resolve dependencies — no hardcoded plugin lists.
 
-**Add to your `~/.zshrc`:**
+**Install:**
 
 ```bash
-# ── Productivity Plugin Installer ────────────────────────────────────
-cpi() {
-  _cpi_resolve() {
-    case "$1" in
-      github)            echo "github@productivity-tools" ;;
-      slack)             echo "playwright-cli@productivity-tools slack@productivity-tools" ;;
-      google)            echo "google@productivity-tools" ;;
-      redhat-detective)  echo "redhat-detective@productivity-tools" ;;
-      context-keeper)    echo "playwright-cli@productivity-tools slack@productivity-tools google@productivity-tools redhat-detective@productivity-tools github@productivity-tools context-keeper@productivity-tools" ;;
-      cluster-installer) echo "cluster-installer@productivity-tools" ;;
-      playwright-cli)    echo "playwright-cli@productivity-tools" ;;
-      ibkr)              echo "playwright-cli@productivity-tools ibkr@productivity-tools" ;;
-      twitter)           echo "playwright-cli@productivity-tools twitter@productivity-tools" ;;
-      youtube)           echo "youtube@productivity-tools" ;;
-      polymarket)        echo "polymarket@productivity-tools" ;;
-      dev-digest)        echo "redhat-detective@productivity-tools github@productivity-tools dev-digest@productivity-tools" ;;
-      market-news)       echo "polymarket@productivity-tools playwright-cli@productivity-tools twitter@productivity-tools market-news@productivity-tools" ;;
-      reddit)            echo "reddit@productivity-tools" ;;
-      hackernews)        echo "hackernews@productivity-tools" ;;
-      sec-edgar)         echo "sec-edgar@productivity-tools" ;;
-      fred)              echo "fred@productivity-tools" ;;
-      *) echo ""; return 1 ;;
-    esac
-  }
-
-  _cpi_collect() {
-    local names=("$@") seen=() result=()
-    for name in "${names[@]}"; do
-      if [[ "$name" == "all" ]]; then
-        _cpi_collect github slack google redhat-detective context-keeper cluster-installer playwright-cli \
-                     ibkr twitter youtube polymarket dev-digest market-news reddit hackernews sec-edgar fred
-        return
-      fi
-      local plugins=$(_cpi_resolve "$name") || { echo "Unknown plugin: $name"; continue; }
-      for p in $plugins; do
-        if [[ ! " ${seen[*]} " =~ " $p " ]]; then
-          seen+=("$p")
-          result+=("$p")
-        fi
-      done
-    done
-    echo "${result[@]}"
-  }
-
-  case "$1" in
-    install|i)
-      shift
-      local to_add=($(_cpi_collect "$@"))
-      for p in "${to_add[@]}"; do claude plugin install --scope local "$p" || return 1; done
-      ;;
-    uninstall|remove)
-      shift
-      local to_rm=($(_cpi_collect "$@"))
-      local reversed=()
-      for p in "${to_rm[@]}"; do reversed=("$p" "${reversed[@]}"); done
-      for p in "${reversed[@]}"; do claude plugin uninstall --scope local "$p"; done
-      ;;
-    list)
-      local all_plugins=(github slack google redhat-detective context-keeper cluster-installer playwright-cli
-                         ibkr twitter youtube polymarket dev-digest market-news reddit hackernews sec-edgar fred)
-      local installed=$(claude plugin list --json 2>/dev/null | jq -r --arg pwd "$PWD" \
-        '.[] | select(.projectPath == $pwd and (.id | endswith("@productivity-tools"))) | "\(.id | split("@")[0])\t\(if .enabled then "✔" else "✘" end)\t\(.version)"')
-      for p in "${all_plugins[@]}"; do
-        local match=$(echo "$installed" | grep "^${p}	")
-        if [[ -n "$match" ]]; then
-          local st=$(echo "$match" | cut -f2)
-          local ver=$(echo "$match" | cut -f3)
-          printf "  %-20s %s  %s\n" "$p" "$st" "$ver"
-        else
-          printf "  %s\n" "$p"
-        fi
-      done
-      ;;
-    *)
-      echo "Usage: cpi <install|uninstall|list> <plugin> [plugin...]"
-      echo ""
-      echo "Plugins:"
-      echo "  github  slack  google  redhat-detective  context-keeper"
-      echo "  cluster-installer  playwright-cli"
-      echo "  ibkr  twitter  youtube  polymarket  reddit  hackernews"
-      echo "  sec-edgar  fred  dev-digest  market-news"
-      echo "  all"
-      ;;
-  esac
-}
-
-_cpi() {
-  local plugins=(github slack google redhat-detective context-keeper cluster-installer playwright-cli
-                 ibkr twitter youtube polymarket dev-digest market-news reddit hackernews sec-edgar fred all)
-  if (( CURRENT == 2 )); then
-    compadd install uninstall list
-  else
-    compadd "${plugins[@]}"
-  fi
-}
-compdef _cpi cpi
+ln -sf ~/Projects/productivity/scripts/cpi ~/.local/bin/cpi
 ```
 
-Then reload: `source ~/.zshrc`
+**Register marketplaces:**
+
+```bash
+cpi add ~/Projects/productivity        # register a marketplace (one-time)
+```
+
+**Tab completion (add to `~/.zshrc`):**
+
+```bash
+eval "$(cpi completions zsh)"
+```
 
 **Usage:**
 
 ```bash
-cpi list                                # show all plugins, mark installed ones
+cpi list                                # all plugins across all marketplaces
 cpi install github                      # install one plugin
-cpi install redhat-detective github     # install multiple (deps resolved automatically)
+cpi install redhat-detective github     # install multiple (deps auto-resolved)
 cpi install all                         # install everything
-cpi uninstall slack                     # remove a plugin and its deps
-cpi uninstall all                       # remove everything
-cpi                                 # show help
+cpi uninstall google                    # remove a plugin and its deps
+cpi search detective                    # search by name or description
 ```
 
-Tab completion works at every position — type `cpi install red<TAB>` to complete `redhat-detective`.
+**How it works:**
+
+- `~/.config/cpi/` holds symlinks to marketplace repos — one per marketplace
+- `cpi add <path>` reads `.claude-plugin/marketplace.json`, creates the symlink
+- All commands auto-discover plugins and resolve `dependencies` across marketplaces
+- Cross-marketplace deps work seamlessly (e.g., a plugin in marketplace B can depend on one in marketplace A)
+- Tab completion is dynamic — it queries the registered marketplaces at completion time
 
 ## Available Plugins
 

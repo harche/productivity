@@ -1,0 +1,309 @@
+#!/usr/bin/env python3
+"""cpi — Claude Plugin Installer
+
+Unified plugin manager for Claude Code plugin marketplaces.
+Auto-discovers plugins by reading marketplace.json from registered repos.
+
+Quick start:
+    cpi add ~/Projects/productivity
+    cpi install github redhat-detective
+    cpi list
+"""
+
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+CONFIG_DIR = Path.home() / ".config" / "cpi"
+
+# ── Marketplace discovery ────────────────────────────────────────────
+
+
+def load_marketplaces():
+    if not CONFIG_DIR.exists():
+        return {}
+    marketplaces = {}
+    for entry in sorted(CONFIG_DIR.iterdir()):
+        target = entry.resolve()
+        manifest = target / ".claude-plugin" / "marketplace.json"
+        if manifest.exists():
+            with open(manifest) as f:
+                data = json.load(f)
+            marketplaces[data["name"]] = data
+    return marketplaces
+
+
+def find_plugin(name, marketplaces):
+    for mp_name, mp in marketplaces.items():
+        for p in mp.get("plugins", []):
+            if p["name"] == name:
+                return mp_name, p
+    return None, None
+
+
+# ── Dependency resolution ────────────────────────────────────────────
+
+
+def resolve_deps(names, marketplaces):
+    order, seen = [], set()
+
+    def _walk(name):
+        if name in seen:
+            return
+        seen.add(name)
+        mp_name, plugin = find_plugin(name, marketplaces)
+        if not plugin:
+            print(f"  Unknown plugin: {name}", file=sys.stderr)
+            return
+        for dep in plugin.get("dependencies", []):
+            _walk(dep)
+        order.append(f"{name}@{mp_name}")
+
+    for n in names:
+        if n == "all":
+            for mp in marketplaces.values():
+                for p in mp.get("plugins", []):
+                    _walk(p["name"])
+        else:
+            _walk(n)
+    return order
+
+
+# ── Installed plugin state ───────────────────────────────────────────
+
+
+def get_installed():
+    try:
+        r = subprocess.run(
+            ["claude", "plugin", "list", "--json"],
+            capture_output=True, text=True, timeout=10,
+        )
+        if r.returncode == 0 and r.stdout.strip():
+            return {
+                p["id"]: {"enabled": p.get("enabled", False), "version": p.get("version", "")}
+                for p in json.loads(r.stdout)
+            }
+    except Exception:
+        pass
+    return {}
+
+
+# ── Commands ─────────────────────────────────────────────────────────
+
+
+def cmd_add(args):
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    repo = Path(args.path).expanduser().resolve()
+    manifest = repo / ".claude-plugin" / "marketplace.json"
+    if not manifest.exists():
+        print(f"No .claude-plugin/marketplace.json in {repo}", file=sys.stderr)
+        return 1
+    with open(manifest) as f:
+        data = json.load(f)
+    name = data["name"]
+    link = CONFIG_DIR / name
+    if link.exists() or link.is_symlink():
+        link.unlink()
+    link.symlink_to(repo)
+    n = len(data.get("plugins", []))
+    print(f"  {name} ({n} plugins) -> {repo}")
+    return 0
+
+
+def cmd_remove(args):
+    link = CONFIG_DIR / args.name
+    if link.exists() or link.is_symlink():
+        link.unlink()
+        print(f"  Removed {args.name}")
+    else:
+        print(f"  Not registered: {args.name}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def cmd_list(_args):
+    marketplaces = load_marketplaces()
+    if not marketplaces:
+        print("No marketplaces registered. Run: cpi add <path>")
+        return 0
+    installed = get_installed()
+    for mp_name, mp in marketplaces.items():
+        print(f"\n  {mp_name}")
+        print(f"  {'─' * len(mp_name)}")
+        for p in mp.get("plugins", []):
+            pid = f"{p['name']}@{mp_name}"
+            info = installed.get(pid)
+            name = p["name"]
+            ver = p.get("version", "")
+            deps = p.get("dependencies", [])
+            dep_str = f"  (-> {', '.join(deps)})" if deps else ""
+            if info:
+                mark = "✔" if info["enabled"] else "✘"
+                print(f"    {mark} {name:<22s} {ver:<8s}{dep_str}")
+            else:
+                print(f"      {name:<22s} {ver:<8s}{dep_str}")
+    print()
+    return 0
+
+
+def cmd_install(args):
+    marketplaces = load_marketplaces()
+    order = resolve_deps(args.plugins, marketplaces)
+    if not order:
+        return 1
+    installed = get_installed()
+    to_install = [p for p in order if p not in installed]
+    if not to_install:
+        print("  All plugins already installed.")
+        return 0
+    for p in to_install:
+        print(f"  Installing {p}")
+        r = subprocess.run(
+            ["claude", "plugin", "install", "--scope", "local", p],
+            capture_output=True, text=True,
+        )
+        if r.returncode != 0:
+            err = r.stderr.strip() or r.stdout.strip()
+            print(f"  Failed: {err}", file=sys.stderr)
+            return 1
+    print(f"  Done — {len(to_install)} plugin(s) installed.")
+    return 0
+
+
+def cmd_uninstall(args):
+    marketplaces = load_marketplaces()
+    order = resolve_deps(args.plugins, marketplaces)
+    if not order:
+        return 1
+    for p in reversed(order):
+        print(f"  Removing {p}")
+        subprocess.run(
+            ["claude", "plugin", "uninstall", "--scope", "local", p],
+            capture_output=True, text=True,
+        )
+    return 0
+
+
+def cmd_search(args):
+    marketplaces = load_marketplaces()
+    q = args.query.lower()
+    hits = []
+    for mp_name, mp in marketplaces.items():
+        for p in mp.get("plugins", []):
+            if q in p["name"].lower() or q in p.get("description", "").lower():
+                hits.append((mp_name, p))
+    if not hits:
+        print(f"  No plugins matching '{args.query}'")
+        return 0
+    for mp_name, p in hits:
+        print(f"  {p['name']}@{mp_name}")
+        print(f"    {p.get('description', '')}")
+    return 0
+
+
+def cmd_completions(args):
+    if args.shell == "zsh":
+        print(ZSH_COMPLETION)
+    else:
+        print(f"Unsupported shell: {args.shell}", file=sys.stderr)
+        return 1
+    return 0
+
+
+ZSH_COMPLETION = r"""
+# ── cpi completion (add to ~/.zshrc) ──────────────────────────────────
+_cpi() {
+  local -a subcmds plugins
+  subcmds=(add remove list install uninstall search completions)
+
+  if (( CURRENT == 2 )); then
+    _describe 'command' subcmds
+    return
+  fi
+
+  case "${words[2]}" in
+    install|i|uninstall|search)
+      plugins=(${(f)"$(cpi _plugins 2>/dev/null)"})
+      [[ "${words[2]}" == install ]] && plugins+=(all)
+      compadd "${plugins[@]}"
+      ;;
+    remove)
+      local -a mps=(${(f)"$(ls ~/.config/cpi/ 2>/dev/null)"})
+      compadd "${mps[@]}"
+      ;;
+    add)
+      _files -/
+      ;;
+    completions)
+      compadd zsh
+      ;;
+  esac
+}
+compdef _cpi cpi
+""".strip()
+
+
+def cmd_plugins(_args):
+    """Hidden command: output raw plugin names for tab completion."""
+    marketplaces = load_marketplaces()
+    for mp in marketplaces.values():
+        for p in mp.get("plugins", []):
+            print(p["name"])
+    return 0
+
+
+# ── CLI ──────────────────────────────────────────────────────────────
+
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog="cpi",
+        description="Claude Plugin Installer — unified manager for Claude Code plugin marketplaces",
+    )
+    sub = parser.add_subparsers(dest="command")
+
+    p = sub.add_parser("add", help="Register a marketplace repo")
+    p.add_argument("path")
+
+    p = sub.add_parser("remove", help="Unregister a marketplace")
+    p.add_argument("name")
+
+    sub.add_parser("list", aliases=["ls"], help="List all plugins across marketplaces")
+
+    p = sub.add_parser("install", aliases=["i"], help="Install plugins (deps auto-resolved)")
+    p.add_argument("plugins", nargs="+")
+
+    p = sub.add_parser("uninstall", help="Uninstall plugins")
+    p.add_argument("plugins", nargs="+")
+
+    p = sub.add_parser("search", help="Search plugins by name or description")
+    p.add_argument("query")
+
+    p = sub.add_parser("completions", help="Output shell completion script")
+    p.add_argument("shell", choices=["zsh"])
+
+    sub.add_parser("_plugins", help=argparse.SUPPRESS)
+
+    args = parser.parse_args()
+    if not args.command:
+        parser.print_help()
+        return 0
+
+    dispatch = {
+        "add": cmd_add, "remove": cmd_remove,
+        "list": cmd_list, "ls": cmd_list,
+        "install": cmd_install, "i": cmd_install,
+        "uninstall": cmd_uninstall,
+        "search": cmd_search,
+        "completions": cmd_completions,
+        "_plugins": cmd_plugins,
+    }
+    return dispatch[args.command](args) or 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
