@@ -24,13 +24,15 @@ A Python CLI that manages plugins across multiple Claude Code marketplaces. It r
 **Install:**
 
 ```bash
-ln -sf ~/Projects/productivity/scripts/cpi ~/.local/bin/cpi
+# From your clone of this repo:
+ln -sf "$(pwd)/scripts/cpi" ~/.local/bin/cpi
 ```
 
 **Register marketplaces:**
 
 ```bash
-cpi add ~/Projects/productivity        # register a marketplace (one-time)
+# From your clone of this repo:
+cpi add .
 ```
 
 **Tab completion (add to `~/.zshrc`):**
