@@ -1,5 +1,5 @@
 {
   "name": "redhat-detective",
   "description": "Red Hat debugging and investigation toolkit: Jira issues, Knowledge Base, support cases, platform docs, and Prometheus metrics",
-  "version": "2.0.0"
+  "version": "2.1.0"
 }
