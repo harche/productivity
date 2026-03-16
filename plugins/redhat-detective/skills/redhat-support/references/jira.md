@@ -115,6 +115,18 @@ project = OCPNODE AND created >= startOfWeek()
 sprint in openSprints() AND project = OCPNODE AND resolution = Unresolved
 ```
 
+### Unsupported JQL
+
+`issueFunction` (e.g. `issueFunction in commented("by currentUser()")`) does **not** exist on Jira Cloud. There is no native JQL to filter by commenter.
+
+**Workaround — find issues I commented on:**
+
+Jira Cloud auto-adds you as a watcher when you comment. Use `watcher = currentUser()` with text/comment search:
+
+```
+watcher = currentUser() AND comment ~ "keyword" ORDER BY updated DESC
+```
+
 ## curl Fallbacks
 
 ACLI cannot update custom fields (sprint, labels via custom field, etc.) on existing issues. Use `curl` with the API token from Keychain for these operations:
