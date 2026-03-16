@@ -15,13 +15,6 @@
       "version": "1.0.2"
     },
     {
-      "name": "slack",
-      "source": "./plugins/slack",
-      "description": "Read/search/send Slack messages via Chrome extension",
-      "category": "workflow",
-      "version": "2.1.0"
-    },
-    {
       "name": "google",
       "source": "./plugins/google",
       "description": "Gmail, Google Calendar, Drive, and Docs via gog CLI",
@@ -64,13 +57,6 @@
       "version": "1.1.0"
     },
     {
-      "name": "twitter",
-      "source": "./plugins/twitter",
-      "description": "Read/search/post Twitter (X) content via browser session",
-      "category": "misc",
-      "version": "1.2.1"
-    },
-    {
       "name": "youtube",
       "source": "./plugins/youtube",
       "description": "Fetch YouTube transcripts, metadata, comments, search, and browse channels/playlists",
@@ -85,24 +71,10 @@
       "version": "0.1.0"
     },
     {
-      "name": "market-news",
-      "source": "./plugins/market-news",
-      "description": "Generate news briefings from Polymarket prediction markets, cross-referenced with Twitter",
-      "category": "misc",
-      "version": "0.1.0"
-    },
-    {
       "name": "dev-digest",
       "source": "./plugins/dev-digest",
       "description": "Generate developer attention briefings from Jira issues, GitHub PRs, and GitHub issues",
       "category": "workflow",
-      "version": "0.1.0"
-    },
-    {
-      "name": "reddit",
-      "source": "./plugins/reddit",
-      "description": "Browse and search Reddit via Chrome session",
-      "category": "misc",
       "version": "0.1.0"
     },
     {

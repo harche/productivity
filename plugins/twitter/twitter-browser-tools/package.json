@@ -1,6 +1,0 @@
-{
-  "name": "twitter-browser-tools",
-  "version": "0.1.0",
-  "description": "Twitter/X API tools via Chrome session extraction. No Playwright or app required.",
-  "private": true
-}

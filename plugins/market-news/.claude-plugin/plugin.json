@@ -1,5 +1,0 @@
-{
-  "name": "market-news",
-  "description": "Generate news briefings from Polymarket prediction markets, cross-referenced with Twitter for context",
-  "version": "0.1.0"
-}
