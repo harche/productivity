@@ -34,6 +34,18 @@ acli jira sprint list-workitems --sprint <SPRINT_ID> --board 7845 --jql 'assigne
 acli jira sprint view --id <SPRINT_ID>
 ```
 
+### Move issue to a sprint
+
+ACLI cannot do this — use `curl` with the API token:
+
+```bash
+JIRA_API_TOKEN=$(security find-generic-password -s "JIRA_API_TOKEN" -w)
+curl -s -u "harpatil@redhat.com:$JIRA_API_TOKEN" \
+  -X POST "https://redhat.atlassian.net/rest/agile/1.0/sprint/<SPRINT_ID>/issue" \
+  -H "Content-Type: application/json" \
+  -d '{"issues": ["OCPNODE-4137"]}'
+```
+
 Active sprint names follow the pattern: `OCP Node Core Sprint N`, `OCP Node Devices Sprint N`, `OCP Kueue Sprint N`, etc.
 
 ## Other Boards

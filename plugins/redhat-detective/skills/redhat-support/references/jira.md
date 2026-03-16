@@ -115,6 +115,34 @@ project = OCPNODE AND created >= startOfWeek()
 sprint in openSprints() AND project = OCPNODE AND resolution = Unresolved
 ```
 
+## curl Fallbacks
+
+ACLI cannot update custom fields (sprint, labels via custom field, etc.) on existing issues. Use `curl` with the API token from Keychain for these operations:
+
+```bash
+JIRA_API_TOKEN=$(security find-generic-password -s "JIRA_API_TOKEN" -w)
+
+# Move issue to a sprint
+curl -s -u "harpatil@redhat.com:$JIRA_API_TOKEN" \
+  -X POST "https://redhat.atlassian.net/rest/agile/1.0/sprint/{sprintId}/issue" \
+  -H "Content-Type: application/json" \
+  -d '{"issues": ["OCPNODE-4137"]}'
+
+# Update a custom field on an existing issue
+curl -s -u "harpatil@redhat.com:$JIRA_API_TOKEN" \
+  -X PUT "https://redhat.atlassian.net/rest/api/2/issue/{issueKey}" \
+  -H "Content-Type: application/json" \
+  -d '{"fields": {"customfield_10855": {"name": "4.22.0"}}}'
+
+# Add a watcher (also not supported by ACLI)
+curl -s -u "harpatil@redhat.com:$JIRA_API_TOKEN" \
+  -X POST "https://redhat.atlassian.net/rest/api/2/issue/{issueKey}/watchers" \
+  -H "Content-Type: application/json" \
+  -d '"accountId"'
+```
+
+Auth: Basic auth with `email:API_TOKEN`. Token stored in macOS Keychain as `JIRA_API_TOKEN`.
+
 ## Custom Fields
 
 Key Red Hat custom fields (use field names in JQL, IDs for `--fields`):
