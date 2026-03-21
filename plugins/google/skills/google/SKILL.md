@@ -46,6 +46,7 @@ Detailed command references for each service:
 ## Important
 
 - **Always confirm with the user before sending emails, creating/modifying calendar events, deleting files, or sharing documents.**
+- **When replying to emails, ALWAYS use `--quote` to preserve the email chain in the reply body.**
 - **When presenting dates to the user, always verify the day of the week using `date -j -f '%Y-%m-%d' 'YYYY-MM-DD' '+%A'` instead of guessing it.**
 - Use `--dry-run` (`-n`) to preview destructive actions.
 - Use `--json` for reliable parsing of command output.

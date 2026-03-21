@@ -36,6 +36,7 @@ gog gmail url <threadId>
 ## Send
 
 **IMPORTANT: Always confirm with the user before sending emails.**
+**IMPORTANT: When replying to a thread or message, ALWAYS use `--quote` to preserve the email chain.**
 
 ```bash
 # Send a new email
@@ -45,11 +46,11 @@ gog gmail send --to "a@example.com" --subject "Subject" --body "Body text"
 gog gmail send --to "a@example.com" --cc "b@example.com" --subject "Subject" \
   --body "Body" --attach file1.pdf --attach file2.png
 
-# Reply to a thread
-gog gmail send --thread-id <threadId> --reply-all --body "Reply text" [--quote]
+# Reply to a thread (--quote preserves the email chain)
+gog gmail send --thread-id <threadId> --reply-all --quote --body "Reply text"
 
-# Reply to a specific message
-gog gmail send --reply-to-message-id <messageId> --reply-all --body "Reply" [--quote]
+# Reply to a specific message (--quote preserves the email chain)
+gog gmail send --reply-to-message-id <messageId> --reply-all --quote --body "Reply"
 
 # Send HTML email
 gog gmail send --to "a@example.com" --subject "Subject" --body-html "<h1>Hello</h1>"
