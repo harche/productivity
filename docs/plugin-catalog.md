@@ -49,6 +49,7 @@ claude plugin install --scope local context-keeper@productivity-tools
 | `hackernews` | Browse, search, and read Hacker News stories, comments, and user profiles | — |
 | `sec-edgar` | Search SEC EDGAR for company filings, financials, and insider transactions | — |
 | `fred` | Federal Reserve economic data (GDP, CPI, interest rates, unemployment) | — |
+| `pubmed` | Search biomedical literature, clinical trials, and scientific papers (Europe PMC, ClinicalTrials.gov, Semantic Scholar, OpenAlex) | — |
 
 ## Agent Plugins
 
@@ -91,6 +92,8 @@ External CLI tools and API tokens required by specific plugins. Only install wha
 | `RH_API_OFFLINE_TOKEN` | `redhat-detective` | [Generate an offline token](https://access.redhat.com/management/api) for the Customer Portal API |
 | `OCP_PULL_SECRET` | `cluster-installer` | [Download from console.redhat.com](https://console.redhat.com/openshift/install/pull-secret) |
 | `fred-api-key` | `fred` | [Get a free API key](https://fred.stlouisfed.org/docs/api/api_key.html) (instant approval) |
+| `semantic-scholar-api-key` | `pubmed` | [Request a free API key](https://www.semanticscholar.org/product/api#api-key-form) (optional — plugin works without it) |
+| `openalex-api-key` | `pubmed` | [Get a free API key](https://openalex.org/settings/api) (sign up, then copy from settings) |
 
 ### Storing Tokens
 
@@ -122,4 +125,5 @@ See the full examples in the [README](../README.md#authentication--secrets).
 | `hackernews` | No auth required (public API) |
 | `sec-edgar` | No auth required (User-Agent header only) |
 | `fred` | API key from Keychain (`fred-api-key`) |
+| `pubmed` | Europe PMC and ClinicalTrials.gov: no auth; Semantic Scholar and OpenAlex: API keys from Keychain (optional/free) |
 | `context-keeper` | Uses other plugins' auth |

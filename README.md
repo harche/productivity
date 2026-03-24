@@ -85,6 +85,12 @@ security add-generic-password -a "$USER" -s "OCP_PULL_SECRET" \
 
 # FRED API key (free from https://fred.stlouisfed.org/docs/api/api_key.html)
 security add-generic-password -s "fred-api-key" -a "fred" -w "your-fred-api-key" -U
+
+# Semantic Scholar API key (optional, free from https://www.semanticscholar.org/product/api)
+security add-generic-password -s "semantic-scholar-api-key" -a "$USER" -w "your-s2-api-key" -U
+
+# OpenAlex API key (free from https://openalex.org/settings/api)
+security add-generic-password -s "openalex-api-key" -a "$USER" -w "your-openalex-api-key" -U
 ```
 
 **Linux (secret-tool / libsecret):**
