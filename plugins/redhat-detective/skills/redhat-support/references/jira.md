@@ -33,11 +33,67 @@ acli jira workitem search --jql '"Epic Link" = OCPNODE-4151' --fields "key,summa
 
 ## Comments
 
+IMPORTANT: Jira Cloud uses ADF (Atlassian Document Format). Plain text via `--body` renders as one unformatted paragraph. Wiki markup (`*bold*`, `{quote}`) renders as literal characters. Always use ADF JSON via `--body-file` for formatted comments.
+
 ```bash
+# List comments
 acli jira workitem comment list --key OCPNODE-4151
-acli jira workitem comment create --key OCPNODE-4151 --body "Comment text"
+
+# Create comment with ADF (write JSON to temp file first)
+acli jira workitem comment create --key OCPNODE-4151 --body-file /tmp/comment.json
+
+# Update last comment by same author
+acli jira workitem comment create --key OCPNODE-4151 --edit-last --body-file /tmp/comment.json
+
+# Simple unformatted comment (only for short, single-paragraph text)
+acli jira workitem comment create --key OCPNODE-4151 --body "Simple one-liner"
+
 # See: acli jira workitem comment -h
 ```
+
+### ADF JSON Template
+
+Write this to a temp file, then pass via `--body-file`:
+
+```json
+{"version":1,"type":"doc","content":[
+  {"type":"heading","attrs":{"level":3},"content":[
+    {"type":"text","text":"Section Title"}
+  ]},
+  {"type":"paragraph","content":[
+    {"type":"text","text":"Normal text. "},
+    {"type":"text","text":"Bold text","marks":[{"type":"strong"}]},
+    {"type":"text","text":". "},
+    {"type":"text","text":"Link text","marks":[{"type":"link","attrs":{"href":"https://example.com"}}]}
+  ]},
+  {"type":"blockquote","content":[
+    {"type":"paragraph","content":[
+      {"type":"text","text":"Quoted text","marks":[{"type":"em"}]}
+    ]}
+  ]},
+  {"type":"bulletList","content":[
+    {"type":"listItem","content":[
+      {"type":"paragraph","content":[{"type":"text","text":"Item 1"}]}
+    ]},
+    {"type":"listItem","content":[
+      {"type":"paragraph","content":[{"type":"text","text":"Item 2"}]}
+    ]}
+  ]},
+  {"type":"codeBlock","attrs":{"language":"bash"},"content":[
+    {"type":"text","text":"echo hello"}
+  ]}
+]}
+```
+
+### ADF Marks Reference
+- Bold: `"marks":[{"type":"strong"}]`
+- Italic: `"marks":[{"type":"em"}]`
+- Code (inline): `"marks":[{"type":"code"}]`
+- Link: `"marks":[{"type":"link","attrs":{"href":"URL"}}]`
+- Strikethrough: `"marks":[{"type":"strike"}]`
+
+### ADF Node Types
+`heading` (attrs: level 1-6), `paragraph`, `bulletList`, `orderedList`, `listItem`, `blockquote`, `codeBlock` (attrs: language), `table`, `tableRow`, `tableHeader`, `tableCell`
 
 ## Transitions
 
