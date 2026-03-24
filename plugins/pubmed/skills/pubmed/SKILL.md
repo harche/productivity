@@ -17,8 +17,11 @@ curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=GLP-1%20
 # Search clinical trials
 curl -sf "https://clinicaltrials.gov/api/v2/studies?query.cond=obesity&query.intr=semaglutide&pageSize=5&format=json" | jq '.studies[] | {nctId: .protocolSection.identificationModule.nctId, title: .protocolSection.identificationModule.briefTitle, status: .protocolSection.statusModule.overallStatus, phase: .protocolSection.designModule.phases}'
 
-# Paper details with AI summary (Semantic Scholar)
-curl -sf -H "x-api-key: $(security find-generic-password -s semantic-scholar-api-key -w)" "https://api.semanticscholar.org/graph/v1/paper/search?query=peptide+drug+delivery&fields=title,tldr,citationCount,year&limit=5" | jq '.data[] | {title, tldr: .tldr.text, citations: .citationCount, year}'
+# Paper details with AI summary (Semantic Scholar — requires API key)
+S2_KEY=$(security find-generic-password -s "semantic-scholar-api-key" -w 2>/dev/null)
+if [ -n "$S2_KEY" ]; then
+  curl -sf -H "x-api-key: ${S2_KEY}" "https://api.semanticscholar.org/graph/v1/paper/search?query=peptide+drug+delivery&fields=title,tldr,citationCount,year&limit=5" | jq '.data[] | {title, tldr: .tldr.text, citations: .citationCount, year}'
+fi
 ```
 
 ## Sources
@@ -40,7 +43,7 @@ For broad literature searches, start with **Europe PMC** — it indexes PubMed, 
 |---|---|---|
 | Europe PMC | None required | — |
 | ClinicalTrials.gov | None required | — |
-| Semantic Scholar | API key (free, optional) | macOS Keychain: `semantic-scholar-api-key` — check availability before use; if missing, skip and use Europe PMC |
+| Semantic Scholar | API key (free, required) | macOS Keychain: `semantic-scholar-api-key` — check availability before use; if missing, skip and use Europe PMC |
 | OpenAlex | API key (free) | macOS Keychain: `openalex-api-key` |
 
 ## Important

@@ -24,7 +24,7 @@ curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=QUERY&re
 | `format` | string | `json` or `xml` |
 | `pageSize` | int | Results per page (max 1000, default 25) |
 | `cursorMark` | string | Pagination cursor (`*` for first page) |
-| `sort` | string | `RELEVANCE` (default), `DATE_DESC`, `DATE_ASC`, `CITED` |
+| `sort` | string | Omit for relevance (default). Use `CITED desc`, `CITED asc`, `P_PDATE_D desc` (newest first), `P_PDATE_D asc` (oldest first). Format is `FIELD direction`. |
 
 ## Query Syntax
 

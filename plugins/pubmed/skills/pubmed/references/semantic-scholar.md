@@ -4,7 +4,7 @@ AI-powered academic search with TLDRs (auto-generated paper summaries), citation
 
 **Base URL:** `https://api.semanticscholar.org/graph/v1`
 
-**Auth:** API key in `x-api-key` header. Without key: shared rate pool (unreliable during peak). With key: dedicated 1 req/sec.
+**Auth:** API key in `x-api-key` header. **Required** — without a key, requests return 429 (Too Many Requests) immediately. With key: dedicated 1 req/sec.
 
 **Before using Semantic Scholar, check if the API key is available.** If not, skip Semantic Scholar and use Europe PMC instead — it covers the same literature without auth.
 
