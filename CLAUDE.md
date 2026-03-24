@@ -26,6 +26,7 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 - `hackernews` — Browse, search, and read Hacker News stories, comments, and user profiles
 - `sec-edgar` — Search SEC EDGAR for company filings, financials, and insider transactions
 - `fred` — Federal Reserve economic data (GDP, CPI, interest rates, unemployment)
+- `pubmed` — Search biomedical literature, clinical trials, and scientific papers (Europe PMC, ClinicalTrials.gov, Semantic Scholar, OpenAlex)
 
 **agents** (orchestrate other plugins, no tools of their own)
 - `dev-digest` — Developer attention briefing from Jira + GitHub (depends on `redhat-detective`, `github`)

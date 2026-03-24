@@ -99,6 +99,13 @@
       "description": "Federal Reserve economic data — GDP, CPI, interest rates, unemployment, and 800k+ time series",
       "category": "misc",
       "version": "0.1.0"
+    },
+    {
+      "name": "pubmed",
+      "source": "./plugins/pubmed",
+      "description": "Search biomedical literature, clinical trials, and scientific papers across PubMed, Europe PMC, ClinicalTrials.gov, Semantic Scholar, and OpenAlex",
+      "category": "misc",
+      "version": "0.1.0"
     }
   ]
 }
