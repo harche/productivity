@@ -8,13 +8,13 @@ Primary literature search API. Indexes PubMed (37M+ citations), PubMed Central (
 
 ```bash
 # Basic keyword search
-curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=QUERY&resultType=lite&format=json&pageSize=10" | jq '.resultList.result[] | {title, authorString, journalTitle, pubYear, pmid, doi, source}'
+curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=QUERY&resultType=lite&format=json&pageSize=10" | jq '.resultList.result // [] | .[] | {title, authorString, journalTitle, pubYear, pmid, doi, source}'
 
 # With abstract (use resultType=core)
-curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=QUERY&resultType=core&format=json&pageSize=5" | jq '.resultList.result[] | {title, authorString, pubYear, abstractText}'
+curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=QUERY&resultType=core&format=json&pageSize=5" | jq '.resultList.result // [] | .[] | {title, authorString, pubYear, abstractText}'
 
 # Pagination (cursorMark-based)
-curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=QUERY&resultType=lite&format=json&pageSize=25&cursorMark=*" | jq '{nextCursorMark, hitCount, results: [.resultList.result[] | {title, pubYear, pmid}]}'
+curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=QUERY&resultType=lite&format=json&pageSize=25&cursorMark=*" | jq '{nextCursorMark, hitCount, results: [.resultList.result // [] | .[] | {title, pubYear, pmid}]}'
 ```
 
 | Param | Type | Description |
@@ -24,7 +24,7 @@ curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=QUERY&re
 | `format` | string | `json` or `xml` |
 | `pageSize` | int | Results per page (max 1000, default 25) |
 | `cursorMark` | string | Pagination cursor (`*` for first page) |
-| `sort` | string | Omit for relevance (default). Use `CITED desc`, `CITED asc`, `P_PDATE_D desc` (newest first), `P_PDATE_D asc` (oldest first). Format is `FIELD direction`. |
+| `sort` | string | Omit for relevance (default). Use `CITED desc`, `CITED asc`, `P_PDATE_D desc` (newest first), `P_PDATE_D asc` (oldest first). Format is `FIELD direction`. **Do NOT use `DATE_DESC` or other non-standard values — the API returns null results silently on invalid sort values.** |
 
 ## Query Syntax
 
@@ -32,22 +32,25 @@ Combine field-specific queries with boolean operators (`AND`, `OR`, `NOT`):
 
 ```bash
 # By author
-curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=AUTH:%22Smith+J%22&resultType=lite&format=json&pageSize=5" | jq '.resultList.result[] | {title, pubYear, journalTitle}'
+curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=AUTH:%22Smith+J%22&resultType=lite&format=json&pageSize=5" | jq '.resultList.result // [] | .[] | {title, pubYear, journalTitle}'
 
 # By journal
-curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=JOURNAL:%22Nature%22+AND+peptide+therapeutics&resultType=lite&format=json&pageSize=5" | jq '.resultList.result[] | {title, pubYear, doi}'
+curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=JOURNAL:%22Nature%22+AND+peptide+therapeutics&resultType=lite&format=json&pageSize=5" | jq '.resultList.result // [] | .[] | {title, pubYear, doi}'
 
 # Date range
-curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=GLP-1+AND+(FIRST_PDATE:[2024-01-01+TO+2026-12-31])&resultType=lite&format=json&pageSize=10" | jq '.resultList.result[] | {title, pubYear, pmid}'
+curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=GLP-1+AND+(FIRST_PDATE:[2024-01-01+TO+2026-12-31])&resultType=lite&format=json&pageSize=10" | jq '.resultList.result // [] | .[] | {title, pubYear, pmid}'
 
 # Preprints only (bioRxiv/medRxiv)
-curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=SRC:PPR+AND+peptide+delivery&resultType=lite&format=json&pageSize=5" | jq '.resultList.result[] | {title, authorString, pubYear, source}'
+curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=SRC:PPR+AND+peptide+delivery&resultType=lite&format=json&pageSize=5" | jq '.resultList.result // [] | .[] | {title, authorString, pubYear, source}'
 
 # Open access only
-curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=OPEN_ACCESS:y+AND+semaglutide&resultType=lite&format=json&pageSize=5" | jq '.resultList.result[] | {title, pubYear, isOpenAccess}'
+curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=OPEN_ACCESS:y+AND+semaglutide&resultType=lite&format=json&pageSize=5" | jq '.resultList.result // [] | .[] | {title, pubYear, isOpenAccess}'
 
 # MeSH terms
-curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=MESH:%22Glucagon-Like+Peptide+1%22&resultType=lite&format=json&pageSize=5" | jq '.resultList.result[] | {title, pubYear, pmid}'
+curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=MESH:%22Glucagon-Like+Peptide+1%22&resultType=lite&format=json&pageSize=5" | jq '.resultList.result // [] | .[] | {title, pubYear, pmid}'
+
+# Sort by newest first (use P_PDATE_D desc, NOT DATE_DESC)
+curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=peptide+therapeutics&resultType=lite&format=json&pageSize=5&sort=P_PDATE_D+desc" | jq '.resultList.result // [] | .[] | {title, pubYear, pmid}'
 ```
 
 ### Query Field Reference
@@ -69,10 +72,10 @@ curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=MESH:%22
 
 ```bash
 # Articles that cite a paper (by PMID)
-curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/MED/PMID/citations?format=json&pageSize=10" | jq '.citationList.citation[] | {title, authorString, pubYear, journalAbbreviation}'
+curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/MED/PMID/citations?format=json&pageSize=10" | jq '.citationList.citation // [] | .[] | {title, authorString, pubYear, journalAbbreviation}'
 
 # References from a paper
-curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/MED/PMID/references?format=json&pageSize=10" | jq '.referenceList.reference[] | {title, authorString, pubYear, journalAbbreviation}'
+curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/MED/PMID/references?format=json&pageSize=10" | jq '.referenceList.reference // [] | .[] | {title, authorString, pubYear, journalAbbreviation}'
 ```
 
 Replace `MED` with the source (`PMC`, `PPR`, `PAT`) and `PMID` with the article ID.
@@ -89,7 +92,7 @@ curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/PMC12345/fullTextXML"
 Europe PMC extracts entities (genes, diseases, chemicals) from articles:
 
 ```bash
-curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/MED/PMID/textMinedTerms?format=json&pageSize=20" | jq '.semanticTypeList.semanticType[] | {name, total, terms: [.tmSummary[:3][] | {term, count}]}'
+curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/MED/PMID/textMinedTerms?format=json&pageSize=20" | jq '.semanticTypeList.semanticType // [] | .[] | {name, total, terms: [.tmSummary[:3] // [] | .[] | {term, count}]}'
 ```
 
 ## Important

@@ -21,19 +21,19 @@ fi
 
 ```bash
 # Basic search with TLDRs
-curl -sf -H "x-api-key: ${S2_KEY}" "https://api.semanticscholar.org/graph/v1/paper/search?query=peptide+drug+delivery&fields=title,tldr,year,citationCount,url&limit=5" | jq '.data[] | {title, tldr: .tldr.text, year, citations: .citationCount, url}'
+curl -sf -H "x-api-key: ${S2_KEY}" "https://api.semanticscholar.org/graph/v1/paper/search?query=peptide+drug+delivery&fields=title,tldr,year,citationCount,url&limit=5" | jq '.data // [] | .[] | {title, tldr: .tldr.text, year, citations: .citationCount, url}'
 
 # Search with abstracts and authors
-curl -sf -H "x-api-key: ${S2_KEY}" "https://api.semanticscholar.org/graph/v1/paper/search?query=GLP-1+receptor+agonist&fields=title,abstract,authors,year,citationCount,openAccessPdf&limit=5" | jq '.data[] | {title, year, citations: .citationCount, authors: [.authors[]?.name], pdf: .openAccessPdf.url}'
+curl -sf -H "x-api-key: ${S2_KEY}" "https://api.semanticscholar.org/graph/v1/paper/search?query=GLP-1+receptor+agonist&fields=title,abstract,authors,year,citationCount,openAccessPdf&limit=5" | jq '.data // [] | .[] | {title, year, citations: .citationCount, authors: [.authors[]?.name], pdf: .openAccessPdf.url}'
 
 # Filter by year range
-curl -sf -H "x-api-key: ${S2_KEY}" "https://api.semanticscholar.org/graph/v1/paper/search?query=semaglutide&fields=title,year,citationCount,tldr&year=2023-2026&limit=10" | jq '.data[] | {title, year, citations: .citationCount, tldr: .tldr.text}'
+curl -sf -H "x-api-key: ${S2_KEY}" "https://api.semanticscholar.org/graph/v1/paper/search?query=semaglutide&fields=title,year,citationCount,tldr&year=2023-2026&limit=10" | jq '.data // [] | .[] | {title, year, citations: .citationCount, tldr: .tldr.text}'
 
 # Filter by open access
-curl -sf -H "x-api-key: ${S2_KEY}" "https://api.semanticscholar.org/graph/v1/paper/search?query=BPC-157&fields=title,year,openAccessPdf,citationCount&openAccessPdf&limit=5" | jq '.data[] | {title, year, citations: .citationCount, pdf: .openAccessPdf.url}'
+curl -sf -H "x-api-key: ${S2_KEY}" "https://api.semanticscholar.org/graph/v1/paper/search?query=BPC-157&fields=title,year,openAccessPdf,citationCount&openAccessPdf&limit=5" | jq '.data // [] | .[] | {title, year, citations: .citationCount, pdf: .openAccessPdf.url}'
 
 # Pagination
-curl -sf -H "x-api-key: ${S2_KEY}" "https://api.semanticscholar.org/graph/v1/paper/search?query=peptides&fields=title,year&limit=100&offset=100" | jq '{total, offset, next, data: [.data[] | {title, year}]}'
+curl -sf -H "x-api-key: ${S2_KEY}" "https://api.semanticscholar.org/graph/v1/paper/search?query=peptides&fields=title,year&limit=100&offset=100" | jq '{total, offset, next, data: [.data // [] | .[] | {title, year}]}'
 ```
 
 | Param | Type | Description |
@@ -71,10 +71,10 @@ Supported ID prefixes: `DOI:`, `PMID:`, `ARXIV:`, `CorpusId:`, `MAG:`, `ACL:`.
 
 ```bash
 # Papers that cite this paper
-curl -sf -H "x-api-key: ${S2_KEY}" "https://api.semanticscholar.org/graph/v1/paper/PAPER_ID/citations?fields=title,year,citationCount,isInfluential&limit=10" | jq '.data[] | {title: .citingPaper.title, year: .citingPaper.year, citations: .citingPaper.citationCount, influential: .isInfluential}'
+curl -sf -H "x-api-key: ${S2_KEY}" "https://api.semanticscholar.org/graph/v1/paper/PAPER_ID/citations?fields=title,year,citationCount,isInfluential&limit=10" | jq '.data // [] | .[] | {title: .citingPaper.title, year: .citingPaper.year, citations: .citingPaper.citationCount, influential: .isInfluential}'
 
 # Papers this paper references
-curl -sf -H "x-api-key: ${S2_KEY}" "https://api.semanticscholar.org/graph/v1/paper/PAPER_ID/references?fields=title,year,citationCount,isInfluential&limit=10" | jq '.data[] | {title: .citedPaper.title, year: .citedPaper.year, citations: .citedPaper.citationCount, influential: .isInfluential}'
+curl -sf -H "x-api-key: ${S2_KEY}" "https://api.semanticscholar.org/graph/v1/paper/PAPER_ID/references?fields=title,year,citationCount,isInfluential&limit=10" | jq '.data // [] | .[] | {title: .citedPaper.title, year: .citedPaper.year, citations: .citedPaper.citationCount, influential: .isInfluential}'
 ```
 
 The `isInfluential` flag indicates whether the citation significantly impacted the citing paper — useful for finding the most important connections.
@@ -93,16 +93,16 @@ curl -sf -X POST -H "x-api-key: ${S2_KEY}" -H "Content-Type: application/json" \
 
 ```bash
 # Search authors
-curl -sf -H "x-api-key: ${S2_KEY}" "https://api.semanticscholar.org/graph/v1/author/search?query=Daniel+Drucker&fields=name,hIndex,citationCount,paperCount&limit=5" | jq '.data[] | {name, hIndex, citations: .citationCount, papers: .paperCount}'
+curl -sf -H "x-api-key: ${S2_KEY}" "https://api.semanticscholar.org/graph/v1/author/search?query=Daniel+Drucker&fields=name,hIndex,citationCount,paperCount&limit=5" | jq '.data // [] | .[] | {name, hIndex, citations: .citationCount, papers: .paperCount}'
 
 # Author's papers
-curl -sf -H "x-api-key: ${S2_KEY}" "https://api.semanticscholar.org/graph/v1/author/AUTHOR_ID/papers?fields=title,year,citationCount&limit=10" | jq '.data[] | {title, year, citations: .citationCount}'
+curl -sf -H "x-api-key: ${S2_KEY}" "https://api.semanticscholar.org/graph/v1/author/AUTHOR_ID/papers?fields=title,year,citationCount&limit=10" | jq '.data // [] | .[] | {title, year, citations: .citationCount}'
 ```
 
 ## Autocomplete
 
 ```bash
-curl -sf -H "x-api-key: ${S2_KEY}" "https://api.semanticscholar.org/graph/v1/paper/autocomplete?query=semaglu" | jq '.completions[] | {text, id}'
+curl -sf -H "x-api-key: ${S2_KEY}" "https://api.semanticscholar.org/graph/v1/paper/autocomplete?query=semaglu" | jq '.completions // [] | .[] | {text, id}'
 ```
 
 ## Available Fields

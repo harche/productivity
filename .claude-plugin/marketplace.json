@@ -105,7 +105,7 @@
       "source": "./plugins/pubmed",
       "description": "Search biomedical literature, clinical trials, and scientific papers across PubMed, Europe PMC, ClinicalTrials.gov, Semantic Scholar, and OpenAlex",
       "category": "misc",
-      "version": "0.2.0"
+      "version": "0.2.1"
     }
   ]
 }

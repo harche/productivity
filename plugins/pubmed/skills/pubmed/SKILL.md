@@ -12,15 +12,15 @@ Search peer-reviewed articles, clinical trials, and scientific papers across mul
 
 ```bash
 # Search articles (Europe PMC — covers PubMed, PMC, preprints, patents)
-curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=GLP-1%20receptor%20agonists&resultType=lite&format=json&pageSize=5" | jq '.resultList.result[] | {title, authorString, journalTitle, pubYear, pmid, doi}'
+curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=GLP-1%20receptor%20agonists&resultType=lite&format=json&pageSize=5" | jq '.resultList.result // [] | .[] | {title, authorString, journalTitle, pubYear, pmid, doi}'
 
 # Search clinical trials
-curl -sf "https://clinicaltrials.gov/api/v2/studies?query.cond=obesity&query.intr=semaglutide&pageSize=5&format=json" | jq '.studies[] | {nctId: .protocolSection.identificationModule.nctId, title: .protocolSection.identificationModule.briefTitle, status: .protocolSection.statusModule.overallStatus, phase: .protocolSection.designModule.phases}'
+curl -sf "https://clinicaltrials.gov/api/v2/studies?query.cond=obesity&query.intr=semaglutide&pageSize=5&format=json" | jq '.studies // [] | .[] | {nctId: .protocolSection.identificationModule.nctId, title: .protocolSection.identificationModule.briefTitle, status: .protocolSection.statusModule.overallStatus, phase: .protocolSection.designModule.phases}'
 
 # Paper details with AI summary (Semantic Scholar — requires API key)
 S2_KEY=$(security find-generic-password -s "semantic-scholar-api-key" -w 2>/dev/null)
 if [ -n "$S2_KEY" ]; then
-  curl -sf -H "x-api-key: ${S2_KEY}" "https://api.semanticscholar.org/graph/v1/paper/search?query=peptide+drug+delivery&fields=title,tldr,citationCount,year&limit=5" | jq '.data[] | {title, tldr: .tldr.text, citations: .citationCount, year}'
+  curl -sf -H "x-api-key: ${S2_KEY}" "https://api.semanticscholar.org/graph/v1/paper/search?query=peptide+drug+delivery&fields=title,tldr,citationCount,year&limit=5" | jq '.data // [] | .[] | {title, tldr: .tldr.text, citations: .citationCount, year}'
 fi
 ```
 

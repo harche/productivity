@@ -8,22 +8,22 @@ Search 500K+ registered clinical studies worldwide. Clean JSON API, no authentic
 
 ```bash
 # Search by condition
-curl -sf "https://clinicaltrials.gov/api/v2/studies?query.cond=diabetes&pageSize=5&format=json" | jq '.studies[] | {nctId: .protocolSection.identificationModule.nctId, title: .protocolSection.identificationModule.briefTitle, status: .protocolSection.statusModule.overallStatus}'
+curl -sf "https://clinicaltrials.gov/api/v2/studies?query.cond=diabetes&pageSize=5&format=json" | jq '.studies // [] | .[] | {nctId: .protocolSection.identificationModule.nctId, title: .protocolSection.identificationModule.briefTitle, status: .protocolSection.statusModule.overallStatus}'
 
 # Search by intervention (drug/therapy)
-curl -sf "https://clinicaltrials.gov/api/v2/studies?query.intr=semaglutide&pageSize=5&format=json" | jq '.studies[] | {nctId: .protocolSection.identificationModule.nctId, title: .protocolSection.identificationModule.briefTitle, status: .protocolSection.statusModule.overallStatus, phase: .protocolSection.designModule.phases}'
+curl -sf "https://clinicaltrials.gov/api/v2/studies?query.intr=semaglutide&pageSize=5&format=json" | jq '.studies // [] | .[] | {nctId: .protocolSection.identificationModule.nctId, title: .protocolSection.identificationModule.briefTitle, status: .protocolSection.statusModule.overallStatus, phase: .protocolSection.designModule.phases}'
 
 # Combined: condition + intervention
-curl -sf "https://clinicaltrials.gov/api/v2/studies?query.cond=obesity&query.intr=tirzepatide&pageSize=5&format=json" | jq '.studies[] | {nctId: .protocolSection.identificationModule.nctId, title: .protocolSection.identificationModule.briefTitle, status: .protocolSection.statusModule.overallStatus}'
+curl -sf "https://clinicaltrials.gov/api/v2/studies?query.cond=obesity&query.intr=tirzepatide&pageSize=5&format=json" | jq '.studies // [] | .[] | {nctId: .protocolSection.identificationModule.nctId, title: .protocolSection.identificationModule.briefTitle, status: .protocolSection.statusModule.overallStatus}'
 
 # Full-text search (any field)
-curl -sf "https://clinicaltrials.gov/api/v2/studies?query.term=BPC-157+peptide&pageSize=5&format=json" | jq '.studies[] | {nctId: .protocolSection.identificationModule.nctId, title: .protocolSection.identificationModule.briefTitle, status: .protocolSection.statusModule.overallStatus}'
+curl -sf "https://clinicaltrials.gov/api/v2/studies?query.term=BPC-157+peptide&pageSize=5&format=json" | jq '.studies // [] | .[] | {nctId: .protocolSection.identificationModule.nctId, title: .protocolSection.identificationModule.briefTitle, status: .protocolSection.statusModule.overallStatus}'
 
 # By sponsor
-curl -sf "https://clinicaltrials.gov/api/v2/studies?query.spons=Novo+Nordisk&pageSize=5&format=json" | jq '.studies[] | {nctId: .protocolSection.identificationModule.nctId, title: .protocolSection.identificationModule.briefTitle, status: .protocolSection.statusModule.overallStatus}'
+curl -sf "https://clinicaltrials.gov/api/v2/studies?query.spons=Novo+Nordisk&pageSize=5&format=json" | jq '.studies // [] | .[] | {nctId: .protocolSection.identificationModule.nctId, title: .protocolSection.identificationModule.briefTitle, status: .protocolSection.statusModule.overallStatus}'
 
 # By location
-curl -sf "https://clinicaltrials.gov/api/v2/studies?query.locn=Boston&query.cond=cancer&pageSize=5&format=json" | jq '.studies[] | {nctId: .protocolSection.identificationModule.nctId, title: .protocolSection.identificationModule.briefTitle}'
+curl -sf "https://clinicaltrials.gov/api/v2/studies?query.locn=Boston&query.cond=cancer&pageSize=5&format=json" | jq '.studies // [] | .[] | {nctId: .protocolSection.identificationModule.nctId, title: .protocolSection.identificationModule.briefTitle}'
 ```
 
 | Param | Type | Description |
@@ -44,13 +44,13 @@ Append filters to narrow results:
 
 ```bash
 # Only recruiting studies
-curl -sf "https://clinicaltrials.gov/api/v2/studies?query.cond=alzheimer&filter.overallStatus=RECRUITING&pageSize=5&format=json" | jq '.studies[] | {nctId: .protocolSection.identificationModule.nctId, title: .protocolSection.identificationModule.briefTitle}'
+curl -sf "https://clinicaltrials.gov/api/v2/studies?query.cond=alzheimer&filter.overallStatus=RECRUITING&pageSize=5&format=json" | jq '.studies // [] | .[] | {nctId: .protocolSection.identificationModule.nctId, title: .protocolSection.identificationModule.briefTitle}'
 
 # Phase 3 trials only
-curl -sf "https://clinicaltrials.gov/api/v2/studies?query.intr=ozempic&filter.phase=PHASE3&pageSize=5&format=json" | jq '.studies[] | {nctId: .protocolSection.identificationModule.nctId, title: .protocolSection.identificationModule.briefTitle, phase: .protocolSection.designModule.phases}'
+curl -sf "https://clinicaltrials.gov/api/v2/studies?query.intr=ozempic&filter.phase=PHASE3&pageSize=5&format=json" | jq '.studies // [] | .[] | {nctId: .protocolSection.identificationModule.nctId, title: .protocolSection.identificationModule.briefTitle, phase: .protocolSection.designModule.phases}'
 
 # Interventional studies with results
-curl -sf "https://clinicaltrials.gov/api/v2/studies?query.term=GLP-1&filter.overallStatus=COMPLETED&filter.advanced=STUDY_RESULTS:WITH&pageSize=5&format=json" | jq '.studies[] | {nctId: .protocolSection.identificationModule.nctId, title: .protocolSection.identificationModule.briefTitle}'
+curl -sf "https://clinicaltrials.gov/api/v2/studies?query.term=GLP-1&filter.overallStatus=COMPLETED&filter.advanced=STUDY_RESULTS:WITH&pageSize=5&format=json" | jq '.studies // [] | .[] | {nctId: .protocolSection.identificationModule.nctId, title: .protocolSection.identificationModule.briefTitle}'
 ```
 
 | Filter | Values |
