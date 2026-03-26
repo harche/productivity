@@ -6,10 +6,28 @@ RHCOS worker nodes are not directly accessible via SSH. The [ssh-bastion](https:
 
 ### 1. Deploy the Bastion
 
+Use the deploy script (not a single YAML — the repo has separate manifests for SA, roles, deployment, and service):
+
 ```bash
-# Deploy the bastion pod and LoadBalancer service
-oc apply -f https://raw.githubusercontent.com/eparis/ssh-bastion/master/deploy/deploy.yaml
-oc wait --for=condition=available -n openshift-ssh-bastion deployment/ssh-bastion --timeout=120s
+curl -sL https://raw.githubusercontent.com/eparis/ssh-bastion/master/deploy/deploy.sh | bash
+```
+
+The script creates the `openshift-ssh-bastion` namespace, deploys the bastion pod, and prints the LoadBalancer IP.
+
+If the script is unavailable, apply the individual manifests from the [deploy/ directory](https://github.com/eparis/ssh-bastion/tree/master/deploy):
+
+```bash
+for f in serviceaccount role clusterrole deployment service; do
+  oc apply -f "https://raw.githubusercontent.com/eparis/ssh-bastion/master/deploy/${f}.yaml"
+done
+```
+
+**LoadBalancer warm-up:** After deployment, the cloud LoadBalancer (especially on GCP) takes 30-60 seconds to become reachable. SSH connections will be refused during this period. Wait and retry — don't assume the bastion is broken.
+
+```bash
+# Wait for the LB to provision, then test
+sleep 30
+ssh -i $SSH_KEY -o ConnectTimeout=15 core@${BASTION_HOST} echo "connected"
 ```
 
 ### 2. Discover the SSH Key
@@ -75,3 +93,28 @@ Always SCP files to `/home/core/` first.
 ## Gotcha: SCP Fails on Bind-Mounted Files
 
 If the target file is already bind-mounted (busy), SCP will fail with `Failure`. Copy to a new filename (e.g., `/home/core/binary-v2`), then swap after unmounting.
+
+## Troubleshooting: Bastion Connectivity
+
+If SSH connections are intermittently refused (`Connection refused` on port 22) after the bastion pod is running:
+
+1. **Restart the bastion pod.** Deleting the pod lets the deployment recreate it, which often fixes flaky LB connectivity:
+
+```bash
+oc delete pod -n openshift-ssh-bastion -l run=ssh-bastion
+sleep 30
+```
+
+2. **Verify the pod is running and the LB has an IP:**
+
+```bash
+oc get pods -n openshift-ssh-bastion -o wide
+oc get svc -n openshift-ssh-bastion ssh-bastion
+```
+
+3. **Re-fetch the bastion IP** (it shouldn't change, but confirm):
+
+```bash
+BASTION_HOST=$(oc get service -n openshift-ssh-bastion ssh-bastion \
+  -o go-template='{{ with (index (index .status.loadBalancer.ingress 0)) }}{{ or .hostname .ip }}{{end}}')
+```
