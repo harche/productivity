@@ -1,24 +1,29 @@
 ---
 name: redhat-support
 description: Interact with Red Hat Jira (redhat.atlassian.net), search Red Hat Knowledge Base articles and solutions, and manage Customer Portal support cases. Use when the user asks about Jira issues, shares a Jira URL, asks about known issues, troubleshooting, knowledge base articles, support cases, shares a case/knowledge base URL, mentions issue keys like OCPBUGS-*, OCPNODE-*, any redhat.atlassian.net link, or asks about Node team work — bugs, epics, sprints, triage, standup prep, release readiness, escalations, CVEs, customer issues, CRI-O, kubelet, kueue, DRA, device manager, or any OpenShift Node component.
-allowed-tools: Bash(acli:*,curl:*)
+allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/*),Bash(curl:*)
 ---
 
 # Red Hat Support
 
-Jira uses the Atlassian CLI (`acli`). Knowledge Base and Support Cases use `curl` with OAuth.
-
-Use `acli jira -h` and `acli jira workitem -h` to discover commands and flags.
+Jira uses the bundled `jira.sh` CLI (REST API via curl). Knowledge Base and Support Cases use `curl` with OAuth.
 
 ## Quick Start
 
 ### Jira
 
 ```bash
-acli jira workitem view OCPNODE-4151
-acli jira workitem view OCPNODE-4151 --fields '*all' --json
-acli jira workitem search --jql 'assignee = currentUser() AND type = Epic AND status not in (Closed, Done)' --limit 10
-acli jira workitem search --jql '"Epic Link" = OCPNODE-4151' --fields "key,summary,status,assignee"
+# View an issue
+${CLAUDE_PLUGIN_ROOT}/scripts/jira.sh get OCPNODE-4151
+
+# Search issues
+${CLAUDE_PLUGIN_ROOT}/scripts/jira.sh search 'assignee = currentUser() AND type = Epic AND status not in (Closed, Done)' 10
+
+# Deep dive (full issue + comments + linked issues)
+${CLAUDE_PLUGIN_ROOT}/scripts/jira.sh issue-deep-dive OCPNODE-4151
+
+# Add a remote link (e.g., GitHub PR)
+${CLAUDE_PLUGIN_ROOT}/scripts/jira.sh link OCPNODE-4151 "https://github.com/org/repo/pull/123" "PR title"
 ```
 
 ### Knowledge Base
@@ -58,7 +63,7 @@ Read based on what the user needs:
 | User intent | Read |
 |---|---|
 | Node team work (bugs, epics, sprints, standup, triage, investigation, release) | [node-guide.md](references/node-guide.md) — it routes to the right reference |
-| Jira command syntax (`acli` usage) | [jira.md](references/jira.md) |
+| Jira command syntax (`jira.sh` usage) | [jira.md](references/jira.md) |
 | Knowledge Base search | [knowledge-base.md](references/knowledge-base.md) |
 | Support cases | [cases.md](references/cases.md) |
 

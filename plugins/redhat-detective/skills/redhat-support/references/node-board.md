@@ -4,46 +4,38 @@
 
 Board, sprint, and saved filter reference for the OpenShift Node team.
 
+**Shorthand:** In this doc, `jira.sh` means `${CLAUDE_PLUGIN_ROOT}/scripts/jira.sh`.
+
 ## Board
 
 The main board is **"Node board" (ID 7845)**, a scrum board covering OCPNODE + OCPKUEUE + Node-component bugs.
 
-```bash
-# Board details
-acli jira board get --id 7845
-
-# Active sprints
-acli jira board list-sprints --id 7845 --state active
-
-# Closed sprints
-acli jira board list-sprints --id 7845 --state closed
-```
-
 ## Sprints
 
-Each sprint has a numeric ID shown by `list-sprints`. Use it to query sprint items.
-
 ```bash
+# Active sprints
+jira.sh sprints active
+
+# Closed sprints
+jira.sh sprints closed
+
+# Future sprints
+jira.sh sprints future
+
 # List items in a sprint
-acli jira sprint list-workitems --sprint <SPRINT_ID> --board 7845
+jira.sh sprint-issues <SPRINT_ID> 100
 
-# Sprint items filtered by JQL
-acli jira sprint list-workitems --sprint <SPRINT_ID> --board 7845 --jql 'assignee = currentUser()'
+# Start a sprint
+jira.sh start-sprint <SPRINT_ID>
 
-# Sprint details
-acli jira sprint view --id <SPRINT_ID>
+# Close a sprint
+jira.sh close-sprint <SPRINT_ID>
 ```
 
 ### Move issue to a sprint
 
-ACLI cannot do this — use `curl` with the API token:
-
 ```bash
-JIRA_API_TOKEN=$(security find-generic-password -s "JIRA_API_TOKEN" -w)
-curl -s -u "harpatil@redhat.com:$JIRA_API_TOKEN" \
-  -X POST "https://redhat.atlassian.net/rest/agile/1.0/sprint/<SPRINT_ID>/issue" \
-  -H "Content-Type: application/json" \
-  -d '{"issues": ["OCPNODE-4137"]}'
+jira.sh move-to-sprint <SPRINT_ID> OCPNODE-4137
 ```
 
 Active sprint names follow the pattern: `OCP Node Core Sprint N`, `OCP Node Devices Sprint N`, `OCP Kueue Sprint N`, etc.
@@ -69,8 +61,3 @@ Key filters usable in JQL via `filter = "Name"`:
 | Node Core Team | 66331 | `membersOf(OpenShift-Node-Team)` |
 | Node Epics | 96318 | OCPNODE epics |
 | Node CR bugs | 94401 | Component regression bugs |
-
-```bash
-# Look up a filter's JQL by ID
-acli jira filter get --id 83963 --json
-```

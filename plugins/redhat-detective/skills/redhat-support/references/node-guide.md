@@ -97,12 +97,14 @@ Sprint names: `OCP Node Core Sprint N`, `OCP Node Devices Sprint N`, `OCP Kueue 
 
 ## Workflows
 
+**Shorthand:** In this doc, `jira.sh` means `${CLAUDE_PLUGIN_ROOT}/scripts/jira.sh`.
+
 ### Standup Prep
 
 "What's on my plate? What should I report?"
 
 1. **My sprint items** — what I'm working on this sprint
-   → [node-board.md](node-board.md): `acli jira sprint list-workitems --sprint <ID> --board 7845 --jql 'assignee = currentUser()'`
+   → [node-board.md](node-board.md): `jira.sh sprint-issues <SPRINT_ID> 100` (pipe through jq to filter by assignee)
 
 2. **My open bugs** — bugs assigned to me
    → [node-bugs.md](node-bugs.md): `filter = "Node Bugs" AND assignee = currentUser() AND status not in (Done, CLOSED, Verified)`
@@ -112,6 +114,9 @@ Sprint names: `OCP Node Core Sprint N`, `OCP Node Devices Sprint N`, `OCP Kueue 
 
 4. **Items I'm watching** — bugs/issues I'm keeping an eye on
    → [node-bugs.md](node-bugs.md): use the "My" tab: `assignee = currentUser() OR watcher in (currentUser())`
+
+5. **Composite shortcut** — all of the above in one call
+   → `jira.sh my-standup-data <team>`
 
 ### Bug Triage
 
@@ -132,31 +137,31 @@ Sprint names: `OCP Node Core Sprint N`, `OCP Node Devices Sprint N`, `OCP Kueue 
 5. **By component** — e.g., just CRI-O bugs
    → add `AND Component in ("Node / CRI-O")` to any query
 
+6. **Composite shortcut** — full bug overview in one call
+   → `jira.sh bug-overview <team>`
+
 ### Investigation
 
 "Dig into this issue. What's going on with OCPBUGS-12345?"
 
 Follow these steps to build a complete picture:
 
-1. **View the issue** — summary, status, assignee, description
-   → [jira.md](jira.md): `acli jira workitem view OCPBUGS-12345`
+1. **Deep dive** — full issue + comments + linked issues in one call
+   → [jira.md](jira.md): `jira.sh issue-deep-dive OCPBUGS-12345`
 
-2. **Read comments** — discussion, root cause analysis, workarounds
-   → [jira.md](jira.md): `acli jira workitem comment list --key OCPBUGS-12345`
+2. **View the issue** — summary, status, assignee, description
+   → [jira.md](jira.md): `jira.sh get OCPBUGS-12345`
 
-3. **Check history** — who changed what, when was it moved to POST
-   → [jira.md](jira.md): `acli jira workitem view OCPBUGS-12345 --fields '*all' --json` (check changelog)
+3. **Read comments** — discussion, root cause analysis, workarounds
+   → [jira.md](jira.md): `jira.sh comments OCPBUGS-12345`
 
-4. **Check linked issues** — duplicates, blockers, related work
-   → [jira.md](jira.md): `acli jira workitem link list --key OCPBUGS-12345`
-
-5. **Find the parent epic** — broader context
+4. **Find the parent epic** — broader context
    → [jira.md](jira.md): look for Epic Link in the issue fields, then view the epic
 
-6. **Search Knowledge Base** — existing solutions or known issues
+5. **Search Knowledge Base** — existing solutions or known issues
    → [knowledge-base.md](../knowledge-base.md): extract key error messages or symptoms from the bug and search KB
 
-7. **Check support cases** — if SFDC Cases Links field is populated, look up the case
+6. **Check support cases** — if SFDC Cases Links field is populated, look up the case
    → [cases.md](../cases.md): fetch the case number from the field
 
 ### Release Readiness
@@ -173,34 +178,32 @@ Follow these steps to build a complete picture:
    → [node-bugs.md](node-bugs.md): CVE tab with `AND due <= 14d`
 
 4. **Open bug count by priority** — overall picture
-   → run `--count` with priority filters: Blocker, Critical, Major
+   → run search with priority filters: Blocker, Critical, Major
 
 5. **Epic completion** — are the planned features done?
    → [node-epics.md](node-epics.md): `project = OCPNODE AND issuetype = Epic AND fixVersion = "4.22.0" AND status not in (Closed, Done)`
+
+6. **Composite shortcut** — full release readiness in one call
+   → `jira.sh release-data <team> [version]`
 
 ### Reporting
 
 "How many bugs are open? Give me a summary."
 
-Use `--count` for aggregation:
-
 ```bash
 # Total open Node bugs
-acli jira workitem search --jql 'filter = "Node Bugs" AND status not in (Done, CLOSED, Verified)' --count
+jira.sh search 'filter = "Node Bugs" AND status not in (Done, CLOSED, Verified)' 1
 
 # Open bugs by priority (run each separately)
-acli jira workitem search --jql 'filter = "Node Bugs" AND priority = Blocker AND status not in (Done, CLOSED, Verified)' --count
-acli jira workitem search --jql 'filter = "Node Bugs" AND priority = Critical AND status not in (Done, CLOSED, Verified)' --count
-acli jira workitem search --jql 'filter = "Node Bugs" AND priority = Major AND status not in (Done, CLOSED, Verified)' --count
-
-# Open bugs for a specific version
-acli jira workitem search --jql 'filter = "Node Bugs" AND fixVersion = "4.22.0" AND status not in (Done, CLOSED, Verified)' --count
+jira.sh search 'filter = "Node Bugs" AND priority = Blocker AND status not in (Done, CLOSED, Verified)' 1
+jira.sh search 'filter = "Node Bugs" AND priority = Critical AND status not in (Done, CLOSED, Verified)' 1
+jira.sh search 'filter = "Node Bugs" AND priority = Major AND status not in (Done, CLOSED, Verified)' 1
 
 # Customer-impacting bugs
-acli jira workitem search --jql 'filter = "Node Bugs" AND ("Customer Impact" = "Customer Escalated" OR "SFDC Cases Counter" is not EMPTY) AND status not in (Done, CLOSED, Verified)' --count
+jira.sh search 'filter = "Node Bugs" AND ("Customer Impact" = "Customer Escalated" OR "SFDC Cases Counter" is not EMPTY) AND status not in (Done, CLOSED, Verified)' 50
 
 # Bugs by component (e.g., CRI-O)
-acli jira workitem search --jql 'filter = "Node Bugs" AND Component in ("Node / CRI-O") AND status not in (Done, CLOSED, Verified)' --count
+jira.sh search 'filter = "Node Bugs" AND Component in ("Node / CRI-O") AND status not in (Done, CLOSED, Verified)' 50
 ```
 
 Present counts in a summary table when the user asks for a report or overview.

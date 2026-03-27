@@ -2,147 +2,140 @@
 
 > For Node team-specific queries, start with [node-guide.md](node-guide.md) instead.
 
-All Jira operations use `acli`. Run `acli jira workitem -h` for the full command list.
+All Jira operations use the bundled `jira.sh` CLI. It wraps the Jira REST API v3 with curl and handles auth via macOS Keychain.
+
+**Shorthand:** In this doc, `jira.sh` means `${CLAUDE_PLUGIN_ROOT}/scripts/jira.sh`.
 
 ## View
 
 ```bash
-acli jira workitem view OCPNODE-4151
-acli jira workitem view OCPNODE-4151 --json
-acli jira workitem view OCPNODE-4151 --fields '*all' --json
-acli jira workitem view OCPNODE-4151 --fields "summary,status,assignee,priority,description,comment"
+# Full issue details (JSON)
+jira.sh get OCPNODE-4151
+
+# Deep dive — issue + comments (ADF→text) + linked issues
+jira.sh issue-deep-dive OCPNODE-4151
 ```
 
 ## Search
 
 ```bash
-acli jira workitem search --jql 'project = OCPNODE AND type = Epic' --limit 10
-acli jira workitem search --jql 'project = OCPNODE AND type = Epic' --json
-acli jira workitem search --jql 'project = OCPNODE AND type = Epic' --csv
-acli jira workitem search --jql 'project = OCPNODE AND type = Epic' --paginate  # fetch all
-acli jira workitem search --jql 'project = OCPNODE AND type = Epic' --count     # count only
-```
+# Search with JQL (default limit: 50)
+jira.sh search 'project = OCPNODE AND type = Epic' 10
 
-Use `--fields` to control output columns (default: `issuetype,key,assignee,priority,status,summary`).
+# All results use JSON output by default
+```
 
 ## Epic Children
 
 ```bash
-acli jira workitem search --jql '"Epic Link" = OCPNODE-4151' --fields "key,summary,status,assignee,priority"
+jira.sh search '"Epic Link" = OCPNODE-4151' 50
 ```
 
 ## Comments
 
-IMPORTANT: Jira Cloud uses ADF (Atlassian Document Format). Plain text via `--body` renders as one unformatted paragraph. Wiki markup (`*bold*`, `{quote}`) renders as literal characters. Always use ADF JSON via `--body-file` for formatted comments.
-
 ```bash
 # List comments
-acli jira workitem comment list --key OCPNODE-4151
+jira.sh comments OCPNODE-4151
 
-# Create comment with ADF (write JSON to temp file first)
-acli jira workitem comment create --key OCPNODE-4151 --body-file /tmp/comment.json
+# Add a comment (plain text)
+jira.sh comment "This is a comment" OCPNODE-4151
 
-# Update last comment by same author
-acli jira workitem comment create --key OCPNODE-4151 --edit-last --body-file /tmp/comment.json
-
-# Simple unformatted comment (only for short, single-paragraph text)
-acli jira workitem comment create --key OCPNODE-4151 --body "Simple one-liner"
-
-# See: acli jira workitem comment -h
+# Comment on multiple issues
+jira.sh comment "Blocking on upstream fix" OCPNODE-100 OCPNODE-200
 ```
-
-### ADF JSON Template
-
-Write this to a temp file, then pass via `--body-file`:
-
-```json
-{"version":1,"type":"doc","content":[
-  {"type":"heading","attrs":{"level":3},"content":[
-    {"type":"text","text":"Section Title"}
-  ]},
-  {"type":"paragraph","content":[
-    {"type":"text","text":"Normal text. "},
-    {"type":"text","text":"Bold text","marks":[{"type":"strong"}]},
-    {"type":"text","text":". "},
-    {"type":"text","text":"Link text","marks":[{"type":"link","attrs":{"href":"https://example.com"}}]}
-  ]},
-  {"type":"blockquote","content":[
-    {"type":"paragraph","content":[
-      {"type":"text","text":"Quoted text","marks":[{"type":"em"}]}
-    ]}
-  ]},
-  {"type":"bulletList","content":[
-    {"type":"listItem","content":[
-      {"type":"paragraph","content":[{"type":"text","text":"Item 1"}]}
-    ]},
-    {"type":"listItem","content":[
-      {"type":"paragraph","content":[{"type":"text","text":"Item 2"}]}
-    ]}
-  ]},
-  {"type":"codeBlock","attrs":{"language":"bash"},"content":[
-    {"type":"text","text":"echo hello"}
-  ]}
-]}
-```
-
-### ADF Marks Reference
-- Bold: `"marks":[{"type":"strong"}]`
-- Italic: `"marks":[{"type":"em"}]`
-- Code (inline): `"marks":[{"type":"code"}]`
-- Link: `"marks":[{"type":"link","attrs":{"href":"URL"}}]`
-- Strikethrough: `"marks":[{"type":"strike"}]`
-
-### ADF Node Types
-`heading` (attrs: level 1-6), `paragraph`, `bulletList`, `orderedList`, `listItem`, `blockquote`, `codeBlock` (attrs: language), `table`, `tableRow`, `tableHeader`, `tableCell`
 
 ## Transitions
 
 ```bash
-acli jira workitem transition --key OCPNODE-4151 --status "In Progress"
-# See: acli jira workitem transition -h
+# List available transitions
+jira.sh transitions OCPNODE-4151
+
+# Perform a transition (use transition ID from above)
+jira.sh transition 31 OCPNODE-4151
+
+# Comment + close in one step
+jira.sh close "Fixed in PR #123" OCPNODE-4151
 ```
 
-## Create
+## Links
 
 ```bash
-acli jira workitem create --project OCPNODE --type Story --summary "Issue summary" --assignee "@me"
-acli jira workitem create --project OCPNODE --type Story --summary "Title" --description "Details" --parent OCPNODE-4151
-# See: acli jira workitem create -h
+# Add a remote link (e.g., GitHub PR)
+jira.sh link OCPNODE-4151 "https://github.com/org/repo/pull/123" "PR #123: Fix description"
+
+# GitHub URLs auto-detect and add the GitHub favicon icon
 ```
 
-Common issue types: `Epic`, `Story`, `Task`, `Bug`, `Sub-task`, `Feature`, `Spike`
-
-## Edit
+## Fields
 
 ```bash
-acli jira workitem edit --key OCPNODE-4151 --summary "Updated summary"
-acli jira workitem edit --key OCPNODE-4151 --assignee "user@redhat.com"
-acli jira workitem edit --key OCPNODE-4151 --labels "label1,label2"
-# See: acli jira workitem edit -h
+# Set story points
+jira.sh set-points OCPNODE-4151 5
+
+# Set any field (string, number, or JSON value)
+jira.sh set-field OCPNODE-4151 customfield_10855 '{"name": "4.22.0"}'
+
+# Move issue to a sprint
+jira.sh move-to-sprint <SPRINT_ID> OCPNODE-4151 OCPNODE-4152
 ```
 
-## Assign
+## Sprints
 
 ```bash
-acli jira workitem assign --key OCPNODE-4151 --assignee "@me"
-acli jira workitem assign --key OCPNODE-4151 --assignee "user@redhat.com"
-# See: acli jira workitem assign -h
+# List sprints (active|future|closed)
+jira.sh sprints active
+
+# Get issues in a sprint
+jira.sh sprint-issues <SPRINT_ID> 100
 ```
 
-## Link
+## Composite Commands
+
+High-level commands that aggregate multiple API calls:
 
 ```bash
-acli jira workitem link create --out OCPNODE-100 --in OCPNODE-200 --type Blocks
-acli jira workitem link list --key OCPNODE-4151
-acli jira workitem link type  # list available link types
-# See: acli jira workitem link -h
+# Sprint dashboard — issues by status, workload, blockers
+jira.sh sprint-dashboard <team>
+
+# Standup prep — dashboard + recent updates + new bugs
+jira.sh standup-data <team>
+
+# Bug triage — untriaged, unassigned, blockers, new
+jira.sh bug-overview <team>
+
+# Carryover report — not-done items with context
+jira.sh carryover-report <team>
+
+# Planning — carryovers + backlog + bugs
+jira.sh planning-data <team>
+
+# Release readiness — blockers, bugs, epics
+jira.sh release-data <team> [version]
+
+# Per-member sprint items + comment counts
+jira.sh team-activity <team>
+
+# My board items
+jira.sh my-board-data <team>
+
+# My bugs
+jira.sh my-bugs-data <team>
+
+# My standup data
+jira.sh my-standup-data <team>
+
+# Epic progress
+jira.sh epic-progress <EPIC-KEY>
+
+# Pickup candidates
+jira.sh pickup-data <team>
 ```
 
-## Watchers
+## Health Check
 
 ```bash
-acli jira workitem watcher list --key OCPNODE-4151
-# See: acli jira workitem watcher -h
+# Validate custom field IDs against Jira metadata
+jira.sh health-check
 ```
 
 ## JQL Reference
@@ -183,37 +176,9 @@ Jira Cloud auto-adds you as a watcher when you comment. Use `watcher = currentUs
 watcher = currentUser() AND comment ~ "keyword" ORDER BY updated DESC
 ```
 
-## curl Fallbacks
-
-ACLI cannot update custom fields (sprint, labels via custom field, etc.) on existing issues. Use `curl` with the API token from Keychain for these operations:
-
-```bash
-JIRA_API_TOKEN=$(security find-generic-password -s "JIRA_API_TOKEN" -w)
-
-# Move issue to a sprint
-curl -s -u "harpatil@redhat.com:$JIRA_API_TOKEN" \
-  -X POST "https://redhat.atlassian.net/rest/agile/1.0/sprint/{sprintId}/issue" \
-  -H "Content-Type: application/json" \
-  -d '{"issues": ["OCPNODE-4137"]}'
-
-# Update a custom field on an existing issue
-curl -s -u "harpatil@redhat.com:$JIRA_API_TOKEN" \
-  -X PUT "https://redhat.atlassian.net/rest/api/2/issue/{issueKey}" \
-  -H "Content-Type: application/json" \
-  -d '{"fields": {"customfield_10855": {"name": "4.22.0"}}}'
-
-# Add a watcher (also not supported by ACLI)
-curl -s -u "harpatil@redhat.com:$JIRA_API_TOKEN" \
-  -X POST "https://redhat.atlassian.net/rest/api/2/issue/{issueKey}/watchers" \
-  -H "Content-Type: application/json" \
-  -d '"accountId"'
-```
-
-Auth: Basic auth with `email:API_TOKEN`. Token stored in macOS Keychain as `JIRA_API_TOKEN`.
-
 ## Custom Fields
 
-Key Red Hat custom fields (use field names in JQL, IDs for `--fields`):
+Key Red Hat custom fields (use field names in JQL, IDs for API calls):
 
 | ID | Name |
 |---|---|
@@ -239,3 +204,4 @@ Key Red Hat custom fields (use field names in JQL, IDs for `--fields`):
 | `customfield_10483` | Blocked Reason |
 | `customfield_10978` | SFDC Cases Counter |
 | `customfield_10979` | SFDC Cases Links |
+| `customfield_12313441` | SFDC Cases (legacy) |

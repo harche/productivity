@@ -26,7 +26,7 @@
       "source": "./plugins/redhat-detective",
       "description": "Red Hat debugging and investigation toolkit: Jira issues, Knowledge Base, support cases, platform docs, Prometheus metrics, and debug binary deployment to RHCOS nodes",
       "category": "workflow",
-      "version": "2.4.1"
+      "version": "3.0.0"
     },
     {
       "name": "cluster-installer",
