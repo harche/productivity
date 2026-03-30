@@ -1,5 +1,0 @@
-{
-  "name": "youtube",
-  "description": "Fetch YouTube transcripts, metadata, comments, search, and download videos/audio",
-  "version": "0.2.0"
-}

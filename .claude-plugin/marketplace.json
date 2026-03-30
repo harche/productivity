@@ -15,11 +15,11 @@
       "version": "1.0.2"
     },
     {
-      "name": "google",
-      "source": "./plugins/google",
-      "description": "Gmail, Google Calendar, Drive, and Docs via gog CLI",
+      "name": "workspace",
+      "source": "./plugins/workspace",
+      "description": "Manage email, calendar, and documents across Google Workspace",
       "category": "workflow",
-      "version": "1.0.1"
+      "version": "2.0.0"
     },
     {
       "name": "redhat-detective",
@@ -43,11 +43,11 @@
       "version": "2.0.0"
     },
     {
-      "name": "ibkr",
-      "source": "./plugins/ibkr",
-      "description": "Interactive Brokers Web API for trading, market data, and portfolio management",
+      "name": "trading",
+      "source": "./plugins/trading",
+      "description": "Monitor portfolio, check positions, place trades, and analyze account performance on Interactive Brokers",
       "category": "misc",
-      "version": "2.5.4",
+      "version": "3.0.0",
       "dependencies": ["web-browser"]
     },
     {
@@ -58,18 +58,18 @@
       "version": "1.1.0"
     },
     {
-      "name": "youtube",
-      "source": "./plugins/youtube",
-      "description": "Fetch YouTube transcripts, metadata, comments, search, and browse channels/playlists",
+      "name": "video-research",
+      "source": "./plugins/video-research",
+      "description": "Extract insights from YouTube videos — transcripts, summaries, comments, and channel info",
       "category": "misc",
-      "version": "0.1.0"
+      "version": "1.0.0"
     },
     {
-      "name": "polymarket",
-      "source": "./plugins/polymarket",
-      "description": "Browse and analyze Polymarket prediction markets, events, prices, and leaderboards",
+      "name": "predictions",
+      "source": "./plugins/predictions",
+      "description": "Research prediction markets and event probabilities on Polymarket",
       "category": "misc",
-      "version": "0.1.0"
+      "version": "1.0.0"
     },
     {
       "name": "dev-digest",
@@ -80,32 +80,25 @@
       "dependencies": ["redhat-detective", "github"]
     },
     {
-      "name": "hackernews",
-      "source": "./plugins/hackernews",
-      "description": "Browse, search, and read Hacker News stories, comments, and user profiles",
+      "name": "tech-news",
+      "source": "./plugins/tech-news",
+      "description": "Discover trending tech news and developer discussions on Hacker News",
       "category": "misc",
-      "version": "0.1.0"
+      "version": "1.0.0"
     },
     {
-      "name": "sec-edgar",
-      "source": "./plugins/sec-edgar",
-      "description": "Search SEC EDGAR for company filings, financials, and insider transactions",
+      "name": "financial-research",
+      "source": "./plugins/financial-research",
+      "description": "Research company fundamentals, economic trends, and financial data from SEC filings and Federal Reserve datasets",
       "category": "misc",
-      "version": "0.1.0"
+      "version": "1.0.0"
     },
     {
-      "name": "fred",
-      "source": "./plugins/fred",
-      "description": "Federal Reserve economic data — GDP, CPI, interest rates, unemployment, and 800k+ time series",
+      "name": "medical-research",
+      "source": "./plugins/medical-research",
+      "description": "Find peer-reviewed medical evidence, clinical trials, and scientific papers across PubMed, Europe PMC, Semantic Scholar, and OpenAlex",
       "category": "misc",
-      "version": "0.1.0"
-    },
-    {
-      "name": "pubmed",
-      "source": "./plugins/pubmed",
-      "description": "Search biomedical literature, clinical trials, and scientific papers across PubMed, Europe PMC, ClinicalTrials.gov, Semantic Scholar, and OpenAlex",
-      "category": "misc",
-      "version": "0.2.1"
+      "version": "1.0.0"
     }
   ]
 }

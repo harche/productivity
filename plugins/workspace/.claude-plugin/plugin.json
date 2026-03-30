@@ -1,0 +1,5 @@
+{
+  "name": "workspace",
+  "description": "Manage email, calendar, and documents across Google Workspace. Use when the user wants to check calendar availability, search emails, read or edit Google Docs, or find files in Drive.",
+  "version": "1.0.2"
+}

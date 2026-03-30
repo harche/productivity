@@ -13,16 +13,16 @@ claude plugin install --scope local <name>@productivity-tools
 | Plugin | Description | Dependencies |
 |--------|-------------|--------------|
 | `github` | GitHub repos, PRs, issues, and actions via `gh` CLI | — |
-| `google` | Gmail, Google Calendar, Drive, and Docs via `gog` CLI | — |
+| `workspace` | Manage email, calendar, and documents across Google Workspace | — |
 | `redhat-detective` | Red Hat debugging/investigation toolkit: Jira, Knowledge Base, support cases, platform docs (k8s + OpenShift), and Prometheus metrics | — |
-| `context-keeper` | Capture project state as structured markdown notes from Slack, Docs, Jira, and other sources | `google`, `redhat-detective`, `github` (all optional) |
+| `context-keeper` | Capture project state as structured markdown notes from Slack, Docs, Jira, and other sources | `workspace`, `redhat-detective`, `github` (all optional) |
 
 <details>
 <summary><b>context-keeper</b> — full install</summary>
 
 ```sh
 # Source plugins (install whichever you use)
-claude plugin install --scope local google@productivity-tools
+claude plugin install --scope local workspace@productivity-tools
 claude plugin install --scope local redhat-detective@productivity-tools
 claude plugin install --scope local github@productivity-tools
 
@@ -43,13 +43,12 @@ claude plugin install --scope local context-keeper@productivity-tools
 
 | Plugin | Description | Dependencies |
 |--------|-------------|--------------|
-| `ibkr` | Interactive Brokers Web API for trading, market data, and portfolio management | `web-browser` |
-| `youtube` | Fetch YouTube transcripts, metadata, comments, search, and browse channels/playlists | — |
-| `polymarket` | Browse and analyze Polymarket prediction markets, events, prices, and leaderboards | — |
-| `hackernews` | Browse, search, and read Hacker News stories, comments, and user profiles | — |
-| `sec-edgar` | Search SEC EDGAR for company filings, financials, and insider transactions | — |
-| `fred` | Federal Reserve economic data (GDP, CPI, interest rates, unemployment) | — |
-| `pubmed` | Search biomedical literature, clinical trials, and scientific papers (Europe PMC, ClinicalTrials.gov, Semantic Scholar, OpenAlex) | — |
+| `trading` | Monitor portfolio, place trades, and analyze account performance on Interactive Brokers | `web-browser` |
+| `video-research` | Extract insights from YouTube videos: transcripts, summaries, comments, and channel info | — |
+| `predictions` | Research prediction markets and event probabilities on Polymarket | — |
+| `tech-news` | Discover trending tech news and developer discussions on Hacker News | — |
+| `financial-research` | Research company fundamentals (SEC filings) and economic trends (Federal Reserve data) | — |
+| `medical-research` | Find peer-reviewed medical evidence, clinical trials, and scientific papers | — |
 
 ## Agent Plugins
 
@@ -81,7 +80,7 @@ External CLI tools and API tokens required by specific plugins. Only install wha
 | Tool | Plugins | macOS | Linux |
 |------|---------|-------|-------|
 | [`gh`](https://cli.github.com/) | `github` | `brew install gh` | `dnf install gh` / `apt install gh` |
-| [`gog`](https://github.com/steipete/gogcli) | `google` | See [repo README](https://github.com/steipete/gogcli) | See [repo README](https://github.com/steipete/gogcli) |
+| [`gog`](https://github.com/steipete/gogcli) | `workspace` | See [repo README](https://github.com/steipete/gogcli) | See [repo README](https://github.com/steipete/gogcli) |
 | [`playwright-cli`](https://github.com/nicolo-ribaudo/playwright-cli) | `web-browser` | `npm install -g @anthropic-ai/playwright-cli@latest` | `npm install -g @anthropic-ai/playwright-cli@latest` |
 
 ### API Tokens
@@ -91,9 +90,9 @@ External CLI tools and API tokens required by specific plugins. Only install wha
 | `JIRA_API_TOKEN` | `redhat-detective` | [Create a PAT](https://issues.redhat.com) — Profile → Personal Access Tokens |
 | `RH_API_OFFLINE_TOKEN` | `redhat-detective` | [Generate an offline token](https://access.redhat.com/management/api) for the Customer Portal API |
 | `OCP_PULL_SECRET` | `cluster-installer` | [Download from console.redhat.com](https://console.redhat.com/openshift/install/pull-secret) |
-| `fred-api-key` | `fred` | [Get a free API key](https://fred.stlouisfed.org/docs/api/api_key.html) (instant approval) |
-| `semantic-scholar-api-key` | `pubmed` | [Request a free API key](https://www.semanticscholar.org/product/api#api-key-form) (optional — plugin works without it) |
-| `openalex-api-key` | `pubmed` | [Get a free API key](https://openalex.org/settings/api) (sign up, then copy from settings) |
+| `fred-api-key` | `financial-research` | [Get a free API key](https://fred.stlouisfed.org/docs/api/api_key.html) (instant approval) |
+| `semantic-scholar-api-key` | `medical-research` | [Request a free API key](https://www.semanticscholar.org/product/api#api-key-form) (optional — plugin works without it) |
+| `openalex-api-key` | `medical-research` | [Get a free API key](https://openalex.org/settings/api) (sign up, then copy from settings) |
 
 ### Storing Tokens
 
@@ -117,13 +116,12 @@ See the full examples in the [README](../README.md#authentication--secrets).
 | Plugin | Auth method |
 |--------|-------------|
 | `github` | `gh auth login` (GitHub CLI handles OAuth) |
-| `google` | `gog` CLI (OAuth flow) |
-| `youtube` | No auth required (public API) |
-| `polymarket` | No auth required (public API) |
-| `ibkr` | Auto-login via `web-browser` (headless); credentials from Keychain (`ibkr-paper-*`, `ibkr-live-*`) |
+| `workspace` | `gog` CLI (OAuth flow) |
+| `video-research` | No auth required (public API) |
+| `predictions` | No auth required (public API) |
+| `trading` | Auto-login via `web-browser` (headless); credentials from Keychain (`ibkr-paper-*`, `ibkr-live-*`) |
 | `web-browser` | No auth required |
-| `hackernews` | No auth required (public API) |
-| `sec-edgar` | No auth required (User-Agent header only) |
-| `fred` | API key from Keychain (`fred-api-key`) |
-| `pubmed` | Europe PMC and ClinicalTrials.gov: no auth; Semantic Scholar and OpenAlex: API keys from Keychain (optional/free) |
+| `tech-news` | No auth required (public API) |
+| `financial-research` | SEC EDGAR: no auth; FRED: API key from Keychain (`fred-api-key`) |
+| `medical-research` | Europe PMC and ClinicalTrials.gov: no auth; Semantic Scholar and OpenAlex: API keys from Keychain (optional/free) |
 | `context-keeper` | Uses other plugins' auth |

@@ -1,0 +1,5 @@
+{
+  "name": "video-research",
+  "description": "Extract insights from YouTube videos — transcripts, summaries, comments, and channel info",
+  "version": "0.2.0"
+}
