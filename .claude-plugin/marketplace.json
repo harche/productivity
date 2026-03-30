@@ -36,11 +36,11 @@
       "version": "1.0.2"
     },
     {
-      "name": "playwright-cli",
-      "source": "./plugins/playwright-cli",
-      "description": "Browser automation for web testing, screenshots, and data extraction",
+      "name": "web-browser",
+      "source": "./plugins/web-browser",
+      "description": "Browse the web — look up information, extract data, fill forms, take screenshots, interact with pages",
       "category": "infra",
-      "version": "1.0.0"
+      "version": "2.0.0"
     },
     {
       "name": "ibkr",
@@ -48,7 +48,7 @@
       "description": "Interactive Brokers Web API for trading, market data, and portfolio management",
       "category": "misc",
       "version": "2.5.4",
-      "dependencies": ["playwright-cli"]
+      "dependencies": ["web-browser"]
     },
     {
       "name": "context-keeper",

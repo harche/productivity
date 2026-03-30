@@ -7,7 +7,7 @@ Cross-discipline scholarly search covering 474M+ works (papers, datasets, prepri
 **Auth:** API key via `api_key` param. Without key: severely rate-limited (testing only).
 
 ```bash
-OA_KEY=$(security find-generic-password -s "openalex-api-key" -w 2>/dev/null)
+OA_KEY="${OPENALEX_API_KEY:-$(security find-generic-password -s "openalex-api-key" -w 2>/dev/null || true)}"
 ```
 
 ## Search Works

@@ -48,9 +48,10 @@ _init_auth() {
   [[ -n "${_AUTH_INITIALIZED:-}" ]] && return 0
   _AUTH_INITIALIZED=1
 
-  JIRA_API_TOKEN=$(security find-generic-password -s "JIRA_API_TOKEN" -w 2>/dev/null) || {
-    echo '{"error": "JIRA_API_TOKEN not found in Keychain"}' >&2; exit 1
-  }
+  JIRA_API_TOKEN="${JIRA_API_TOKEN:-$(security find-generic-password -s "JIRA_API_TOKEN" -w 2>/dev/null || true)}"
+  if [[ -z "$JIRA_API_TOKEN" ]]; then
+    echo '{"error": "JIRA_API_TOKEN not set (env var or Keychain)"}' >&2; exit 1
+  fi
 
   JIRA_USER=$(security find-generic-password -s "JIRA_API_TOKEN" -g 2>&1 | grep "acct" | sed 's/.*="//;s/"//' 2>/dev/null) || true
   if [[ -n "$JIRA_USER" && ! "$JIRA_USER" =~ "@" ]]; then

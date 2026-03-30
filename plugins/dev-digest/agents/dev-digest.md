@@ -17,7 +17,7 @@ Before querying, resolve the user's identity on each platform:
 ### Jira
 ```bash
 # macOS
-JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w)
+JIRA_API_TOKEN="${JIRA_API_TOKEN:-$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w 2>/dev/null)}"
 # Get username
 curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" \
   "https://issues.redhat.com/rest/auth/1/session" | python3 -c "import sys,json;print(json.load(sys.stdin)['name'])"
@@ -38,7 +38,7 @@ Run these queries in parallel to minimize latency. Always URL-encode JQL values 
 
 All Jira queries use Bearer token auth:
 ```bash
-JIRA_API_TOKEN=$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w)
+JIRA_API_TOKEN="${JIRA_API_TOKEN:-$(security find-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w 2>/dev/null)}"
 curl -s -H "Authorization: Bearer $JIRA_API_TOKEN" "<url>"
 ```
 

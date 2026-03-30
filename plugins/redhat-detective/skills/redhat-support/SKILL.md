@@ -30,7 +30,7 @@ ${CLAUDE_PLUGIN_ROOT}/scripts/jira.sh link OCPNODE-4151 "https://github.com/org/
 
 ```bash
 # macOS
-RH_OFFLINE_TOKEN=$(security find-generic-password -a "$USER" -s "RH_API_OFFLINE_TOKEN" -w)
+RH_OFFLINE_TOKEN="${RH_API_OFFLINE_TOKEN:-$(security find-generic-password -a "$USER" -s "RH_API_OFFLINE_TOKEN" -w 2>/dev/null)}"
 # Linux
 RH_OFFLINE_TOKEN=$(secret-tool lookup service redhat key RH_API_OFFLINE_TOKEN)
 

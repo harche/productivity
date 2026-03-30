@@ -37,13 +37,13 @@ claude plugin install --scope local context-keeper@productivity-tools
 | Plugin | Description | Dependencies |
 |--------|-------------|--------------|
 | `cluster-installer` | Create, manage, and destroy clusters (kind, GKE, OpenShift on GCP) | — |
-| `playwright-cli` | Browser automation: navigate, interact, screenshot, scrape | — |
+| `web-browser` | Browse the web: look up information, extract data, fill forms, take screenshots | — |
 
 ### Misc
 
 | Plugin | Description | Dependencies |
 |--------|-------------|--------------|
-| `ibkr` | Interactive Brokers Web API for trading, market data, and portfolio management | `playwright-cli` |
+| `ibkr` | Interactive Brokers Web API for trading, market data, and portfolio management | `web-browser` |
 | `youtube` | Fetch YouTube transcripts, metadata, comments, search, and browse channels/playlists | — |
 | `polymarket` | Browse and analyze Polymarket prediction markets, events, prices, and leaderboards | — |
 | `hackernews` | Browse, search, and read Hacker News stories, comments, and user profiles | — |
@@ -82,7 +82,7 @@ External CLI tools and API tokens required by specific plugins. Only install wha
 |------|---------|-------|-------|
 | [`gh`](https://cli.github.com/) | `github` | `brew install gh` | `dnf install gh` / `apt install gh` |
 | [`gog`](https://github.com/steipete/gogcli) | `google` | See [repo README](https://github.com/steipete/gogcli) | See [repo README](https://github.com/steipete/gogcli) |
-| [`playwright-cli`](https://github.com/microsoft/playwright-cli) | `playwright-cli` | `npm install -g @playwright/cli@latest` | `npm install -g @playwright/cli@latest` |
+| [`playwright-cli`](https://github.com/nicolo-ribaudo/playwright-cli) | `web-browser` | `npm install -g @anthropic-ai/playwright-cli@latest` | `npm install -g @anthropic-ai/playwright-cli@latest` |
 
 ### API Tokens
 
@@ -120,8 +120,8 @@ See the full examples in the [README](../README.md#authentication--secrets).
 | `google` | `gog` CLI (OAuth flow) |
 | `youtube` | No auth required (public API) |
 | `polymarket` | No auth required (public API) |
-| `ibkr` | Auto-login via `playwright-cli` (headless); credentials from Keychain (`ibkr-paper-*`, `ibkr-live-*`) |
-| `playwright-cli` | No auth required |
+| `ibkr` | Auto-login via `web-browser` (headless); credentials from Keychain (`ibkr-paper-*`, `ibkr-live-*`) |
+| `web-browser` | No auth required |
 | `hackernews` | No auth required (public API) |
 | `sec-edgar` | No auth required (User-Agent header only) |
 | `fred` | API key from Keychain (`fred-api-key`) |

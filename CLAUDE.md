@@ -17,10 +17,10 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 
 **infra**
 - `cluster-installer` — Create, manage, and destroy clusters (kind, GKE, OpenShift on GCP)
-- `playwright-cli` — Browser automation: navigate, interact, screenshot, scrape
+- `web-browser` — Browse the web: look up information, extract data, fill forms, take screenshots
 
 **misc**
-- `ibkr` — Interactive Brokers Web API for trading, market data, and portfolio management (depends on `playwright-cli`)
+- `ibkr` — Interactive Brokers Web API for trading, market data, and portfolio management (depends on `web-browser`)
 - `youtube` — Fetch YouTube transcripts, metadata, comments, search, and browse channels/playlists
 - `polymarket` — Browse and analyze Polymarket prediction markets, events, prices, and leaderboards
 - `hackernews` — Browse, search, and read Hacker News stories, comments, and user profiles

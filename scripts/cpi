@@ -12,11 +12,19 @@ Quick start:
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 CONFIG_DIR = Path.home() / ".config" / "cpi"
+SECRETS_FILE = CONFIG_DIR / "secrets.json"
+SANDBOX_DIR = Path(__file__).resolve().parent / "cpi-sandbox"
+SANDBOX_IMAGE = "cpi-sandbox"
+ONECLI_CONTAINER = "cpi-onecli"
+ONECLI_GATEWAY_PORT = 10255
+ONECLI_DASHBOARD_PORT = 10254
+ONECLI_API = f"http://localhost:{ONECLI_DASHBOARD_PORT}/api"
 
 # ── Marketplace discovery ────────────────────────────────────────────
 
@@ -205,6 +213,587 @@ def cmd_search(args):
     return 0
 
 
+# ── Secrets (macOS Keychain → OneCLI) ──────────────────────────────
+
+
+def _load_secrets():
+    if SECRETS_FILE.exists():
+        with open(SECRETS_FILE) as f:
+            return json.load(f)
+    return []
+
+
+def _save_secrets(secrets):
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    with open(SECRETS_FILE, "w") as f:
+        json.dump(secrets, f, indent=2)
+
+
+def _keychain_get(service, account=None):
+    """Read a secret from macOS Keychain. Returns value or None."""
+    cmd = ["security", "find-generic-password", "-s", service, "-w"]
+    if account:
+        cmd.insert(-1, "-a")
+        cmd.insert(-1, account)
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+        if r.returncode == 0:
+            return r.stdout.strip()
+    except Exception:
+        pass
+    return None
+
+
+def _keychain_set(service, account, value):
+    """Store a secret in macOS Keychain."""
+    # Delete first (update = delete + add)
+    subprocess.run(
+        ["security", "delete-generic-password", "-s", service, "-a", account],
+        capture_output=True, timeout=5,
+    )
+    r = subprocess.run(
+        ["security", "add-generic-password", "-s", service, "-a", account,
+         "-w", value, "-U"],
+        capture_output=True, text=True, timeout=5,
+    )
+    return r.returncode == 0
+
+
+def _keychain_delete(service, account=None):
+    """Remove a secret from macOS Keychain."""
+    cmd = ["security", "delete-generic-password", "-s", service]
+    if account:
+        cmd.extend(["-a", account])
+    subprocess.run(cmd, capture_output=True, timeout=5)
+
+
+def _onecli_upsert_secret(name, secret_type, host_pattern, value):
+    """Push a secret to OneCLI gateway."""
+    try:
+        r = subprocess.run(
+            ["curl", "-sf", "-X", "POST", f"{ONECLI_API}/secrets",
+             "-H", "Content-Type: application/json",
+             "-d", json.dumps({
+                 "name": name,
+                 "type": secret_type,
+                 "value": value,
+                 "hostPattern": host_pattern,
+                 "upsert": True,
+             })],
+            capture_output=True, text=True, timeout=10,
+        )
+        return r.returncode == 0
+    except Exception:
+        return False
+
+
+def cmd_secret(args):
+    """Manage secrets: keychain storage + OneCLI registration."""
+    action = args.secret_action
+    if action == "add":
+        return _secret_add(args)
+    elif action == "rm":
+        return _secret_rm(args)
+    elif action == "list":
+        return _secret_list(args)
+    elif action == "sync":
+        return _secret_sync(args)
+    return 0
+
+
+def _secret_add(args):
+    secrets = _load_secrets()
+    name = args.name
+
+    # Check for duplicates
+    existing = [s for s in secrets if s["name"] == name]
+    if existing:
+        secrets = [s for s in secrets if s["name"] != name]
+        print(f"  Updating existing secret: {name}")
+
+    entry = {
+        "name": name,
+        "keychain_service": args.service or name,
+        "keychain_account": args.account or os.environ.get("USER", ""),
+        "type": args.type,
+    }
+    if args.host:
+        entry["host"] = args.host
+    if args.env:
+        entry["env"] = args.env
+
+    # If --value provided, store in keychain now
+    if args.value:
+        ok = _keychain_set(entry["keychain_service"], entry["keychain_account"], args.value)
+        if not ok:
+            print(f"  Failed to store in Keychain", file=sys.stderr)
+            return 1
+        print(f"  Stored in Keychain: {entry['keychain_service']}")
+    else:
+        # Verify it exists in keychain
+        val = _keychain_get(entry["keychain_service"], entry["keychain_account"])
+        if not val:
+            print(f"  WARNING: {entry['keychain_service']} not found in Keychain.")
+            print(f"  Add it with: security add-generic-password -s {entry['keychain_service']} -a {entry['keychain_account']} -w")
+
+    secrets.append(entry)
+    _save_secrets(secrets)
+
+    mode = []
+    if entry.get("host"):
+        mode.append(f"proxy -> {entry['host']}")
+    if entry.get("env"):
+        mode.append(f"env ${entry['env']}")
+    print(f"  Added: {name} ({', '.join(mode) or 'keychain only'})")
+    return 0
+
+
+def _secret_rm(args):
+    secrets = _load_secrets()
+    found = [s for s in secrets if s["name"] == args.name]
+    if not found:
+        print(f"  Not found: {args.name}", file=sys.stderr)
+        return 1
+    secrets = [s for s in secrets if s["name"] != args.name]
+    _save_secrets(secrets)
+
+    if args.delete_keychain:
+        entry = found[0]
+        _keychain_delete(entry["keychain_service"], entry.get("keychain_account"))
+        print(f"  Removed from registry and Keychain: {args.name}")
+    else:
+        print(f"  Removed from registry: {args.name} (Keychain entry kept)")
+    return 0
+
+
+def _secret_list(args):
+    secrets = _load_secrets()
+    if not secrets:
+        print("  No secrets registered. Run: cpi secret add <name> --service <keychain-service> --host <pattern>")
+        return 0
+    print()
+    print(f"  {'Name':<22s} {'Keychain Service':<28s} {'Type':<10s} {'Mode':<30s} {'Status'}")
+    print(f"  {'─'*22} {'─'*28} {'─'*10} {'─'*30} {'─'*8}")
+    for s in secrets:
+        val = _keychain_get(s["keychain_service"], s.get("keychain_account"))
+        status = "OK" if val else "MISSING"
+        modes = []
+        if s.get("host"):
+            modes.append(f"proxy:{s['host']}")
+        if s.get("env"):
+            modes.append(f"env:${s['env']}")
+        mode_str = ", ".join(modes) or "keychain only"
+        print(f"  {s['name']:<22s} {s['keychain_service']:<28s} {s['type']:<10s} {mode_str:<30s} {status}")
+    print()
+    return 0
+
+
+def _secret_sync(args):
+    """Push all registered secrets from Keychain → OneCLI."""
+    secrets = _load_secrets()
+    if not secrets:
+        print("  No secrets registered.")
+        return 0
+
+    proxy_secrets = [s for s in secrets if s.get("host")]
+    if not proxy_secrets:
+        print("  No secrets with --host (proxy mode). Nothing to sync to OneCLI.")
+        return 0
+
+    if not _onecli_running():
+        print("  OneCLI not running. Start with: cpi run (or docker start cpi-onecli)", file=sys.stderr)
+        return 1
+
+    print("  Syncing secrets from Keychain -> OneCLI...")
+    ok_count = 0
+    for s in proxy_secrets:
+        val = _keychain_get(s["keychain_service"], s.get("keychain_account"))
+        if not val:
+            print(f"    SKIP {s['name']} (not in Keychain)")
+            continue
+        if _onecli_upsert_secret(s["name"], s["type"], s["host"], val):
+            print(f"    OK   {s['name']} -> {s['host']}")
+            ok_count += 1
+        else:
+            print(f"    FAIL {s['name']}")
+
+    print(f"  Synced {ok_count}/{len(proxy_secrets)} secrets.")
+    return 0
+
+
+def _get_env_secrets():
+    """Read secrets marked with --env from Keychain, return as Docker -e args."""
+    secrets = _load_secrets()
+    env_args = []
+    for s in secrets:
+        env_var = s.get("env")
+        if not env_var:
+            continue
+        val = _keychain_get(s["keychain_service"], s.get("keychain_account"))
+        if val:
+            env_args.extend(["-e", f"{env_var}={val}"])
+    return env_args
+
+
+# ── Sandbox helpers ─────────────────────────────────────────────────
+
+
+def _docker_available():
+    return shutil.which("docker") is not None
+
+
+def _tmux_available():
+    return shutil.which("tmux") is not None
+
+
+def _image_exists():
+    r = subprocess.run(
+        ["docker", "image", "inspect", SANDBOX_IMAGE],
+        capture_output=True, timeout=10,
+    )
+    return r.returncode == 0
+
+
+def _build_image():
+    print("  Building sandbox image...")
+    r = subprocess.run(
+        ["docker", "build", "-t", SANDBOX_IMAGE,
+         "--build-arg", f"TZ={os.environ.get('TZ', 'America/New_York')}",
+         str(SANDBOX_DIR)],
+        timeout=600,
+    )
+    if r.returncode != 0:
+        print("  Failed to build sandbox image", file=sys.stderr)
+        return False
+    return True
+
+
+def _onecli_running():
+    r = subprocess.run(
+        ["docker", "ps", "--format", "{{.Names}}"],
+        capture_output=True, text=True, timeout=10,
+    )
+    return ONECLI_CONTAINER in r.stdout.split()
+
+
+def _start_onecli():
+    """Start OneCLI gateway and return True if successful."""
+    setup_script = SANDBOX_DIR / "onecli-setup.sh"
+    if not setup_script.exists():
+        print("  onecli-setup.sh not found", file=sys.stderr)
+        return False
+    r = subprocess.run(["bash", str(setup_script)], timeout=120)
+    return r.returncode == 0
+
+
+def _get_onecli_ca_path():
+    """Get the OneCLI CA certificate for TLS interception."""
+    try:
+        r = subprocess.run(
+            ["docker", "exec", ONECLI_CONTAINER, "cat", "/app/data/ca.pem"],
+            capture_output=True, text=True, timeout=10,
+        )
+        if r.returncode == 0 and r.stdout.strip():
+            ca_path = Path("/tmp/cpi-onecli-ca.pem")
+            ca_path.write_text(r.stdout)
+            return str(ca_path)
+    except Exception:
+        pass
+    return None
+
+
+def _tmux_session_exists(name):
+    r = subprocess.run(
+        ["tmux", "has-session", "-t", name],
+        capture_output=True, timeout=5,
+    )
+    return r.returncode == 0
+
+
+def _tmux_sessions():
+    """List active cpi tmux sessions."""
+    r = subprocess.run(
+        ["tmux", "list-sessions", "-F", "#{session_name}"],
+        capture_output=True, text=True, timeout=5,
+    )
+    if r.returncode != 0:
+        return []
+    return [s for s in r.stdout.strip().split("\n") if s.startswith("cpi:")]
+
+
+def _create_worktree(project_dir, name):
+    """Create an isolated clone for parallel branch work.
+
+    Uses `git clone --local` instead of `git worktree` so each session
+    gets its own .git directory — no shared locks, safe for concurrent
+    containers doing commits on different branches.
+    """
+    wt_dir = project_dir / ".worktrees" / name
+    if wt_dir.exists():
+        # Verify it's a valid git repo
+        r = subprocess.run(
+            ["git", "-C", str(wt_dir), "rev-parse", "--git-dir"],
+            capture_output=True, timeout=5,
+        )
+        if r.returncode == 0:
+            print(f"  Worktree already exists: {wt_dir}")
+            return wt_dir
+        # Broken state — remove and recreate
+        shutil.rmtree(wt_dir)
+
+    wt_dir.parent.mkdir(parents=True, exist_ok=True)
+    branch = f"worktree-{name}"
+
+    # Clone locally (hardlinks objects, fast and cheap on disk)
+    r = subprocess.run(
+        ["git", "clone", "--local", str(project_dir), str(wt_dir)],
+        capture_output=True, text=True, timeout=60,
+    )
+    if r.returncode != 0:
+        print(f"  git clone failed: {r.stderr.strip()}", file=sys.stderr)
+        return None
+
+    # Create and checkout the branch
+    r = subprocess.run(
+        ["git", "-C", str(wt_dir), "checkout", "-b", branch],
+        capture_output=True, text=True, timeout=10,
+    )
+    if r.returncode != 0:
+        # Branch may already exist at origin, check it out
+        subprocess.run(
+            ["git", "-C", str(wt_dir), "checkout", branch],
+            capture_output=True, text=True, timeout=10,
+        )
+
+    print(f"  Worktree created: {wt_dir} (branch {branch})")
+    return wt_dir
+
+
+def _marketplace_volumes():
+    """Build Docker volume mounts for registered marketplaces."""
+    volumes = []
+    if not CONFIG_DIR.exists():
+        return volumes
+    for entry in sorted(CONFIG_DIR.iterdir()):
+        target = entry.resolve()
+        manifest = target / ".claude-plugin" / "marketplace.json"
+        if manifest.exists():
+            with open(manifest) as f:
+                data = json.load(f)
+            mp_name = data["name"]
+            # Mount each marketplace repo read-only into the container's cpi config
+            volumes.extend([
+                "-v", f"{target}:/home/node/.config/cpi/{mp_name}:ro",
+            ])
+    return volumes
+
+
+def cmd_run(args):
+    """Launch Claude Code in a sandboxed Docker container with OneCLI credential isolation."""
+    if not _docker_available():
+        print("  Docker is required. Install Docker Desktop or podman.", file=sys.stderr)
+        return 1
+
+    project_dir = Path(args.project).expanduser().resolve()
+    if not project_dir.is_dir():
+        print(f"  Not a directory: {project_dir}", file=sys.stderr)
+        return 1
+
+    # ── Session naming ──────────────────────────────────────────────
+    session_name = args.name
+    if not session_name:
+        session_name = args.worktree or project_dir.name
+    tmux_session = f"cpi:{session_name}"
+    container_name = f"cpi-{session_name}"
+
+    # ── Resume existing session ─────────────────────────────────────
+    if args.resume:
+        if not _tmux_available():
+            print("  tmux is required for --resume.", file=sys.stderr)
+            return 1
+        if args.resume is True:
+            # List sessions for selection
+            sessions = _tmux_sessions()
+            if not sessions:
+                print("  No active cpi sessions.")
+                return 0
+            print("  Active sessions:")
+            for i, s in enumerate(sessions, 1):
+                print(f"    {i}. {s}")
+            return 0
+        # Resume specific session
+        target = f"cpi:{args.resume}"
+        if _tmux_session_exists(target):
+            os.execvp("tmux", ["tmux", "attach-session", "-t", target])
+        else:
+            print(f"  Session not found: {target}", file=sys.stderr)
+            return 1
+
+    # ── Build image ─────────────────────────────────────────────────
+    if not args.skip_build and not _image_exists():
+        if not _build_image():
+            return 1
+    elif not _image_exists():
+        print("  Sandbox image not found. Run without --skip-build first.", file=sys.stderr)
+        return 1
+
+    # ── Worktree ────────────────────────────────────────────────────
+    workspace_dir = project_dir
+    if args.worktree:
+        wt = _create_worktree(project_dir, args.worktree)
+        if not wt:
+            return 1
+        workspace_dir = wt
+
+    # ── OneCLI + secrets ──────────────────────────────────────────────
+    onecli_args = []
+    if not args.no_onecli:
+        if not _onecli_running():
+            print("  Starting OneCLI...")
+            if not _start_onecli():
+                print("  OneCLI failed to start. Use --no-onecli to skip.", file=sys.stderr)
+                return 1
+
+        # Sync secrets from Keychain → OneCLI
+        _secret_sync(type("", (), {"__dict__": {}})())
+
+        # Configure proxy env vars for the container
+        onecli_args.extend([
+            "-e", f"HTTPS_PROXY=http://host.docker.internal:{ONECLI_GATEWAY_PORT}",
+            "-e", f"HTTP_PROXY=http://host.docker.internal:{ONECLI_GATEWAY_PORT}",
+            "--add-host", "host.docker.internal:host-gateway",
+        ])
+
+        # Mount CA cert if available
+        ca_path = _get_onecli_ca_path()
+        if ca_path:
+            onecli_args.extend([
+                "-v", f"{ca_path}:/tmp/onecli-proxy-ca.pem:ro",
+            ])
+
+    # Inject env-mode secrets from Keychain (works with or without OneCLI)
+    onecli_args.extend(_get_env_secrets())
+
+    # ── Plugin marketplace volumes ──────────────────────────────────
+    mp_volumes = _marketplace_volumes()
+
+    # ── Docker run args ─────────────────────────────────────────────
+    docker_args = [
+        "docker", "run", "--rm", "-it",
+        "--cap-add=NET_ADMIN", "--cap-add=NET_RAW",
+        "--name", container_name,
+        "-v", f"{workspace_dir}:/workspace",
+        "-v", "cpi-claude-config:/home/node/.claude",
+        "-v", "cpi-bash-history:/commandhistory",
+        # Shadow .env to prevent credential leakage
+        "-v", "/dev/null:/workspace/.env:ro",
+        "-e", "NODE_OPTIONS=--max-old-space-size=4096",
+        "-e", "CLAUDE_CONFIG_DIR=/home/node/.claude",
+    ] + onecli_args + mp_volumes
+
+    # Pass extra claude args after --
+    claude_extra = args.claude_args or []
+    docker_args.append(SANDBOX_IMAGE)
+    docker_args.extend(claude_extra)
+
+    # ── Launch in tmux or directly ──────────────────────────────────
+    if _tmux_available() and not args.no_tmux:
+        # Build the docker command as a string for tmux
+        docker_cmd = " ".join(_shell_quote(a) for a in docker_args)
+
+        if _tmux_session_exists(tmux_session):
+            # Create a new window in the existing session
+            subprocess.run(
+                ["tmux", "new-window", "-t", tmux_session, "-n", session_name, docker_cmd],
+                timeout=10,
+            )
+            os.execvp("tmux", ["tmux", "attach-session", "-t", tmux_session])
+        else:
+            # Create new tmux session with the docker command
+            print(f"  Session: {tmux_session}")
+            print(f"  Workspace: {workspace_dir}")
+            print(f"  Detach: Ctrl+b d | Reattach: cpi run --resume {session_name}")
+            os.execvp("tmux", [
+                "tmux", "new-session", "-s", tmux_session, "-n", session_name,
+                docker_cmd,
+            ])
+    else:
+        # Run directly (no tmux persistence)
+        print(f"  Workspace: {workspace_dir}")
+        os.execvp("docker", docker_args)
+
+
+def _shell_quote(s):
+    """Quote a string for shell use."""
+    if all(c.isalnum() or c in "-_=./:" for c in s):
+        return s
+    return "'" + s.replace("'", "'\\''") + "'"
+
+
+def cmd_sessions(_args):
+    """List or manage active cpi sandbox sessions."""
+    if not _tmux_available():
+        print("  tmux not available.", file=sys.stderr)
+        return 1
+    sessions = _tmux_sessions()
+    if not sessions:
+        print("  No active cpi sessions.")
+        return 0
+    # Also check running containers
+    r = subprocess.run(
+        ["docker", "ps", "--format", "{{.Names}}\t{{.Status}}",
+         "--filter", "name=cpi-"],
+        capture_output=True, text=True, timeout=10,
+    )
+    containers = {}
+    if r.returncode == 0:
+        for line in r.stdout.strip().split("\n"):
+            if "\t" in line:
+                name, status = line.split("\t", 1)
+                containers[name] = status
+
+    print("\n  Active sessions:")
+    for s in sessions:
+        name = s.replace("cpi:", "")
+        cname = f"cpi-{name}"
+        status = containers.get(cname, "no container")
+        print(f"    {s:<30s} [{status}]")
+    print()
+    return 0
+
+
+def cmd_stop(args):
+    """Stop a sandbox session (kills container + tmux session)."""
+    name = args.name
+    container_name = f"cpi-{name}"
+    tmux_session = f"cpi:{name}"
+
+    # Stop container
+    subprocess.run(
+        ["docker", "stop", container_name],
+        capture_output=True, timeout=30,
+    )
+    # Kill tmux session
+    if _tmux_available():
+        subprocess.run(
+            ["tmux", "kill-session", "-t", tmux_session],
+            capture_output=True, timeout=5,
+        )
+    print(f"  Stopped: {name}")
+    return 0
+
+
+def cmd_build(args):
+    """Build or rebuild the sandbox Docker image."""
+    if not _docker_available():
+        print("  Docker is required.", file=sys.stderr)
+        return 1
+    if _build_image():
+        print("  Sandbox image built successfully.")
+        return 0
+    return 1
+
+
 def cmd_completions(args):
     if args.shell == "zsh":
         print(ZSH_COMPLETION)
@@ -218,7 +807,7 @@ ZSH_COMPLETION = r"""
 # ── cpi completion (add to ~/.zshrc) ──────────────────────────────────
 _cpi() {
   local -a subcmds plugins
-  subcmds=(add remove list install uninstall search completions)
+  subcmds=(add remove list install uninstall search completions secret run sessions stop build)
 
   if (( CURRENT == 2 )); then
     _describe 'command' subcmds
@@ -240,6 +829,37 @@ _cpi() {
       ;;
     completions)
       compadd zsh
+      ;;
+    secret)
+      if (( CURRENT == 3 )); then
+        local -a secret_cmds=(add rm list sync)
+        _describe 'secret command' secret_cmds
+      elif (( CURRENT > 3 )) && [[ "${words[3]}" == "rm" ]]; then
+        local -a snames=(${(f)"$(python3 -c 'import json; [print(s["name"]) for s in json.load(open("'${HOME}'/.config/cpi/secrets.json"))]' 2>/dev/null)"})
+        compadd "${snames[@]}"
+      fi
+      ;;
+    run)
+      local -a run_opts=(
+        '-w:Create git worktree'
+        '--worktree:Create git worktree'
+        '-n:Session name'
+        '--name:Session name'
+        '--resume:Resume tmux session'
+        '--skip-build:Skip image build'
+        '--no-onecli:Skip OneCLI'
+        '--no-tmux:Run without tmux'
+      )
+      if [[ "${words[CURRENT]}" == -* ]]; then
+        _describe 'option' run_opts
+      else
+        _files -/
+      fi
+      ;;
+    stop)
+      # Complete with active session names
+      local -a sessions=(${(f)"$(tmux list-sessions -F '#{session_name}' 2>/dev/null | grep '^cpi:' | sed 's/^cpi://')"})
+      compadd "${sessions[@]}"
       ;;
   esac
 }
@@ -288,6 +908,55 @@ def main():
     p = sub.add_parser("completions", help="Output shell completion script")
     p.add_argument("shell", choices=["zsh"])
 
+    # ── Secret management ─────────────────────────────────────────
+    p = sub.add_parser("secret", help="Manage secrets (macOS Keychain + OneCLI)")
+    secret_sub = p.add_subparsers(dest="secret_action")
+
+    sp = secret_sub.add_parser("add", help="Register a secret")
+    sp.add_argument("name", help="Secret name (e.g. github-token)")
+    sp.add_argument("-s", "--service", help="Keychain service name (default: same as name)")
+    sp.add_argument("-a", "--account", help="Keychain account (default: $USER)")
+    sp.add_argument("-t", "--type", default="bearer",
+                    choices=["bearer", "api-key", "basic", "header"],
+                    help="How OneCLI injects the credential (default: bearer)")
+    sp.add_argument("--host", help="OneCLI host pattern for proxy injection (e.g. *.github.com)")
+    sp.add_argument("--env", help="Also inject as this env var in container (for query-param APIs)")
+    sp.add_argument("--value", help="Store this value in Keychain (optional, interactive otherwise)")
+
+    sp = secret_sub.add_parser("rm", help="Unregister a secret")
+    sp.add_argument("name", help="Secret name to remove")
+    sp.add_argument("--delete-keychain", action="store_true",
+                    help="Also delete from macOS Keychain")
+
+    secret_sub.add_parser("list", help="List registered secrets")
+    secret_sub.add_parser("sync", help="Push all secrets from Keychain to OneCLI")
+
+    # ── Sandbox commands ────────────────────────────────────────────
+    p = sub.add_parser("run", help="Launch Claude Code in sandboxed Docker + OneCLI")
+    p.add_argument("project", nargs="?", default=".",
+                    help="Project directory to mount (default: cwd)")
+    p.add_argument("-w", "--worktree",
+                    help="Create/use a git worktree for isolated branch work")
+    p.add_argument("-n", "--name",
+                    help="Session name (default: worktree name or project dir name)")
+    p.add_argument("--resume", nargs="?", const=True, default=False,
+                    help="Resume a tmux session (no arg = list, name = attach)")
+    p.add_argument("--skip-build", action="store_true",
+                    help="Skip image build even if missing")
+    p.add_argument("--no-onecli", action="store_true",
+                    help="Skip OneCLI, pass host credentials directly (less secure)")
+    p.add_argument("--no-tmux", action="store_true",
+                    help="Run directly without tmux session persistence")
+    p.add_argument("claude_args", nargs="*",
+                    help="Extra args passed to claude (after --)")
+
+    sub.add_parser("sessions", help="List active sandbox sessions")
+
+    p = sub.add_parser("stop", help="Stop a sandbox session")
+    p.add_argument("name", help="Session name to stop")
+
+    sub.add_parser("build", help="Build/rebuild the sandbox Docker image")
+
     sub.add_parser("_plugins", help=argparse.SUPPRESS)
 
     args = parser.parse_args()
@@ -302,6 +971,11 @@ def main():
         "uninstall": cmd_uninstall,
         "search": cmd_search,
         "completions": cmd_completions,
+        "secret": cmd_secret,
+        "run": cmd_run,
+        "sessions": cmd_sessions,
+        "stop": cmd_stop,
+        "build": cmd_build,
         "_plugins": cmd_plugins,
     }
     return dispatch[args.command](args) or 0

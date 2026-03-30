@@ -16,25 +16,25 @@ The primary endpoint — fetch data points for any economic indicator.
 
 ```bash
 # GDP (quarterly)
-FRED_KEY=$(security find-generic-password -s "fred-api-key" -w) && curl -sf "https://api.stlouisfed.org/fred/series/observations?series_id=GDP&api_key=${FRED_KEY}&file_type=json" | jq '.observations[-5:][] | {date, value}'
+FRED_KEY="${FRED_API_KEY:-$(security find-generic-password -s "fred-api-key" -w 2>/dev/null)}" && curl -sf "https://api.stlouisfed.org/fred/series/observations?series_id=GDP&api_key=${FRED_KEY}&file_type=json" | jq '.observations[-5:][] | {date, value}'
 
 # Unemployment rate (monthly)
-FRED_KEY=$(security find-generic-password -s "fred-api-key" -w) && curl -sf "https://api.stlouisfed.org/fred/series/observations?series_id=UNRATE&api_key=${FRED_KEY}&file_type=json" | jq '.observations[-12:][] | {date, value}'
+FRED_KEY="${FRED_API_KEY:-$(security find-generic-password -s "fred-api-key" -w 2>/dev/null)}" && curl -sf "https://api.stlouisfed.org/fred/series/observations?series_id=UNRATE&api_key=${FRED_KEY}&file_type=json" | jq '.observations[-12:][] | {date, value}'
 
 # CPI - Consumer Price Index (monthly, percent change from year ago)
-FRED_KEY=$(security find-generic-password -s "fred-api-key" -w) && curl -sf "https://api.stlouisfed.org/fred/series/observations?series_id=CPIAUCSL&units=pc1&api_key=${FRED_KEY}&file_type=json" | jq '.observations[-12:][] | {date, value}'
+FRED_KEY="${FRED_API_KEY:-$(security find-generic-password -s "fred-api-key" -w 2>/dev/null)}" && curl -sf "https://api.stlouisfed.org/fred/series/observations?series_id=CPIAUCSL&units=pc1&api_key=${FRED_KEY}&file_type=json" | jq '.observations[-12:][] | {date, value}'
 
 # Federal funds rate
-FRED_KEY=$(security find-generic-password -s "fred-api-key" -w) && curl -sf "https://api.stlouisfed.org/fred/series/observations?series_id=FEDFUNDS&api_key=${FRED_KEY}&file_type=json" | jq '.observations[-12:][] | {date, value}'
+FRED_KEY="${FRED_API_KEY:-$(security find-generic-password -s "fred-api-key" -w 2>/dev/null)}" && curl -sf "https://api.stlouisfed.org/fred/series/observations?series_id=FEDFUNDS&api_key=${FRED_KEY}&file_type=json" | jq '.observations[-12:][] | {date, value}'
 
 # 10-Year Treasury yield
-FRED_KEY=$(security find-generic-password -s "fred-api-key" -w) && curl -sf "https://api.stlouisfed.org/fred/series/observations?series_id=DGS10&api_key=${FRED_KEY}&file_type=json" | jq '.observations[-20:][] | {date, value}'
+FRED_KEY="${FRED_API_KEY:-$(security find-generic-password -s "fred-api-key" -w 2>/dev/null)}" && curl -sf "https://api.stlouisfed.org/fred/series/observations?series_id=DGS10&api_key=${FRED_KEY}&file_type=json" | jq '.observations[-20:][] | {date, value}'
 
 # S&P 500 index
-FRED_KEY=$(security find-generic-password -s "fred-api-key" -w) && curl -sf "https://api.stlouisfed.org/fred/series/observations?series_id=SP500&api_key=${FRED_KEY}&file_type=json" | jq '.observations[-20:][] | {date, value}'
+FRED_KEY="${FRED_API_KEY:-$(security find-generic-password -s "fred-api-key" -w 2>/dev/null)}" && curl -sf "https://api.stlouisfed.org/fred/series/observations?series_id=SP500&api_key=${FRED_KEY}&file_type=json" | jq '.observations[-20:][] | {date, value}'
 
 # With date range
-FRED_KEY=$(security find-generic-password -s "fred-api-key" -w) && curl -sf "https://api.stlouisfed.org/fred/series/observations?series_id=GDP&observation_start=2023-01-01&observation_end=2025-12-31&api_key=${FRED_KEY}&file_type=json" | jq '.observations[] | {date, value}'
+FRED_KEY="${FRED_API_KEY:-$(security find-generic-password -s "fred-api-key" -w 2>/dev/null)}" && curl -sf "https://api.stlouisfed.org/fred/series/observations?series_id=GDP&observation_start=2023-01-01&observation_end=2025-12-31&api_key=${FRED_KEY}&file_type=json" | jq '.observations[] | {date, value}'
 ```
 
 | Param | Type | Description |
@@ -56,7 +56,7 @@ FRED_KEY=$(security find-generic-password -s "fred-api-key" -w) && curl -sf "htt
 Get metadata about a series.
 
 ```bash
-FRED_KEY=$(security find-generic-password -s "fred-api-key" -w) && curl -sf "https://api.stlouisfed.org/fred/series?series_id=GDP&api_key=${FRED_KEY}&file_type=json" | jq '.seriess[0] | {id, title, frequency_short, units_short, seasonal_adjustment_short, last_updated}'
+FRED_KEY="${FRED_API_KEY:-$(security find-generic-password -s "fred-api-key" -w 2>/dev/null)}" && curl -sf "https://api.stlouisfed.org/fred/series?series_id=GDP&api_key=${FRED_KEY}&file_type=json" | jq '.seriess[0] | {id, title, frequency_short, units_short, seasonal_adjustment_short, last_updated}'
 ```
 
 ---
@@ -67,10 +67,10 @@ Find series by keyword.
 
 ```bash
 # Search for inflation-related series
-FRED_KEY=$(security find-generic-password -s "fred-api-key" -w) && curl -sf "https://api.stlouisfed.org/fred/series/search?search_text=inflation&api_key=${FRED_KEY}&file_type=json&limit=10" | jq '.seriess[] | {id, title, frequency_short, popularity}'
+FRED_KEY="${FRED_API_KEY:-$(security find-generic-password -s "fred-api-key" -w 2>/dev/null)}" && curl -sf "https://api.stlouisfed.org/fred/series/search?search_text=inflation&api_key=${FRED_KEY}&file_type=json&limit=10" | jq '.seriess[] | {id, title, frequency_short, popularity}'
 
 # Search with ordering by popularity
-FRED_KEY=$(security find-generic-password -s "fred-api-key" -w) && curl -sf "https://api.stlouisfed.org/fred/series/search?search_text=housing%20starts&order_by=popularity&sort_order=desc&api_key=${FRED_KEY}&file_type=json&limit=5" | jq '.seriess[] | {id, title, popularity}'
+FRED_KEY="${FRED_API_KEY:-$(security find-generic-password -s "fred-api-key" -w 2>/dev/null)}" && curl -sf "https://api.stlouisfed.org/fred/series/search?search_text=housing%20starts&order_by=popularity&sort_order=desc&api_key=${FRED_KEY}&file_type=json&limit=5" | jq '.seriess[] | {id, title, popularity}'
 ```
 
 | Param | Type | Description |

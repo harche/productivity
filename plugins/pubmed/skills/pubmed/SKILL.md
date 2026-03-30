@@ -18,7 +18,7 @@ curl -sf "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=GLP-1%20
 curl -sf "https://clinicaltrials.gov/api/v2/studies?query.cond=obesity&query.intr=semaglutide&pageSize=5&format=json" | jq '.studies // [] | .[] | {nctId: .protocolSection.identificationModule.nctId, title: .protocolSection.identificationModule.briefTitle, status: .protocolSection.statusModule.overallStatus, phase: .protocolSection.designModule.phases}'
 
 # Paper details with AI summary (Semantic Scholar — requires API key)
-S2_KEY=$(security find-generic-password -s "semantic-scholar-api-key" -w 2>/dev/null)
+S2_KEY="${SEMANTIC_SCHOLAR_API_KEY:-$(security find-generic-password -s "semantic-scholar-api-key" -w 2>/dev/null || true)}"
 if [ -n "$S2_KEY" ]; then
   curl -sf -H "x-api-key: ${S2_KEY}" "https://api.semanticscholar.org/graph/v1/paper/search?query=peptide+drug+delivery&fields=title,tldr,citationCount,year&limit=5" | jq '.data // [] | .[] | {title, tldr: .tldr.text, citations: .citationCount, year}'
 fi

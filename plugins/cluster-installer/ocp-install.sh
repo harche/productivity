@@ -71,18 +71,20 @@ random_suffix() {
 }
 
 get_pull_secret() {
-  local secret=""
-  case "$(uname -s)" in
-    Darwin)
-      # macOS: read from Keychain (-w doesn't work for long values; use -g and parse)
-      secret="$(security find-generic-password -s "OCP_PULL_SECRET" -g 2>&1 \
-        | grep '^password: "' | sed 's/^password: "//;s/"$//')" || true
-      ;;
-    Linux)
-      # Linux: read from GNOME Keyring / libsecret via secret-tool
-      secret="$(secret-tool lookup service ocp-install key OCP_PULL_SECRET 2>/dev/null)" || true
-      ;;
-  esac
+  local secret="${OCP_PULL_SECRET:-}"
+  if [[ -z "$secret" ]]; then
+    case "$(uname -s)" in
+      Darwin)
+        # macOS: read from Keychain (-w doesn't work for long values; use -g and parse)
+        secret="$(security find-generic-password -s "OCP_PULL_SECRET" -g 2>&1 \
+          | grep '^password: "' | sed 's/^password: "//;s/"$//')" || true
+        ;;
+      Linux)
+        # Linux: read from GNOME Keyring / libsecret via secret-tool
+        secret="$(secret-tool lookup service ocp-install key OCP_PULL_SECRET 2>/dev/null)" || true
+        ;;
+    esac
+  fi
   if [[ -z "$secret" ]]; then
     # Fallback: try file
     local fallback="${CLUSTERS_DIR}/pull-secret-gcp.txt"

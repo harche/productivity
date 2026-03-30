@@ -9,7 +9,7 @@ AI-powered academic search with TLDRs (auto-generated paper summaries), citation
 **Before using Semantic Scholar, check if the API key is available.** If not, skip Semantic Scholar and use Europe PMC instead — it covers the same literature without auth.
 
 ```bash
-S2_KEY=$(security find-generic-password -s "semantic-scholar-api-key" -w 2>/dev/null)
+S2_KEY="${SEMANTIC_SCHOLAR_API_KEY:-$(security find-generic-password -s "semantic-scholar-api-key" -w 2>/dev/null || true)}"
 if [ -z "$S2_KEY" ]; then
   echo "Semantic Scholar API key not found — skipping. Use Europe PMC instead."
   # To set up: security add-generic-password -s "semantic-scholar-api-key" -a "$USER" -w "YOUR_KEY"
