@@ -1,6 +1,6 @@
 ---
 name: deploy-debug-binary
-description: Deploy a custom-built debug binary (CRI-O, crun, kubelet, etc.) to an OpenShift worker node running RHCOS. Use when the user wants to build, deploy, test, or replace a binary on a live OpenShift cluster for debugging or POC testing. Also trigger when the user mentions cross-compiling for RHCOS, replacing CRI-O on a node, bind-mounting binaries, or testing a patched runtime on an OpenShift cluster.
+description: Deploy a custom-built debug binary (CRI-O, crun, kubelet, etc.) to an OpenShift worker node running RHCOS. Use when the user wants to build, deploy, test, or replace a binary on a live OpenShift cluster for debugging or POC testing. Also trigger when the user mentions cross-compiling for RHCOS, replacing CRI-O on a node, bind-mounting binaries, testing a patched runtime on an OpenShift cluster, RHCOS layered images, or rolling out a custom OS image via MachineConfig.
 allowed-tools: Bash(*), Read, Write, Edit, Glob, Grep
 ---
 
@@ -44,6 +44,14 @@ For binary-specific details (build tags, library dependencies, systemd units, co
 Unmount the bind mount, remove config drop-ins, restart the service. The original binary is untouched.
 
 Read [rollback.md](references/rollback.md) for rollback steps.
+
+### Alternative: Cluster-Wide via Layered Image
+
+For deploying to **all nodes** in a pool (not just one), or when the binary must **survive reboots**, use RHCOS image layering instead of bind mounts. This builds a custom OS image with your binary baked in, and the MCO rolls it out across the cluster.
+
+Read [layered-image.md](references/layered-image.md) for the full procedure.
+
+This is also how customers would deploy a custom binary in production — layered image for the binary, then a MachineConfig to drop the configuration that enables the feature.
 
 ## Safety Rules
 
