@@ -51,11 +51,11 @@
       "dependencies": ["web-browser"]
     },
     {
-      "name": "context-keeper",
-      "source": "./plugins/context-keeper",
-      "description": "Capture project state as mind-map knowledge bases from Slack, Docs, Jira, and other sources",
+      "name": "knowledge-base",
+      "source": "./plugins/knowledge-base",
+      "description": "Build and maintain LLM-powered knowledge bases: ingest sources (conversations, articles, URLs), compile structured wikis, and lint for consistency. Obsidian-compatible.",
       "category": "workflow",
-      "version": "1.1.0"
+      "version": "1.0.0"
     },
     {
       "name": "video-research",

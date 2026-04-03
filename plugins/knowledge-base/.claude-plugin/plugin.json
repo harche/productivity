@@ -1,0 +1,5 @@
+{
+  "name": "knowledge-base",
+  "description": "Build and maintain LLM-powered knowledge bases: ingest sources (articles, conversations, URLs), compile structured wikis, and lint for consistency. Obsidian-compatible.",
+  "version": "1.0.0"
+}
