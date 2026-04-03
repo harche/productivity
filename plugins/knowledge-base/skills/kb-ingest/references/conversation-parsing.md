@@ -8,6 +8,36 @@ Transcripts live under `~/.claude/projects/` in directories named after the work
 
 Example: `~/.claude/projects/-Users-harpatil-repos-cri-o/8d543f52-974a-49cb-a043-0753f582beca.jsonl`
 
+## Finding the Current Conversation's JSONL
+
+Claude Code stores session metadata at `~/.claude/sessions/<PID>.json`, where PID is the Claude Code process ID. From a Bash tool call, `$PPID` is the Claude Code PID.
+
+The session file contains:
+
+```json
+{
+  "pid": 80119,
+  "sessionId": "2c3bcb84-11d0-4eb6-9354-25cc789f8f3c",
+  "cwd": "/Users/harpatil/repos/cri-o",
+  "startedAt": 1775221788405,
+  "kind": "interactive",
+  "entrypoint": "cli"
+}
+```
+
+### One-liner to resolve the current conversation's JSONL path
+
+```bash
+CONVERSATION_JSONL=$(python3 -c "
+import json, os
+s = json.load(open(os.path.expanduser(f'~/.claude/sessions/{os.getppid()}.json')))
+cwd = s['cwd'].replace('/', '-')
+print(f\"{os.path.expanduser('~')}/.claude/projects/{cwd}/{s['sessionId']}.jsonl\")
+")
+```
+
+When the user asks to ingest "this conversation", use this method to resolve the JSONL path automatically instead of guessing by timestamp.
+
 ## JSONL Structure
 
 Each line is a JSON object. The `type` field determines what it is:
