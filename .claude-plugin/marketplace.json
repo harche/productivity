@@ -55,7 +55,7 @@
       "source": "./plugins/knowledge-base",
       "description": "Build and maintain knowledge bases: ingest sources (conversations, articles, URLs), compile structured wikis, and lint for consistency. Obsidian-compatible.",
       "category": "workflow",
-      "version": "1.0.0"
+      "version": "1.1.0"
     },
     {
       "name": "video-research",
