@@ -15,22 +15,7 @@ claude plugin install --scope local <name>@productivity-tools
 | `github` | GitHub repos, PRs, issues, and actions via `gh` CLI | — |
 | `workspace` | Manage email, calendar, and documents across Google Workspace | — |
 | `redhat-detective` | Red Hat debugging/investigation toolkit: Jira, Knowledge Base, support cases, platform docs (k8s + OpenShift), and Prometheus metrics | — |
-| `context-keeper` | Capture project state as structured markdown notes from Slack, Docs, Jira, and other sources | `workspace`, `redhat-detective`, `github` (all optional) |
-
-<details>
-<summary><b>context-keeper</b> — full install</summary>
-
-```sh
-# Source plugins (install whichever you use)
-claude plugin install --scope local workspace@productivity-tools
-claude plugin install --scope local redhat-detective@productivity-tools
-claude plugin install --scope local github@productivity-tools
-
-# The plugin itself
-claude plugin install --scope local context-keeper@productivity-tools
-```
-
-</details>
+| `knowledge-base` | Build and maintain knowledge bases: ingest sources (conversations, articles, URLs), compile structured wikis, and lint for consistency. Obsidian-compatible. | — |
 
 ### Infra
 
@@ -124,4 +109,4 @@ See the full examples in the [README](../README.md#authentication--secrets).
 | `tech-news` | No auth required (public API) |
 | `financial-research` | SEC EDGAR: no auth; FRED: API key from Keychain (`fred-api-key`) |
 | `medical-research` | Europe PMC and ClinicalTrials.gov: no auth; Semantic Scholar and OpenAlex: API keys from Keychain (optional/free) |
-| `context-keeper` | Uses other plugins' auth |
+| `knowledge-base` | No auth required |
