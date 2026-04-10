@@ -10,6 +10,7 @@ Annotated YAML examples for common use cases. Each explains
 |gitops.md — GitOps: analyze, user applies via git, agent verifies (integrator)
 |acs.md — ACS violation triggers proposal pipeline (integrator)
 |trust-mode.md — Full auto: skip analysis, execute immediately (integrator)
+|upgrade.md — Cluster upgrade: risk assessment → upgrade → verify (integrator)
 
 ## Live Adapter Examples
 
@@ -22,5 +23,6 @@ deploy script, and CLAUDE.md. Run any of them end-to-end:
 | `acs/` | `bash examples/adapters/acs/deploy.sh` | Image CVE → ACS violation → proposal |
 | `gitops/` | `bash examples/adapters/gitops/deploy.sh` | ArgoCD-managed namespace remediation |
 | `ossm/` | `bash examples/adapters/ossm/deploy.sh` | Service Mesh integration |
+| `upgrade/` | `go run ./examples/adapters/upgrade/` | Cluster upgrade risk assessment + execution |
 
 Each adapter's `CLAUDE.md` has the full walkthrough.

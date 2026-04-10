@@ -14,7 +14,7 @@ kind: OlsLlmProvider
 metadata:
   name: smart
 spec:
-  type: anthropic_vertex
+  type: vertex
   model: claude-opus-4-6
   credentialsSecretRef:
     name: llm-credentials  # must exist in openshift-lightspeed namespace
@@ -84,4 +84,4 @@ Since execution is skipped, it stays at Proposed with the analysis results.
 - **Automate creation:** See guides/adapters.md to create proposals from alerts
 - **Tune the agent:** See guides/system-prompts.md to customize analysis behavior
 
-See also: examples/advisory.md, architecture/phases.md
+See also: architecture/phases.md

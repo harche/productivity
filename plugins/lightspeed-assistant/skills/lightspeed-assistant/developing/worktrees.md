@@ -1,63 +1,97 @@
 # Parallel Workspaces (git worktrees)
 
 Work on multiple features simultaneously with isolated branches across
-all repos.
+all repos using `hack/worktree.sh`.
 
-## Quick Reference
+## Commands
 
-```bash
-hack/worktree.sh sync             # fetch + checkout latest main in all submodules
-hack/worktree.sh create <name>    # sync + create .worktrees/<name>/ with all repos
-hack/worktree.sh merge <name>     # merge wt/<name> branches into main
-hack/worktree.sh remove <name>    # tear down workspace + clean branches
-hack/worktree.sh list             # show active workspaces
+```
+hack/worktree.sh sync                  — fetch + checkout main in all submodules
+hack/worktree.sh create <name> [base]  — sync + create parallel workspace
+hack/worktree.sh pull <name>           — sync main + merge into all worktree branches
+hack/worktree.sh merge <name>          — merge worktree branches into main + update root
+hack/worktree.sh remove <name>         — tear down workspace
+hack/worktree.sh list                  — show active workspaces
 ```
 
-After creating:
-```bash
-claude --cwd .worktrees/<name>
-```
-
-## How It Works
-
-The lightspeed project has multiple repos as git submodules. A single
-`git worktree` can only isolate one repo. The script creates worktrees
-for the root AND every submodule, assembling them into a single directory.
-
-Each sub-repo gets a `wt/<name>` branch. Changes in the worktree
-don't affect the main checkout and vice versa.
-
-## Sync Behavior
-
-Fetches all submodules and fast-forwards to latest remote main:
-- **Behind remote:** fast-forwards automatically
-- **Ahead of remote (local commits):** skips pull, prints info
-- **Diverged from remote:** skips pull, prints warning (resolve manually)
-
-## Merge Behavior
-
-1. Checks each submodule for commits on `wt/<name>` beyond main
-2. Skips submodules with no changes
-3. Fast-forwards if possible, otherwise creates merge commit
-4. Stops on conflicts for manual resolution
-5. Updates root repo submodule pointers in a single commit
-
-## Typical Workflow
+## Typical Flow
 
 ```bash
-hack/worktree.sh create fix-rbac      # create workspace
-claude --cwd .worktrees/fix-rbac      # work in it
-# ... make changes, commit ...
-hack/worktree.sh merge fix-rbac       # integrate back to main
-hack/worktree.sh remove fix-rbac      # clean up
+# 1. Create a workspace (syncs all submodules first)
+hack/worktree.sh create fix-rbac
+
+# 2. Work in the workspace
+claude --cwd .worktrees/fix-rbac
+
+# 3. Pull latest main into your workspace (if main moved ahead)
+hack/worktree.sh pull fix-rbac
+
+# 4. Merge workspace branches back into main
+hack/worktree.sh merge fix-rbac
+
+# 5. Clean up
+hack/worktree.sh remove fix-rbac
 ```
+
+## What Each Command Does
+
+### sync
+
+Fetches all remotes, initializes submodules, and fast-forwards each
+submodule's tracked branch (from `.gitmodules`, defaults to `main`).
+Never rebases or creates merge commits — if a submodule has diverged
+from its remote, it warns and skips.
+
+### create \<name\> [base]
+
+1. Runs `sync` first to ensure everything is up to date
+2. Creates a root worktree at `.worktrees/<name>` on branch `wt/<name>`
+3. Creates a worktree for each submodule inside the workspace, also on `wt/<name>`
+
+The optional `base` argument sets the starting point (defaults to HEAD).
+
+### pull \<name\>
+
+1. Runs `sync` to update main branches
+2. Merges each submodule's tracked branch into its `wt/<name>` branch
+3. Updates root worktree submodule pointers
+
+Stops on conflict — resolve it in the submodule, then re-run `pull`.
+
+### merge \<name\>
+
+1. Merges the root repo's `wt/<name>` into its current branch
+2. Merges each submodule's `wt/<name>` into its tracked branch
+   (fast-forward when possible, merge commit otherwise)
+3. Syncs with remote worktree branches (handles agent-pushed commits)
+4. Reconciles submodule pointers — catches cases where the root
+   fast-forwarded a pointer but the submodule's main fell behind
+5. Commits updated submodule pointers in the root repo
+
+### remove \<name\>
+
+Removes all submodule worktrees, the root worktree, and deletes all
+`wt/<name>` branches. Always merge before removing — removing does not
+preserve unmerged changes.
+
+### list
+
+Shows all active workspaces with each submodule's current branch.
+
+## Branch Naming
+
+All worktree branches use the `wt/<name>` convention. The deploy
+scripts in `hack/` auto-detect this via `lib.sh` — when
+`WORKSPACE_ROOT` is inside `.worktrees/<name>/`, images are tagged
+`wt-<name>` instead of `latest`. Multiple workspaces can deploy to
+the same cluster without clobbering each other's images.
 
 ## Important
 
-- Always `merge` before `remove` — removing deletes `wt/<name>` branches
-- Don't delete `.worktrees/` directories manually — use the `remove` command
-- Worktrees share the same `.git` object store — lightweight, not full clones
-- When merging multiple worktrees that touched the same files, merge one
-  at a time and resolve conflicts on subsequent merges
+- Always `merge` before `remove` — removing the worktree does not merge changes
+- Don't delete `.worktrees/` directories manually — use `hack/worktree.sh remove`
+- Worktrees share the same `.git` object store — they're lightweight, not full clones
+- `pull` stops on the first conflict — resolve and re-run
+- `merge` handles remote worktree branches (agent-pushed commits are synced before merge)
 
 See also: developing/deploying.md (deploying from a worktree)

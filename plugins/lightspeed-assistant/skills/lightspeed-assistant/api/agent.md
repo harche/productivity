@@ -12,6 +12,7 @@ into a reusable agent configuration.
 | `llm` | string | yes | Name of an OlsLlmProvider CR |
 | `skills.image` | string | yes | OCI image reference containing skills (mounted in sandbox) |
 | `systemPromptRef` | LocalObjectReference | no | ConfigMap with key `prompt` containing the system prompt text |
+| `outputSchema` | JSON | no | Optional JSON Schema for structured output. Merged with the base schema before sending to the agent. Adapters use this to define custom component types in the response. |
 
 ## System Prompt ConfigMap
 

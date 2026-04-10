@@ -37,11 +37,25 @@ Multiple worktrees can deploy to the same cluster without clobbering.
 
 | Script | Builds | Pushes | Restarts |
 |--------|--------|--------|----------|
+| `deploy-operator.sh` | everything (CRDs, kustomize, all images) | all images | full initial deploy |
 | `redeploy-operator.sh` | operator binary | operator image | operator deployment |
 | `redeploy-agent.sh` | agent container | agent image | agent pods |
-| `redeploy-skills.sh` | 5 skills images | all skills images | agent pods |
+| `redeploy-skills.sh` | full + 4 profile skills images | all skills images | agent pods |
 | `redeploy-console.sh` | console plugin | console image | console deployment |
 | `redeploy-all.sh` | everything | everything | everything |
+
+## Skills Profiles
+
+The `lightspeed-skills/` repo has 5 Containerfiles that produce different
+skills images. `redeploy-skills.sh` builds and pushes all of them:
+
+| Containerfile | Profile | Skills Included |
+|---------------|---------|-----------------|
+| `Containerfile` | base (all skills) | everything under `skills/` |
+| `Containerfile.remediate` | remediate | cluster-ops, prometheus, platform-docs |
+| `Containerfile.escalate` | escalate | escalation, github, redhat-support, platform-docs |
+| `Containerfile.design` | design | operator-catalog, platform-docs, rbac-security |
+| `Containerfile.monitor` | monitor | prometheus, platform-docs |
 
 ## Adapter Skills Images
 

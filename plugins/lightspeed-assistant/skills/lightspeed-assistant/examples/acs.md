@@ -35,10 +35,10 @@ The adapter includes its own skills in `examples/adapters/acs/skills/`:
 - **rbac-security** — minimum-privilege RBAC mapping
 - **redhat-support** — Red Hat knowledge base and Jira
 
-## ACS-Specific Agents and Workflows
+## ACS-Specific Agents
 
 ```yaml
-# ACS analyzer agent — uses ACS-specific skills image
+# ACS analyzer — security-focused analysis with ACS skills
 apiVersion: ols.openshift.io/v1alpha1
 kind: OlsAgent
 metadata:
@@ -49,9 +49,54 @@ spec:
     image: <registry>/acs-skills:latest
   systemPromptRef:
     name: acs-analysis-prompt
-
 ---
-# ACS remediation workflow
+# ACS GitOps analyzer — advises git changes instead of cluster changes
+apiVersion: ols.openshift.io/v1alpha1
+kind: OlsAgent
+metadata:
+  name: acs-gitops-analyzer
+spec:
+  llm: smart
+  skills:
+    image: <registry>/acs-skills:latest
+  systemPromptRef:
+    name: acs-gitops-analysis-prompt   # tells agent NOT to propose cluster changes
+---
+# ACS executor and verifier — use ACS skills image for post-fix scanning
+apiVersion: ols.openshift.io/v1alpha1
+kind: OlsAgent
+metadata:
+  name: acs-executor
+spec:
+  llm: fast
+  skills:
+    image: <registry>/acs-skills:latest
+  systemPromptRef:
+    name: execution-prompt             # reuses standard execution prompt
+---
+apiVersion: ols.openshift.io/v1alpha1
+kind: OlsAgent
+metadata:
+  name: acs-verifier
+spec:
+  llm: fast
+  skills:
+    image: <registry>/acs-skills:latest
+  systemPromptRef:
+    name: verification-prompt          # reuses standard verification prompt
+```
+
+Four agents because the adapter selects a workflow based on whether
+the target namespace is GitOps-managed. The `acs-gitops-analyzer` uses
+a prompt that describes changes as YAML diffs instead of `oc` commands.
+
+## ACS Workflow Variants
+
+Three workflows handle the different ACS remediation patterns.
+Definitions are in `examples/setup/05-acs-workflow.yaml`.
+
+```yaml
+# 1. Full remediation — analyze vulnerability → execute fix → verify
 apiVersion: ols.openshift.io/v1alpha1
 kind: OlsWorkflow
 metadata:
@@ -62,10 +107,41 @@ spec:
   execution:
     agent: acs-executor
   verification:
-    agent: verifier
+    agent: acs-verifier
+---
+# 2. GitOps remediation — analyze → advise git changes → user applies → verify
+#    Used when the target namespace has the argocd.argoproj.io/managed-by annotation
+apiVersion: ols.openshift.io/v1alpha1
+kind: OlsWorkflow
+metadata:
+  name: acs-gitops-remediation
+spec:
+  analysis:
+    agent: acs-gitops-analyzer   # advises git changes, not cluster changes
+  execution:
+    skip: true                   # user applies via git commit + ArgoCD sync
+  verification:
+    agent: acs-verifier
+---
+# 3. Advisory only — analyze ACS violation, no action
+#    Used for runtime anomalies or audit-only policies
+apiVersion: ols.openshift.io/v1alpha1
+kind: OlsWorkflow
+metadata:
+  name: acs-advisory
+spec:
+  analysis:
+    agent: acs-analyzer
+  execution:
+    skip: true
+  verification:
+    skip: true
 ```
 
-Workflow definitions are in `examples/setup/05-acs-workflow.yaml`.
+The adapter auto-selects the workflow:
+- **acs-remediation** for namespaces without GitOps
+- **acs-gitops-remediation** for ArgoCD-managed namespaces
+- **acs-advisory** for runtime anomaly policies (investigation only)
 
 ## Adapter Features
 

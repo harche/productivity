@@ -233,4 +233,36 @@ you need into your adapter's `skills/` directory:
 
 Pick exactly the skills your agents need — don't include everything.
 
+## Skill Profiles
+
+The `lightspeed-skills/` repo ships pre-built Containerfile profiles
+that bundle subsets of skills for common workflow patterns. Each profile
+produces a smaller, purpose-built image instead of including all skills.
+
+| Profile | Containerfile | Skills included | Use case |
+|---|---|---|---|
+| `base` | `Containerfile` | All skills | Development, testing, full-featured agents |
+| `remediate` | `Containerfile.remediate` | cluster-ops, prometheus, platform-docs | Alert-driven remediation (analyze + fix) |
+| `escalate` | `Containerfile.escalate` | escalation, github, redhat-support, platform-docs | Structured issue filing with diagnostics |
+| `design` | `Containerfile.design` | operator-catalog, platform-docs, rbac-security | Architecture review, operator selection, RBAC |
+| `monitor` | `Containerfile.monitor` | prometheus, platform-docs | Monitoring-only agents (metric queries, alert rules) |
+
+Build a profile with `make docker-build-<profile>` (e.g.,
+`make docker-build-remediate`), or build all profiles at once
+with `make docker-build-all`. The base image (`make docker-build`)
+includes every skill.
+
+### Choosing a Profile
+
+Match the profile to your workflow:
+
+- **Full remediation workflow** — use `remediate` for analysis/execution
+  agents, `monitor` for verification agents that only check metrics.
+- **Advisory + escalation** — use `escalate` to file issues when
+  remediation is not automated.
+- **Operator installation planning** — use `design` for agents that
+  evaluate OLM catalogs and plan RBAC.
+- **Custom adapter** — start with `base` during development, then
+  create a custom Containerfile that copies only the skills you need.
+
 See also: api/agent.md (skills field), developing/deploying.md (build + push)

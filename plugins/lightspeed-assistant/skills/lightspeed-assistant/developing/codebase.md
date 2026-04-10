@@ -29,13 +29,16 @@ All repos live in **[NotAKubeKlaw](https://github.com/NotAKubeKlaw)**.
 - `client.go` — REST client to agent API
 - `response_types.go` — Agent response wrapper types
 - `schemas.go` — JSON schema validation for agent outputs
-- `sandbox.go` — Sandbox lifecycle (claim, wait, template)
+- `sandbox.go` — Sandbox lifecycle (claim, wait)
+- `sandbox_templates.go` — SandboxTemplate management (ensure, reconcile)
 
 ### Adapter Examples (`examples/adapters/`)
 Each adapter is self-contained: code, skills, Containerfile, deploy script.
-- `alertmanager/` — AlertManager webhook → proposals (JVM OOMKill demo)
 - `acs/` — ACS violation webhook → proposals (image vulnerability remediation)
+- `alertmanager/` — AlertManager webhook → proposals (JVM OOMKill demo)
+- `custom-components/` — Demonstrates adapter-defined structured output (custom `components` in agent responses rendered by console)
 - `gitops/` — GitOps-aware remediation (ArgoCD/OSSM integration)
+- `mco-advisory/` — MCO diagnostics: advisory-only adapter for MachineConfigPool degradation (custom outputSchema, no execution)
 - `ossm/` — OpenShift Service Mesh adapter
 - `upgrade/` — Cluster upgrade trigger
 

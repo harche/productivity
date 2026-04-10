@@ -34,4 +34,4 @@ after max attempts, they escalate to a child proposal.
 |developing/references:{clusters.md,components.md}
 
 ### Annotated YAML examples
-|examples:{remediation.md,advisory.md,gitops.md,acs.md,trust-mode.md}
+|examples:{remediation.md,advisory.md,gitops.md,acs.md,trust-mode.md,upgrade.md}

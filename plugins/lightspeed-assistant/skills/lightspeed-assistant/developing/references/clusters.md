@@ -34,3 +34,7 @@ All deploy and redeploy scripts require the `KUBECONFIG` environment variable:
 ```bash
 KUBECONFIG=/path/to/kubeconfig bash hack/redeploy-operator.sh
 ```
+
+Available scripts: `deploy-operator.sh`, `redeploy-operator.sh`,
+`redeploy-agent.sh`, `redeploy-console.sh`, `redeploy-skills.sh`,
+`redeploy-all.sh`. All accept `--skip-build` to reuse existing local images.

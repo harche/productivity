@@ -18,6 +18,10 @@ data:
 
 Key must be `prompt`. Referenced via `agent.spec.systemPromptRef.name`.
 
+> **Note:** `systemPromptRef` is optional. If omitted, the operator uses
+> the agent's skills and the default query context without a custom system
+> prompt. This is useful for agents that rely entirely on skill instructions.
+
 ## What the Agent Receives
 
 When the operator calls an agent, it sends:
@@ -76,4 +80,83 @@ Do not rely on the execution agent's self-report.
 - Include context about what previous attempts found (the operator handles
   this automatically via `previousAttempts` in the query context)
 
-See also: api/agent.md (systemPromptRef), guides/quickstart.md
+## Custom Output Schemas
+
+The `outputSchema` field on OlsAgent lets adapters extend the agent's
+structured output with custom component types. The operator merges the
+custom schema with its base schema (options, diagnosis, proposal, etc.)
+before sending to the agent. If not set, the operator uses the default
+schema.
+
+### When to Use outputSchema
+
+Use it when your adapter needs the agent to return structured data
+beyond the standard diagnosis/proposal/RBAC/verification fields.
+Examples:
+
+- **MCO diagnostics** — return pool status and bad config details as
+  typed components that consumers can parse
+- **ACS scanning** — return vulnerability scan results alongside the
+  remediation proposal
+- **Custom dashboards** — return data in a shape your UI expects
+
+### Example: MCO Advisory Agent
+
+The `mco-advisory` adapter (see `examples/adapters/mco-advisory/workflow.yaml`)
+defines an `outputSchema` that requires the agent to return `mco_pool_status`
+and `mco_bad_config` components:
+
+```yaml
+apiVersion: ols.openshift.io/v1alpha1
+kind: OlsAgent
+metadata:
+  name: mco-analyzer
+spec:
+  llm: smart
+  skills:
+    image: image-registry.openshift-image-registry.svc:5000/openshift-lightspeed/lightspeed-alertmanager-skills:latest
+  systemPromptRef:
+    name: mco-analysis-prompt
+  outputSchema:
+    description: >-
+      Include structured component data about the MCP status and the
+      problematic MachineConfig.
+    type: array
+    minItems: 1
+    items:
+      oneOf:
+      - type: object
+        properties:
+          type:
+            type: string
+            const: mco_pool_status
+          pool:
+            type: string
+          degraded:
+            type: boolean
+          message:
+            type: string
+        required: ["type", "pool", "degraded", "message"]
+      - type: object
+        properties:
+          type:
+            type: string
+            const: mco_bad_config
+          machineConfigName:
+            type: string
+          issue:
+            type: string
+          content:
+            type: string
+        required: ["type", "machineConfigName", "issue", "content"]
+```
+
+The agent returns these components in the `components` array of each
+remediation option. The operator stores them as-is on the proposal
+status. Consumers (the console, downstream systems) interpret them
+based on the `type` field.
+
+For built-in component types rendered by the console (`lightspeed_*`),
+see `examples/adapters/custom-components/README.md`.
+
+See also: api/agent.md (systemPromptRef, outputSchema), guides/quickstart.md

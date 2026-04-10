@@ -66,4 +66,79 @@ After failure, the proposal retries (up to `maxAttempts`). Previous
 failure context is fed back to the analyzer for a better second attempt.
 After max attempts, it escalates to a child proposal.
 
-See also: architecture/phases.md, examples/advisory.md (simpler variant)
+## Specialized Remediation Workflows
+
+The standard `remediation` workflow above uses generic agents. Several
+adapters define specialized variants with domain-specific agents,
+skills images, and system prompts. They follow the same 3-phase
+pattern but with tailored analysis.
+
+### AlertManager Remediation
+
+Defined in `examples/setup/06-alertmanager-workflow.yaml`. Used by the
+AlertManager adapter when a Prometheus alert fires.
+
+```yaml
+apiVersion: ols.openshift.io/v1alpha1
+kind: OlsWorkflow
+metadata:
+  name: alertmanager-remediation
+spec:
+  analysis:
+    agent: alertmanager-analyzer   # alert-aware prompt, Prometheus skills
+  execution:
+    agent: alertmanager-executor   # AlertManager skills image
+  verification:
+    agent: alertmanager-verifier   # AlertManager skills image
+```
+
+All three agents use the `lightspeed-alertmanager-skills` image, which
+includes Prometheus query skills and OpenShift platform docs. The
+analysis prompt instructs the agent to query Istio and Prometheus
+metrics, check pod logs, and inspect resource limits.
+
+### OSSM (OpenShift Service Mesh) Remediation
+
+Defined in `examples/setup/07-ossm-workflow.yaml`. Used when Istio
+sidecar metrics detect service mesh issues (high error rates, latency
+spikes, mTLS misconfigurations).
+
+```yaml
+# Full remediation: analyze mesh issue -> execute fix -> verify
+apiVersion: ols.openshift.io/v1alpha1
+kind: OlsWorkflow
+metadata:
+  name: ossm-remediation
+spec:
+  analysis:
+    agent: ossm-analyzer       # understands VirtualService, DestinationRule, etc.
+  execution:
+    agent: ossm-executor
+  verification:
+    agent: ossm-verifier
+---
+# Advisory only: analyze mesh issue, no action
+apiVersion: ols.openshift.io/v1alpha1
+kind: OlsWorkflow
+metadata:
+  name: ossm-advisory
+spec:
+  analysis:
+    agent: ossm-analyzer
+  execution:
+    skip: true
+  verification:
+    skip: true
+```
+
+The OSSM analysis prompt teaches the agent to inspect Istio resources
+(VirtualService, DestinationRule, PeerAuthentication, AuthorizationPolicy)
+and query Istio metrics (`istio_requests_total`, response flags like
+UH/UO/NR). Agents use the `lightspeed-alertmanager-skills` image since
+OSSM alerts come through the same AlertManager pipeline.
+
+The `ossm-advisory` variant is useful for investigating mesh issues
+without making changes -- for example, diagnosing whether a fault
+injection rule or circuit breaker is causing errors.
+
+See also: architecture/phases.md, examples/advisory.md (simpler variant), examples/upgrade.md (upgrade workflow)

@@ -16,14 +16,18 @@ The operator handles everything from there.
 
 ## Existing Adapters (use as reference)
 
-All adapters are standalone Go programs in `examples/adapters/`:
-- `examples/adapters/alertmanager/main.go` — AlertManager webhook (most complete reference)
-- `examples/adapters/acs/main.go` — ACS violation webhook
-- `examples/adapters/gitops/main.go` — GitOps-aware remediation
-- `examples/adapters/upgrade/main.go` — Cluster upgrade trigger
+All adapters live in `examples/adapters/`:
+- `alertmanager/` — AlertManager webhook (most complete reference; Go program with deploy.sh)
+- `acs/` — ACS violation webhook (Go program with deploy.sh)
+- `gitops/` — GitOps-aware remediation (Go program with deploy.sh)
+- `upgrade/` — Cluster upgrade trigger (Go program, no deploy script)
+- `mco-advisory/` — Machine Config Operator diagnostics (advisory-only workflow with custom outputSchema; no Go code, uses workflow.yaml + demo.yaml)
+- `ossm/` — Istio/Service Mesh demo (deploys OSSM 3.x + Bookinfo + fault injection via deploy.sh; triggers remediation through the alertmanager adapter)
+- `custom-components/` — Reference for adapter-defined structured output (example-proposal.yaml showing custom component types)
 
-Each adapter directory includes its own skills, Containerfile, deploy
-script, and CLAUDE.md with a full walkthrough.
+Not every adapter is a Go program. `mco-advisory` and `ossm` are
+deployment-and-workflow bundles. `custom-components` is a reference
+example only. Check each directory's CLAUDE.md or README.md for details.
 
 ## Minimal Adapter: Create a Proposal
 
@@ -97,8 +101,10 @@ if !allowedNamespaces[targetNamespace] {
 
 ## Deployment
 
-Each adapter deploys as a standalone Service in the cluster. See
-the existing adapters' `deploy.sh` and `Containerfile` for the pattern.
+Go-based adapters deploy as standalone Services in the cluster. See
+`alertmanager/deploy.sh`, `acs/deploy.sh`, `gitops/deploy.sh`, or
+`ossm/deploy.sh` for the pattern. Not all adapters have deploy scripts —
+`upgrade/` and `mco-advisory/` are applied directly with `oc apply`.
 Ensure NetworkPolicy allows traffic from the webhook source to your
 adapter's port.
 

@@ -14,7 +14,20 @@ Pending → Analyzing → Proposed → [user approves] → Approved → Executin
 Pending → Proposed (auto-approved, no agent analysis)
 
 **Skip execution** (`execution.skip: true`):
-Proposed → Approved → AwaitingSync (for GitOps — user applies changes externally, then triggers verification)
+Proposed → Approved → AwaitingSync → Verifying → Completed
+
+## AwaitingSync Phase
+
+AwaitingSync is the state entered when execution is skipped (the GitOps
+pattern). The operator does not apply changes itself — instead, the
+analysis step produces a plan (e.g., a manifest diff or a PR), and the
+system waits for the user to apply those changes externally through their
+own deployment pipeline. Once the user has applied the changes and is
+ready for post-execution validation, they trigger verification by
+updating the proposal (e.g., annotating or approving the sync). The
+proposal then transitions to Verifying, where the verification agent
+confirms the changes took effect. This keeps the operator out of the
+apply path while still closing the loop with automated verification.
 
 **Skip verification** (`verification.skip: true`):
 Executing → Completed (no post-execution checks)

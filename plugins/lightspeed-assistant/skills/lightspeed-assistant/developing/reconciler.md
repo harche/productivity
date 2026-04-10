@@ -12,7 +12,7 @@ Each phase has a handler that transitions to the next phase.
 | Pending | `handlePending` | Calls analysis agent, parses response, transitions to Proposed |
 | Approved | `handleApproved` | Creates execution RBAC, calls execution agent, transitions to Verifying |
 | Verifying | `handleVerifying` | Calls verification agent, transitions to Completed or Failed |
-| AwaitingSync | `handleAwaitingSync` | Waits for external trigger to start verification |
+| AwaitingSync | `handleAwaitingSync` | Waits for manual verification trigger when execution is skipped (GitOps/advisory flows). Transitions to Verifying via console "Verify Now" or API patch |
 | Failed | `handleFailed` | Records failure, retries or escalates |
 | Escalated | `handleEscalated` | Creates child proposal with failure history |
 

@@ -42,6 +42,7 @@ namespaceScoped:
   - namespace: production
     apiGroups: ["apps"]
     resources: ["deployments"]
+    resourceNames: ["my-app"]        # optional — narrows to specific resources
     verbs: ["get", "patch"]
     justification: "Scale deployment to fix resource pressure"
 clusterScoped:
@@ -50,6 +51,19 @@ clusterScoped:
     verbs: ["get", "list"]
     justification: "Check node capacity"
 ```
+
+## Naming and Limits
+
+RBAC resource names are derived from the proposal name with a prefix
+(`ls-exec-` for namespace-scoped, `ls-exec-cluster-` for cluster-scoped)
+and truncated to 63 characters (the DNS label limit).
+
+## Cleanup Resilience
+
+When a retry clears the proposal's Steps, the namespace list for cleanup
+is still available via the `ols.openshift.io/rbac-namespaces` annotation.
+If the annotation is missing, the operator falls back to reading namespaces
+from the selected option's RBAC result.
 
 ## Key Principle
 

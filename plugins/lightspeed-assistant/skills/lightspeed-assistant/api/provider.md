@@ -8,7 +8,7 @@ Cluster-scoped. Defines an LLM backend configuration.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `type` | string | yes | Provider type. Enum: `anthropic_vertex`, `azure_openai`, `openai`, `watsonx`, `rhoai_vllm`, `rhelai_vllm` |
+| `type` | string | yes | Provider type. Enum: `anthropic`, `vertex`, `openai`, `azure_openai`, `bedrock` |
 | `model` | string | yes | Model name (e.g., `claude-opus-4-6`, `claude-haiku-4-5-20251001`) |
 | `credentialsSecretRef` | LocalObjectReference | yes | Secret with provider credentials |
 | `url` | string | no | API URL. Optional for providers with well-known endpoints. Must match `^https?://.*$` |
@@ -16,7 +16,7 @@ Cluster-scoped. Defines an LLM backend configuration.
 ## Credentials Secret
 
 The referenced Secret format depends on the provider type. For
-`anthropic_vertex`, it contains the GCP service account JSON.
+`vertex`, it contains the GCP service account JSON.
 
 ## Example
 
@@ -26,7 +26,7 @@ kind: OlsLlmProvider
 metadata:
   name: smart
 spec:
-  type: anthropic_vertex
+  type: anthropic
   model: claude-opus-4-6
   credentialsSecretRef:
     name: llm-credentials
@@ -35,8 +35,8 @@ spec:
 ## kubectl Columns
 
 ```
-NAME    TYPE               MODEL             AGE
-smart   anthropic_vertex   claude-opus-4-6   1d
+NAME    TYPE        MODEL             AGE
+smart   anthropic   claude-opus-4-6   1d
 ```
 
 See also: api/agent.md (references provider by name)
