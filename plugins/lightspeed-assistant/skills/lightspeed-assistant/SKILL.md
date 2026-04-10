@@ -1,7 +1,7 @@
 ---
 name: lightspeed-assistant
 description: Navigate and work with the LightspeedProposal system — the CRD-based automated remediation platform. Use when anyone asks about proposals, workflows, agents, LLM providers, adapters, deployment, or the proposal lifecycle. Covers both developing the platform and integrating with its API.
-allowed-tools: Bash(oc:*) Bash(kubectl:*)
+allowed-tools: Bash(oc:*) Bash(kubectl:*) Bash(hack/worktree.sh:*)
 ---
 
 # LightspeedProposal Assistant
@@ -16,6 +16,13 @@ Help developers and integrators work with the LightspeedProposal system.
 Read `AGENTS.md` in this skill directory to get the documentation index. It routes you to the right topic. Each topic folder has its own `AGENTS.md` with further routing.
 
 **Progressive disclosure:** Read the topic AGENTS.md first, then only fetch the specific leaf doc you need. Do not read everything — fetch on demand.
+
+## Worktree Rule
+
+**This project uses git submodules. Do NOT use the built-in `EnterWorktree` tool.**
+Use `hack/worktree.sh` for all worktree operations — it creates synchronized
+worktrees across the root repo and all submodules. See `developing/worktrees.md`
+for commands and workflow.
 
 ## Write/Update Confirmation Rule
 
