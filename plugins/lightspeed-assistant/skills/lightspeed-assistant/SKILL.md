@@ -17,6 +17,13 @@ Read `AGENTS.md` in this skill directory to get the documentation index. It rout
 
 **Progressive disclosure:** Read the topic AGENTS.md first, then only fetch the specific leaf doc you need. Do not read everything — fetch on demand.
 
+## User Interaction Rule
+
+**Always use `AskUserQuestion` instead of asking questions in plain text.**
+When you need to gather preferences, clarify instructions, get decisions on
+implementation choices, or confirm actions, use the `AskUserQuestion` tool.
+This gives the user a structured UI to respond with, rather than free-form text.
+
 ## Worktree Rule
 
 **This project uses git submodules. Do NOT use the built-in `EnterWorktree` tool.**
@@ -29,7 +36,7 @@ for commands and workflow.
 **Never perform write or update operations without explicit user confirmation.**
 Before any `oc apply`, `oc patch`, `oc delete`, `oc scale`, `oc rollout restart`,
 `kubectl apply`, or any command that creates, modifies, or deletes cluster resources,
-you MUST ask the user for confirmation first. Show them exactly what you're about
+you MUST use `AskUserQuestion` to confirm first. Show them exactly what you're about
 to do and wait for approval. This applies to:
 
 - Creating CRs (proposals, workflows, agents, providers)

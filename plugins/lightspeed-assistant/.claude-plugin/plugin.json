@@ -1,5 +1,5 @@
 {
   "name": "lightspeed-assistant",
   "description": "Navigate and work with the LightspeedProposal system — the CRD-based automated remediation platform for OpenShift. Covers architecture, CRD fields, integration, deployment, dev environment setup, and skills authoring.",
-  "version": "1.2.1"
+  "version": "1.2.2"
 }
