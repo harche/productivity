@@ -103,9 +103,9 @@
     {
       "name": "lightspeed-assistant",
       "source": "./plugins/lightspeed-assistant",
-      "description": "Navigate and work with the LightspeedProposal system — CRD-based automated remediation platform for OpenShift",
+      "description": "Navigate and work with the LightspeedProposal system — CRD-based automated remediation platform for OpenShift. Includes dev environment setup, repo cloning, and submodule management.",
       "category": "workflow",
-      "version": "1.0.0"
+      "version": "1.1.0"
     }
   ]
 }

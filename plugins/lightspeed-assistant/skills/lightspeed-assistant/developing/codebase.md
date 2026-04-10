@@ -1,5 +1,9 @@
 # Codebase Map
 
+## GitHub Organization
+
+All repos live in **[NotAKubeKlaw](https://github.com/NotAKubeKlaw)**.
+
 ## Repositories
 
 | Repo | Language | Purpose |
@@ -7,6 +11,8 @@
 | `lightspeed-operator/` | Go | Operator: CRDs, reconciler, webhooks, RBAC |
 | `lightspeed-agent/` | TypeScript | Agent: Claude SDK + Fastify, chat SSE |
 | `lightspeed-console/` | React/TS | Console plugin: proposal UI, chat |
+| `lightspeed-skills/` | Mixed | Per-profile skills OCI images |
+| `lightspeed-gitops-demo/` | YAML | GitOps demo: ArgoCD-managed workloads for proposals |
 
 ## Key Files (operator — proposal system)
 

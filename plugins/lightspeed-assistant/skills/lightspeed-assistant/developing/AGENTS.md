@@ -9,6 +9,7 @@ Orientation for developers building the LightspeedProposal system.
 
 ## Topics
 
+|setup.md — Dev environment setup: clone repos, init submodules (developer)
 |codebase.md — Repo map, key files, what's legacy vs new (developer)
 |reconciler.md — Phase handlers, callAgent flow, retry, escalation (developer)
 |deploying.md — hack/ scripts for build, push, deploy iteration (developer)
