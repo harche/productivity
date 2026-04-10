@@ -67,7 +67,20 @@ Update `wiki/_index.md`:
 - Group articles by topic section
 - Remove entries for deleted articles
 
-### Step 6: Report
+### Step 6: Log the Operation
+
+Append an entry to `log.md` in the KB root:
+
+```markdown
+## [YYYY-MM-DD] compile | Description
+
+- **Articles created:** N (list paths)
+- **Articles updated:** N (list paths)
+- **Articles unchanged:** N
+- **Index updated:** yes/no
+```
+
+### Step 7: Report
 
 Tell the user:
 - Number of articles created/updated/unchanged

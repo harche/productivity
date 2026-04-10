@@ -13,6 +13,7 @@ Add source material to a knowledge base and compile it into structured wiki arti
 2. Processes it into a structured raw source document in `raw/`
 3. Automatically compiles new/updated wiki articles in `wiki/`
 4. Updates the master index
+5. Appends an entry to `log.md`
 
 ## Required Input
 
@@ -39,8 +40,10 @@ If the KB path is empty or doesn't exist:
 2. Set up Obsidian vault config (`.obsidian/app.json`, `.obsidian/core-plugins.json`)
 3. Create `AGENTS.md` with a default schema. See [references/source-types.md](references/source-types.md) for the default schema.
 4. Create `wiki/_index.md` as the master index
-5. Symlink `CLAUDE.md -> AGENTS.md`
-6. Initialize git repo with appropriate `.gitignore`
+5. Create `log.md` as the chronological operation log
+6. Create `tools/search` — the default search script. See [references/search-tool.md](references/search-tool.md) for the script.
+7. Symlink `CLAUDE.md -> AGENTS.md`
+8. Initialize git repo with appropriate `.gitignore`
 
 ### Step 2: Process the Source
 
@@ -132,7 +135,24 @@ When creating or updating wiki articles:
   - [OCPBUGS-61881](https://redhat.atlassian.net/browse/OCPBUGS-61881) — 512-core baremetal thread explosion, Westpac Banking
   ```
 
-### Step 5: Report
+### Step 5: Log the Operation
+
+Append an entry to `log.md` in the KB root. Create the file if it doesn't exist (with a `# Knowledge Base Log` heading). Each entry uses this format:
+
+```markdown
+## [YYYY-MM-DD] ingest | Source Title
+
+- **Source:** original path or URL
+- **Raw:** `raw/filename.md`
+- **Topics:** topic-1, topic-2, ...
+- **Links captured:** N with hints
+- **Articles created:** list of new wiki articles
+- **Articles updated:** list of existing articles that were modified
+```
+
+The date prefix makes the log parseable: `grep "^## \[" log.md | tail -5` shows the last 5 operations.
+
+### Step 6: Report
 
 Tell the user what was created/updated:
 - Raw source file path and size

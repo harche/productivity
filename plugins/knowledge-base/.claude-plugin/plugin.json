@@ -1,5 +1,5 @@
 {
   "name": "knowledge-base",
   "description": "Build and maintain knowledge bases: ingest sources (conversations, articles, URLs), compile structured wikis, and lint for consistency. Obsidian-compatible.",
-  "version": "1.1.0"
+  "version": "1.2.0"
 }

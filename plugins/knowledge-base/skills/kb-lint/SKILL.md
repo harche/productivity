@@ -95,6 +95,20 @@ Present findings as a structured report:
 - Health score: N% (broken links, orphans, missing refs as % of total)
 ```
 
+## Logging
+
+After completing the lint, append an entry to `log.md` in the KB root:
+
+```markdown
+## [YYYY-MM-DD] lint | Health check
+
+- **Broken links:** N
+- **Orphaned sources:** N
+- **Index issues:** N
+- **Missing cross-refs:** N suggestions
+- **Health score:** N%
+```
+
 ## Important
 
 - **Read-only by default.** Lint reports problems and suggests fixes — it doesn't modify files unless the user explicitly asks to apply fixes.

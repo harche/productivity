@@ -52,12 +52,14 @@ This is a personal knowledge base maintained by an LLM agent. The human rarely e
 \```
 .
 ├── AGENTS.md          # This file — schema and instructions for the LLM
+├── log.md             # Chronological record of ingests, compiles, queries, lint passes
 ├── raw/               # Source documents (articles, papers, notes, images, data)
 ├── wiki/              # LLM-compiled wiki (structured .md files)
 │   ├── _index.md      # Master index of all wiki articles
 │   └── <topic>/       # Topic directories containing articles
-├── outputs/           # Query results, reports, slides, visualizations
-└── tools/             # Helper scripts (search, lint, etc.)
+├── outputs/           # Query results, reports, presentations filed back into the KB
+└── tools/             # Helper scripts (search, etc.)
+    └── search         # Keyword/regex search across wiki and raw sources
 \```
 
 ## Workflow
@@ -75,7 +77,8 @@ This is a personal knowledge base maintained by an LLM agent. The human rarely e
 ### 3. Query
 - Human asks questions; LLM researches answers using the wiki
 - LLM reads `_index.md` first to orient, then dives into relevant articles
-- Complex answers are saved as `.md` files in `outputs/`
+- Substantive answers (comparisons, analyses, syntheses) are filed as `.md` in `outputs/` so they compound in the KB rather than disappearing into chat history
+- Filename convention: `YYYY-MM-DD-descriptive-name.md`
 
 ### 4. Lint
 - Periodically run health checks: find inconsistencies, missing data, broken links
@@ -102,6 +105,34 @@ Brief summary (1-2 sentences).
 
 ## Related
 - [[wiki/topic/related-article.md]]
+\```
+
+## Log
+
+`log.md` is an append-only chronological record. Each entry uses:
+
+\```markdown
+## [YYYY-MM-DD] operation | Title
+
+- **Source:** path or URL
+- **Raw:** raw file created
+- **Articles created/updated:** list
+\```
+
+Operations: `ingest`, `compile`, `query`, `lint`. Parseable with `grep "^## \[" log.md`.
+
+## Outputs
+
+`outputs/` stores query results, reports, and analyses worth keeping. When a question produces a substantive answer, file it here as markdown. Filename convention: `YYYY-MM-DD-descriptive-name.md`.
+
+## Search
+
+`tools/search` provides keyword/regex search across the wiki:
+
+\```bash
+tools/search gomaxprocs              # search wiki articles
+tools/search "customer.*512" --all   # regex, search everything
+tools/search crio -i -C 3           # case-insensitive, 3 lines context
 \```
 
 ## Conventions
