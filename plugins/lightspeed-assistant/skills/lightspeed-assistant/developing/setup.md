@@ -65,7 +65,8 @@ lightspeed-tachyon/
   lightspeed-agent/      # TypeScript agent
   lightspeed-console/    # React console plugin
   lightspeed-skills/     # Skills images
-  hack/                  # worktree.sh lives here (in operator)
+  lightspeed-operator/
+    hack/                # worktree.sh, deploy scripts, etc.
 ```
 
 ## Next Steps

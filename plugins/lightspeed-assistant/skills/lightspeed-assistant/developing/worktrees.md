@@ -1,36 +1,36 @@
 # Parallel Workspaces (git worktrees)
 
 Work on multiple features simultaneously with isolated branches across
-all repos using `hack/worktree.sh`.
+all repos using `lightspeed-operator/hack/worktree.sh`.
 
 ## Commands
 
 ```
-hack/worktree.sh sync                  — fetch + checkout main in all submodules
-hack/worktree.sh create <name> [base]  — sync + create parallel workspace
-hack/worktree.sh pull <name>           — sync main + merge into all worktree branches
-hack/worktree.sh merge <name>          — merge worktree branches into main + update root
-hack/worktree.sh remove <name>         — tear down workspace
-hack/worktree.sh list                  — show active workspaces
+lightspeed-operator/hack/worktree.sh sync                  — fetch + checkout main in all submodules
+lightspeed-operator/hack/worktree.sh create <name> [base]  — sync + create parallel workspace
+lightspeed-operator/hack/worktree.sh pull <name>           — sync main + merge into all worktree branches
+lightspeed-operator/hack/worktree.sh merge <name>          — merge worktree branches into main + update root
+lightspeed-operator/hack/worktree.sh remove <name>         — tear down workspace
+lightspeed-operator/hack/worktree.sh list                  — show active workspaces
 ```
 
 ## Typical Flow
 
 ```bash
 # 1. Create a workspace (syncs all submodules first)
-hack/worktree.sh create fix-rbac
+lightspeed-operator/hack/worktree.sh create fix-rbac
 
 # 2. Work in the workspace
 claude --cwd .worktrees/fix-rbac
 
 # 3. Pull latest main into your workspace (if main moved ahead)
-hack/worktree.sh pull fix-rbac
+lightspeed-operator/hack/worktree.sh pull fix-rbac
 
 # 4. Merge workspace branches back into main
-hack/worktree.sh merge fix-rbac
+lightspeed-operator/hack/worktree.sh merge fix-rbac
 
 # 5. Clean up
-hack/worktree.sh remove fix-rbac
+lightspeed-operator/hack/worktree.sh remove fix-rbac
 ```
 
 ## What Each Command Does
@@ -89,7 +89,7 @@ the same cluster without clobbering each other's images.
 ## Important
 
 - Always `merge` before `remove` — removing the worktree does not merge changes
-- Don't delete `.worktrees/` directories manually — use `hack/worktree.sh remove`
+- Don't delete `.worktrees/` directories manually — use `lightspeed-operator/hack/worktree.sh remove`
 - Worktrees share the same `.git` object store — they're lightweight, not full clones
 - `pull` stops on the first conflict — resolve and re-run
 - `merge` handles remote worktree branches (agent-pushed commits are synced before merge)
