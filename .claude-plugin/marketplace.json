@@ -99,6 +99,13 @@
       "description": "Find peer-reviewed medical evidence, clinical trials, and scientific papers across PubMed, Europe PMC, Semantic Scholar, and OpenAlex",
       "category": "misc",
       "version": "1.0.0"
+    },
+    {
+      "name": "lightspeed-assistant",
+      "source": "./plugins/lightspeed-assistant",
+      "description": "Navigate and work with the LightspeedProposal system — CRD-based automated remediation platform for OpenShift",
+      "category": "workflow",
+      "version": "1.0.0"
     }
   ]
 }

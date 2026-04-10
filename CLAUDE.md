@@ -27,6 +27,9 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 - `financial-research` — Research company fundamentals (SEC filings) and economic trends (Federal Reserve data)
 - `medical-research` — Find peer-reviewed medical evidence, clinical trials, and scientific papers
 
+**platform**
+- `lightspeed-assistant` — Navigate the LightspeedProposal system: architecture, CRD fields, integration, deployment, skills authoring
+
 **agents** (orchestrate other plugins, no tools of their own)
 - `dev-digest` — Developer attention briefing from Jira + GitHub (depends on `redhat-detective`, `github`)
 
