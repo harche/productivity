@@ -47,18 +47,28 @@ team_config() {
   # All Node-related components (used to distinguish "outside scope" vs "other Node team" bugs)
   ALL_NODE_COMPONENTS='"Node", "Node / CRI-O", "Node / Kubelet", "Node / CPU manager", "Node / Memory manager", "Node / Topology manager", "Node / Numa aware Scheduling", "Node / Device Manager", "Node / Pod resource API", "Node / Node Problem Detector", "Node / Kueue", "Node / Instaslice-operator"'
 
+  local na_dir="${HOME}/.node-assistant"
+
   case "$team" in
     "Node Devices"|"DRA"|"devices"|"dra")
       TEAM_NAME="Node Devices"
       TEAM_SPRINT_FILTER="Node Devices"
-      TEAM_ROSTER_FILE="${root_dir}/config/team-roster-dra.json"
+      if [[ -f "${na_dir}/team-roster-dra.json" ]]; then
+        TEAM_ROSTER_FILE="${na_dir}/team-roster-dra.json"
+      else
+        TEAM_ROSTER_FILE="${root_dir}/config/team-roster-dra.json"
+      fi
       TEAM_BUG_COMPONENTS='"Node / Device Manager", "Node / Instaslice-operator"'
       TEAM_BACKLOG_KEYWORDS="DRA DAS Instaslice device"
       ;;
     "Node Core"|"Core"|"core")
       TEAM_NAME="Node Core"
       TEAM_SPRINT_FILTER="Node Core"
-      TEAM_ROSTER_FILE="${root_dir}/config/team-roster-core.json"
+      if [[ -f "${na_dir}/team-roster-core.json" ]]; then
+        TEAM_ROSTER_FILE="${na_dir}/team-roster-core.json"
+      else
+        TEAM_ROSTER_FILE="${root_dir}/config/team-roster-core.json"
+      fi
       TEAM_BUG_COMPONENTS='"Node", "Node / CRI-O", "Node / Kubelet", "Node / CPU manager", "Node / Memory manager", "Node / Topology manager", "Node / Numa aware Scheduling", "Node / Device Manager", "Node / Pod resource API", "Node / Node Problem Detector", "Node / Kueue", "Node / Instaslice-operator"'
       TEAM_BACKLOG_KEYWORDS=""
       ;;
@@ -86,10 +96,21 @@ team_roster() {
 
   # "all" team: merge both rosters (deduplicated)
   if [[ -z "$TEAM_ROSTER_FILE" ]]; then
-    local dra_file="${root_dir}/config/team-roster-dra.json"
-    local core_file="${root_dir}/config/team-roster-core.json"
-    [[ ! -f "$dra_file" ]] && _roster_missing "$dra_file"
-    [[ ! -f "$core_file" ]] && _roster_missing "$core_file"
+    local na_dir="${HOME}/.node-assistant"
+    local dra_file="${na_dir}/team-roster-dra.json"
+    local core_file="${na_dir}/team-roster-core.json"
+    [[ ! -f "$dra_file" ]] && dra_file="${root_dir}/config/team-roster-dra.json"
+    [[ ! -f "$core_file" ]] && core_file="${root_dir}/config/team-roster-core.json"
+    if [[ ! -f "$dra_file" || ! -f "$core_file" ]]; then
+      if type -t cmd_roster_sync >/dev/null 2>&1; then
+        _log "INFO" "Roster(s) not found, attempting auto-sync..."
+        cmd_roster_sync >/dev/null 2>&1 || true
+        [[ ! -f "$dra_file" && -f "${na_dir}/team-roster-dra.json" ]] && dra_file="${na_dir}/team-roster-dra.json"
+        [[ ! -f "$core_file" && -f "${na_dir}/team-roster-core.json" ]] && core_file="${na_dir}/team-roster-core.json"
+      fi
+      [[ ! -f "$dra_file" ]] && _roster_missing "$dra_file"
+      [[ ! -f "$core_file" ]] && _roster_missing "$core_file"
+    fi
     python3 -c "
 import json, sys
 members = {}
@@ -103,7 +124,14 @@ print(json.dumps([{'name': k, 'github': v} for k, v in members.items()]))
   fi
 
   if [[ ! -f "$TEAM_ROSTER_FILE" ]]; then
-    _roster_missing "$TEAM_ROSTER_FILE"
+    if type -t cmd_roster_sync >/dev/null 2>&1; then
+      _log "INFO" "Roster not found, attempting auto-sync..."
+      cmd_roster_sync >/dev/null 2>&1 || true
+      [[ -n "${1:-}" ]] && team_config "$1"
+    fi
+    if [[ ! -f "$TEAM_ROSTER_FILE" ]]; then
+      _roster_missing "$TEAM_ROSTER_FILE"
+    fi
   fi
 
   python3 -c "

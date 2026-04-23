@@ -61,6 +61,7 @@ High-level composite commands:
   issue-deep-dive <KEY>             Full issue + comments (ADF converted) + linked issues
   release-data <team> [version]     Release readiness (blockers, bugs, epics)
   team-activity <team>              Per-member sprint items + comment counts
+  roster-sync [--force]             Download team rosters from Jira attachments
 
 Options:
   --stream                          Stream JSON Lines output (composite commands only)
@@ -68,6 +69,7 @@ Options:
 Environment:
   JIRA_EMAIL       Override Jira email (default: Keychain account or git config user.email)
   JIRA_BOARD_ID    Override board ID (default: 7845)
+  NODE_ASSISTANT_CONFIG_ISSUE  Jira issue with roster attachments (default: OCPNODE-4230)
 EOF
 }
 
@@ -101,6 +103,7 @@ case "${1:-help}" in
   issue-deep-dive)   cmd_issue_deep_dive "${@:2}" ;;
   release-data)      cmd_release_data "${@:2}" ;;
   team-activity)     cmd_team_activity "${@:2}" ;;
+  roster-sync)       cmd_roster_sync "${@:2}" ;;
   my-board-data)     cmd_my_board_data "${@:2}" ;;
   my-bugs-data)      cmd_my_bugs_data "${@:2}" ;;
   my-standup-data)   cmd_my_standup_data "${@:2}" ;;
