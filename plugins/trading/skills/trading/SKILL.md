@@ -55,12 +55,20 @@ Order types, bracket orders, raw curl examples, and confirmation flow -- see [re
 ## Build options strategies
 
 ```bash
-# Iron butterfly on SPX
+# Iron butterfly on SPX (ATM shorts)
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --submit
+
+# Iron condor on SPX (shorts 0.3% OTM)
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --short-offset 0.3 --submit
+
+# With bracket orders
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py 2026-03-10 --quantity 2 --bracket 2000 4000 --submit
+
+# Close a position by strikes (no JSON file needed)
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/close_position.py --strikes 7450P,7475P,7520C,7545C -y
 ```
 
-See [references/strategies.md](references/strategies.md) for iron butterfly parameters, auto-close, close position, and bracket orders.
+See [references/strategies.md](references/strategies.md) for iron butterfly/condor parameters, auto-close, close position, and bracket orders.
 
 ## View trade history and performance
 

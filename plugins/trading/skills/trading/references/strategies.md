@@ -2,34 +2,41 @@
 
 Scripts for building, submitting, and managing options positions. All scripts are in `${CLAUDE_PLUGIN_ROOT}/scripts/` and import from the shared `ibkr_client.py` module.
 
-## Iron Butterfly Builder: `iron_butterfly.py`
+## Iron Butterfly / Iron Condor Builder: `iron_butterfly.py`
 
-Builds an SPX iron butterfly order and saves it as a JSON file.
+Builds an SPX iron butterfly or iron condor order and saves it as a JSON file.
+
+- **Iron Butterfly** (default): Short strikes at ATM.
+- **Iron Condor** (`--short-offset`): Short strikes placed N% OTM on each side of SPX price, giving a wider profit zone but less credit.
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py <expiry> [--quantity N] [--ratio R] [--output FILE] [--submit] [--bracket PROFIT STOP_LOSS]
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py <expiry> [--quantity N] [--ratio R] [--short-offset PCT] [--output FILE] [--submit] [--bracket PROFIT STOP_LOSS]
 ```
 
 - `expiry`: "today", "tomorrow", or YYYY-MM-DD
 - **IMPORTANT**: When the user asks for a relative date like "1 day expiry" or "tomorrow", determine the actual calendar date first. If today is Friday, "tomorrow" is Saturday (no market) -- confirm with the user.
+- `--short-offset`: Place short strikes N% OTM from SPX price (default: 0 = ATM butterfly). E.g., `--short-offset 0.3` builds an iron condor with shorts 0.3% OTM on each side.
 - `--ratio`: Target max_loss/max_profit ratio (default: 2.0). Lower = tighter wings, less capital.
 - `--submit`: Immediately submits the order via `submit_order.py`
 - `--bracket PROFIT STOP_LOSS`: Attach bracket orders (profit target + stop-loss in dollars). Requires `--submit`. Submits entry first, waits for fill, then submits OCA-linked profit target (LMT) and stop-loss (STP LMT) on the combo.
-- Output: JSON file (default: `iron_butterfly_<date>.json`)
+- Output: JSON file (default: `iron_butterfly_<date>.json` or `iron_condor_<date>.json`)
 - Retries on transient 5xx API errors (up to 2 retries)
 
 ```bash
-# Build order for tomorrow
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py tomorrow
+# Iron butterfly (ATM shorts)
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --submit
+
+# Iron condor (shorts 0.3% OTM) -- e.g., for Strategy 4
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --short-offset 0.3 --submit
+
+# Iron condor with bracket orders
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --short-offset 0.3 --bracket 2000 4000 --submit
 
 # Build with custom risk/reward ratio
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --ratio 2.0
 
 # Build and immediately submit
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py 2026-03-10 --quantity 2 --submit
-
-# Build with bracket: $2000 profit target, $4000 stop-loss
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --bracket 2000 4000 --submit
 ```
 
 ## Order Submitter: `submit_order.py`
@@ -61,20 +68,23 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/submit_order.py --account DUXXXXXXX \
 
 ## Close Position: `close_position.py`
 
-Closes a combo position and cancels related standing orders (profit target, stop-loss).
+Closes a combo position and cancels related standing orders (profit target, stop-loss). Can close from the original order JSON file or directly from live positions by specifying strikes.
 
 ```bash
-# Close position from order file (fetches live prices, calculates close price)
+# Close from order file
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/close_position.py iron_butterfly_2026-03-12.json
 
+# Close from live positions by strikes (no JSON file needed)
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/close_position.py --strikes 7410P,7465P,7510C,7565C
+
 # With larger buffer for faster fill
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/close_position.py iron_butterfly_2026-03-12.json --buffer 1.0
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/close_position.py --strikes 7450P,7475P,7520C,7545C --buffer 1.0
 
 # Skip confirmation
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/close_position.py iron_butterfly_2026-03-12.json -y
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/close_position.py --strikes 7450P,7475P,7520C,7545C -y
 ```
 
-- Reads leg data from the JSON file to calculate close cost
+- `--strikes`: Comma-separated strike+right pairs (e.g., `7410P,7465P,7510C,7565C`). Matches against live portfolio positions to determine long/short direction and conids.
 - Fetches live bid/ask for each leg
 - Uses ask for legs being bought back, bid for legs being sold
 - Adds configurable buffer (default: $0.50) for fill certainty

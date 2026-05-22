@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """
-Iron Butterfly/Condor Strategy Builder for SPX via IBKR Client Portal Gateway API.
+Iron Butterfly / Iron Condor Strategy Builder for SPX via IBKR Client Portal Gateway API.
 
-Selects ATM strikes, calculates wing widths for max_loss = 2x max_profit,
-and outputs an order JSON file that can be submitted via submit_order.py.
+Builds ATM (butterfly) or OTM (condor) short-strike spreads, calculates
+wing widths for the target risk/reward ratio, and outputs an order JSON
+file that can be submitted via submit_order.py.
 
 Usage:
-    python iron_butterfly.py today
+    python iron_butterfly.py today                              # butterfly (ATM shorts)
+    python iron_butterfly.py today --short-offset 0.3           # condor (shorts 0.3% OTM)
+    python iron_butterfly.py today --short-offset 0.3 --submit  # condor, submit immediately
     python iron_butterfly.py tomorrow --quantity 2
     python iron_butterfly.py 2026-03-10 --output my_order.json
 """
@@ -139,19 +142,29 @@ def get_option_prices(conids: list[int]) -> dict[int, dict]:
 # Strategy construction
 # ---------------------------------------------------------------------------
 
-def build_strategy(spx_price: float, expiry_date: date, ratio: float = 2.0) -> dict:
-    print("[3/9] Finding ATM strikes ...")
-    lower = int(math.floor(spx_price / STRIKE_INCREMENT) * STRIKE_INCREMENT)
-    upper = lower + STRIKE_INCREMENT
-    print(f"       SPX={spx_price:.2f} -> Short Put @ {lower}, Short Call @ {upper}")
+def build_strategy(spx_price: float, expiry_date: date, ratio: float = 2.0,
+                   short_offset: float = 0.0) -> dict:
+    is_condor = short_offset > 0
+    if is_condor:
+        print(f"[3/9] Finding OTM strikes ({short_offset}% offset) ...")
+        offset_pts = spx_price * short_offset / 100.0
+        lower = round_to_strike(spx_price - offset_pts)
+        upper = round_to_strike(spx_price + offset_pts)
+        print(f"       SPX={spx_price:.2f} -> Short Put @ {lower} (-{short_offset}%), Short Call @ {upper} (+{short_offset}%)")
+    else:
+        print("[3/9] Finding ATM strikes ...")
+        lower = int(math.floor(spx_price / STRIKE_INCREMENT) * STRIKE_INCREMENT)
+        upper = lower + STRIKE_INCREMENT
+        print(f"       SPX={spx_price:.2f} -> Short Put @ {lower}, Short Call @ {upper}")
 
-    print("[4/9] Fetching ATM option contracts ...")
+    strike_label = "OTM" if is_condor else "ATM"
+    print(f"[4/9] Fetching {strike_label} option contracts ...")
     sp_contract = get_option_contract_for_expiry(lower, "P", expiry_date)
     sc_contract = get_option_contract_for_expiry(upper, "C", expiry_date)
     print(f"       Short Put  conid={sp_contract['conid']} ({sp_contract.get('tradingClass', '?')})")
     print(f"       Short Call conid={sc_contract['conid']} ({sc_contract.get('tradingClass', '?')})")
 
-    print("[5/9] Fetching ATM option prices ...")
+    print(f"[5/9] Fetching {strike_label} option prices ...")
     prices = get_option_prices([sp_contract["conid"], sc_contract["conid"]])
     sp_price = prices[sp_contract["conid"]]
     sc_price = prices[sc_contract["conid"]]
@@ -195,16 +208,20 @@ def build_strategy(spx_price: float, expiry_date: date, ratio: float = 2.0) -> d
     max_loss = (wing_width - net_credit) * 100
     ratio = max_loss / max_profit if max_profit > 0 else float("inf")
 
+    short_label = "OTM" if is_condor else "ATM"
+    strategy_name = "iron_condor" if is_condor else "iron_butterfly"
+
     return {
+        "strategy_name": strategy_name,
         "expiry": str(expiry_date),
         "spx_price": spx_price,
         "legs": [
             {"action": "BUY",  "strike": lp_strike, "right": "P", "conid": lp_contract["conid"],
              "bid": lp_price["bid"], "ask": lp_price["ask"], "label": "Long Put (wing)"},
             {"action": "SELL", "strike": lower,      "right": "P", "conid": sp_contract["conid"],
-             "bid": sp_price["bid"], "ask": sp_price["ask"], "label": "Short Put (ATM)"},
+             "bid": sp_price["bid"], "ask": sp_price["ask"], "label": f"Short Put ({short_label})"},
             {"action": "SELL", "strike": upper,       "right": "C", "conid": sc_contract["conid"],
-             "bid": sc_price["bid"], "ask": sc_price["ask"], "label": "Short Call (ATM)"},
+             "bid": sc_price["bid"], "ask": sc_price["ask"], "label": f"Short Call ({short_label})"},
             {"action": "BUY",  "strike": lc_strike,  "right": "C", "conid": lc_contract["conid"],
              "bid": lc_price["bid"], "ask": lc_price["ask"], "label": "Long Call (wing)"},
         ],
@@ -220,8 +237,9 @@ def build_strategy(spx_price: float, expiry_date: date, ratio: float = 2.0) -> d
 
 def display_strategy(strategy: dict, quantity: int) -> None:
     s = strategy
+    title = "SPX IRON CONDOR" if s.get("strategy_name") == "iron_condor" else "SPX IRON BUTTERFLY"
     print("\n" + "=" * 70)
-    print("  SPX IRON BUTTERFLY / CONDOR STRATEGY")
+    print(f"  {title}")
     print("=" * 70)
     print(f"  Expiry:       {s['expiry']}")
     print(f"  SPX Price:    {s['spx_price']:.2f}")
@@ -268,7 +286,7 @@ def build_order_json(account_id: str, strategy: dict, quantity: int) -> dict:
             }
         ],
         "metadata": {
-            "strategy": "iron_butterfly",
+            "strategy": strategy.get("strategy_name", "iron_butterfly"),
             "symbol": "SPX",
             "expiry": strategy["expiry"],
             "net_credit": strategy["net_credit"],
@@ -361,14 +379,17 @@ def _submit_bracket(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Build an SPX Iron Butterfly order and save to JSON for submission."
+        description="Build an SPX Iron Butterfly or Iron Condor order and save to JSON for submission."
     )
     parser.add_argument("expiry", help='"today", "tomorrow", or YYYY-MM-DD')
     parser.add_argument("--quantity", type=int, default=1, help="Number of contracts (default: 1)")
     parser.add_argument("--ratio", type=float, default=2.0,
                         help="Target max_loss/max_profit ratio (default: 2.0). Lower = tighter wings.")
+    parser.add_argument("--short-offset", type=float, default=0.0,
+                        help="Place short strikes N%% OTM from SPX price (default: 0 = ATM butterfly). "
+                             "E.g., --short-offset 0.3 builds an iron condor with shorts 0.3%% OTM.")
     parser.add_argument("--output", "-o", default=None,
-                        help="Output JSON file path (default: iron_butterfly_<date>.json)")
+                        help="Output JSON file path (default: iron_butterfly_<date>.json or iron_condor_<date>.json)")
     parser.add_argument("--submit", action="store_true",
                         help="Immediately submit the order via submit_order.py after building")
     parser.add_argument("--bracket", nargs=2, type=float, metavar=("PROFIT", "STOP_LOSS"),
@@ -376,7 +397,11 @@ def main() -> None:
     args = parser.parse_args()
 
     expiry_date = parse_expiry(args.expiry)
-    output_file = args.output or f"iron_butterfly_{expiry_date}.json"
+    is_condor = args.short_offset > 0
+    default_prefix = "iron_condor" if is_condor else "iron_butterfly"
+    output_file = args.output or f"{default_prefix}_{expiry_date}.json"
+    strategy_type = "Iron Condor" if is_condor else "Iron Butterfly"
+    print(f"Strategy:      {strategy_type}" + (f" (shorts {args.short_offset}% OTM)" if is_condor else ""))
     print(f"Target expiry: {expiry_date} ({expiry_date.strftime('%A')})")
     print(f"Quantity:      {args.quantity}")
     print(f"Output:        {output_file}")
@@ -385,7 +410,8 @@ def main() -> None:
     initialize_session()
     account_id = get_account_id()
     spx_price = get_spx_price()
-    strategy = build_strategy(spx_price, expiry_date, ratio=args.ratio)
+    strategy = build_strategy(spx_price, expiry_date, ratio=args.ratio,
+                              short_offset=args.short_offset)
     display_strategy(strategy, args.quantity)
 
     order_json = build_order_json(account_id, strategy, args.quantity)

@@ -2,19 +2,21 @@
 """
 Close an IBKR combo position and cancel related standing orders.
 
-Reads the order JSON file (from iron_butterfly.py), fetches live prices,
-calculates the correct close price, submits the close order, and cancels
-any open orders on the same combo.
+Can close from an order JSON file (from iron_butterfly.py) or directly
+from live positions by specifying strikes.
 
 Usage:
     python close_position.py iron_butterfly_2026-03-12.json
     python close_position.py iron_butterfly_2026-03-12.json --buffer 1.0
+    python close_position.py --strikes 7410P,7465P,7510C,7565C
+    python close_position.py --strikes 7450P,7475P,7520C,7545C -y
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from typing import Optional
 
@@ -31,34 +33,118 @@ from ibkr_client import (
     submit_order,
 )
 
+SPX_CONID = 416904
+
+
+def parse_strikes(strikes_str: str) -> list[tuple[int, str]]:
+    """Parse '7410P,7465P,7510C,7565C' into [(7410, 'P'), (7465, 'P'), ...]."""
+    result = []
+    for s in strikes_str.split(","):
+        s = s.strip().upper()
+        m = re.match(r"^(\d+)([PC])$", s)
+        if not m:
+            sys.exit(f"ERROR: Invalid strike format '{s}'. Expected e.g. 7410P or 7520C.")
+        result.append((int(m.group(1)), m.group(2)))
+    return result
+
+
+def build_legs_from_positions(account_id: str, strikes: list[tuple[int, str]]) -> tuple[list[dict], str, int]:
+    """Match strikes against live positions and build leg data.
+
+    Returns (legs, conidex, quantity).
+    """
+    positions = get_positions(account_id)
+    matched = []
+
+    for target_strike, target_right in strikes:
+        right_code = "P" if target_right == "P" else "C"
+
+        found = False
+        for pos in positions:
+            desc = pos.get("contractDesc", "")
+            if "SPX" not in desc:
+                continue
+            # contractDesc format: "SPX    MAY2026 7410 P [SPXW  260522P07410000 100]"
+            if f" {target_strike} {right_code} " in desc:
+                position = pos.get("position", 0)
+                if position == 0:
+                    continue
+                action = "BUY" if position > 0 else "SELL"
+                matched.append({
+                    "conid": pos["conid"],
+                    "strike": target_strike,
+                    "right": target_right,
+                    "action": action,
+                    "position": position,
+                    "label": f"{'Long' if position > 0 else 'Short'} {target_right.replace('P','Put').replace('C','Call')} ({target_strike})",
+                })
+                found = True
+                break
+
+        if not found:
+            sys.exit(f"ERROR: No open SPX position found for {target_strike}{target_right}")
+
+    quantity = int(min(abs(m["position"]) for m in matched))
+
+    conidex_parts = []
+    for m in matched:
+        ratio = 1 if m["action"] == "BUY" else -1
+        conidex_parts.append(f"{m['conid']}/{ratio}")
+    conidex = f"{SPX_CONID};;;{','.join(conidex_parts)}"
+
+    legs = [{
+        "conid": m["conid"],
+        "strike": m["strike"],
+        "right": m["right"],
+        "action": m["action"],
+        "label": m["label"],
+    } for m in matched]
+
+    return legs, conidex, quantity
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Close an IBKR combo position and cancel related standing orders."
     )
-    parser.add_argument("file", help="JSON order file (from iron_butterfly.py)")
+    parser.add_argument("file", nargs="?", default=None,
+                        help="JSON order file (from iron_butterfly.py). Not needed with --strikes.")
+    parser.add_argument("--strikes", type=str, default=None,
+                        help="Close by live positions: comma-separated strikes, e.g. 7410P,7465P,7510C,7565C")
     parser.add_argument("--buffer", type=float, default=0.50,
                         help="Buffer added to close price for fill certainty (default: 0.50)")
     parser.add_argument("-y", "--yes", action="store_true", help="Skip confirmation prompt")
     args = parser.parse_args()
 
-    with open(args.file) as f:
-        order_data: dict = json.load(f)
-
-    meta: dict = order_data.get("metadata", {})
-    account_id: str = order_data["account_id"]
-    conidex: str = order_data["orders"][0]["conidex"]
-    quantity: int = order_data["orders"][0].get("quantity", 1)
-    legs: list[dict] = meta.get("legs", [])
-
-    if not legs:
-        sys.exit("ERROR: No leg data in metadata. Cannot calculate close price.")
-
-    print(f"Close position: {meta.get('strategy', 'combo')} {meta.get('symbol', '')} {meta.get('expiry', '')}")
-    print(f"  Quantity: {quantity}")
-    print()
+    if not args.file and not args.strikes:
+        parser.error("Either provide an order JSON file or use --strikes.")
 
     initialize_session()
+
+    if args.strikes:
+        account_id = get_account_id()
+        strike_list = parse_strikes(args.strikes)
+        print(f"Matching strikes against live positions: {args.strikes}")
+        legs, conidex, quantity = build_legs_from_positions(account_id, strike_list)
+        net_credit = 0
+        print(f"  Found {len(legs)} legs, quantity={quantity}")
+        print()
+    else:
+        with open(args.file) as f:
+            order_data: dict = json.load(f)
+        meta: dict = order_data.get("metadata", {})
+        account_id = order_data["account_id"]
+        conidex = order_data["orders"][0]["conidex"]
+        quantity = order_data["orders"][0].get("quantity", 1)
+        legs = meta.get("legs", [])
+        net_credit = meta.get("net_credit", 0)
+
+        if not legs:
+            sys.exit("ERROR: No leg data in metadata. Cannot calculate close price.")
+
+        print(f"Close position: {meta.get('strategy', 'combo')} {meta.get('symbol', '')} {meta.get('expiry', '')}")
+        print(f"  Quantity: {quantity}")
+        print()
 
     # Fetch live prices for all legs
     conids = [leg["conid"] for leg in legs]
@@ -110,15 +196,15 @@ def main() -> None:
 
     close_cost = round(close_cost, 2)
     close_with_buffer = round(close_cost + args.buffer, 2)
-    net_credit = meta.get("net_credit", 0)
-    pnl = round((net_credit - close_with_buffer) * 100 * quantity, 2)
 
     print(f"  {'-' * 60}")
     print(f"  Close cost (market):  {close_cost:.2f}")
     print(f"  Buffer:               {args.buffer:.2f}")
     print(f"  Close price (limit):  {close_with_buffer:.2f}")
-    print(f"  Entry credit:         {net_credit:.2f}")
-    print(f"  Estimated P/L:       ${pnl:,.2f}")
+    if net_credit:
+        pnl = round((net_credit - close_with_buffer) * 100 * quantity, 2)
+        print(f"  Entry credit:         {net_credit:.2f}")
+        print(f"  Estimated P/L:       ${pnl:,.2f}")
     print()
 
     if not args.yes:

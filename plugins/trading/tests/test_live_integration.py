@@ -188,14 +188,19 @@ class TestOrderWhatIfIntegration:
         """A combo LMT order should be accepted by whatif."""
         from ibkr_client import initialize_session, get_account_id, api_post
         import ibkr_client
+        from datetime import datetime, timedelta
         initialize_session()
         account_id = get_account_id()
+
+        # Use a month ~30 days out to avoid expired contracts
+        target = datetime.now() + timedelta(days=30)
+        month_code = target.strftime("%b%y").upper()
 
         # Search for SPX option contracts to build a real combo
         # Use a simple 2-leg vertical for testing
         import time
         data = ibkr_client.api_get("/iserver/secdef/info", params={
-            "conid": 416904, "sectype": "OPT", "month": "APR26",
+            "conid": 416904, "sectype": "OPT", "month": month_code,
             "exchange": "SMART", "strike": "6800", "right": "P",
         })
         time.sleep(0.15)
@@ -206,7 +211,7 @@ class TestOrderWhatIfIntegration:
         conid1 = data[0]["conid"]
 
         data2 = ibkr_client.api_get("/iserver/secdef/info", params={
-            "conid": 416904, "sectype": "OPT", "month": "APR26",
+            "conid": 416904, "sectype": "OPT", "month": month_code,
             "exchange": "SMART", "strike": "6750", "right": "P",
         })
         time.sleep(0.15)
