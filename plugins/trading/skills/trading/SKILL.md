@@ -54,23 +54,26 @@ Order types, bracket orders, raw curl examples, and confirmation flow -- see [re
 
 ## Build options strategies (iron butterfly AND iron condor)
 
-**`iron_butterfly.py` handles BOTH iron butterflies and iron condors.** It auto-detects based on `--short-offset`. Use this script instead of manual API calls — it fetches SPX price, finds contracts, calculates wings, and builds the order automatically.
+**`iron_butterfly.py` handles BOTH iron butterflies and iron condors.** Use `--strategy N` to select a preset, or configure manually with `--short-offset`. When the user asks for an iron butterfly or iron condor without specifying parameters, suggest `--strategy 3` (iron condor with 60% profit target) as the default — it's marked "Best" in the strategies reference.
 
 ```bash
-# Iron butterfly on SPX 0DTE (ATM shorts)
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --submit
+# Strategy 3: Iron condor, 60% profit target (recommended default)
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --strategy 3 --submit
 
-# Iron condor on SPX 0DTE (shorts 0.3% OTM) — use --short-offset to make it a condor
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --short-offset 0.3 --submit
+# Strategy 1: Iron butterfly, hold to expiry
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --strategy 1 --submit
 
-# With bracket orders (profit target + stop-loss)
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py 2026-03-10 --quantity 2 --bracket 2000 4000 --submit
+# Strategy 4: Iron condor, hold to expiry
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --strategy 4 --submit
+
+# Preview without submitting (omit --submit)
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --strategy 3
 
 # Close a position by strikes (no JSON file needed)
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/close_position.py --strikes 7450P,7475P,7520C,7545C -y
 ```
 
-See [references/strategies.md](references/strategies.md) for iron butterfly/condor parameters, auto-close, close position, and bracket orders.
+See [references/strategies.md](references/strategies.md) for strategy presets (1-4), parameters, auto-close, close position, and bracket orders.
 
 ## View trade history and performance
 

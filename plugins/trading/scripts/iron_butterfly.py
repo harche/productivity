@@ -42,6 +42,13 @@ STRIKE_INCREMENT = 5
 REQUEST_DELAY = 0.15
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
+STRATEGIES = {
+    1: {"name": "Iron Butterfly — Hold to Expiry",    "short_offset": 0.0, "ratio": 2.0, "profit_target_pct": None},
+    2: {"name": "Iron Butterfly — 60% Profit Target", "short_offset": 0.0, "ratio": 2.0, "profit_target_pct": 0.6},
+    3: {"name": "Iron Condor — 60% Profit Target",    "short_offset": 0.3, "ratio": 2.0, "profit_target_pct": 0.6},
+    4: {"name": "Iron Condor — Hold to Expiry",        "short_offset": 0.3, "ratio": 2.0, "profit_target_pct": None},
+}
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -235,9 +242,11 @@ def build_strategy(spx_price: float, expiry_date: date, ratio: float = 2.0,
     }
 
 
-def display_strategy(strategy: dict, quantity: int) -> None:
+def display_strategy(strategy: dict, quantity: int, strategy_num: int | None = None) -> None:
     s = strategy
     title = "SPX IRON CONDOR" if s.get("strategy_name") == "iron_condor" else "SPX IRON BUTTERFLY"
+    if strategy_num is not None:
+        title += f"  [Strategy {strategy_num}]"
     print("\n" + "=" * 70)
     print(f"  {title}")
     print("=" * 70)
@@ -256,7 +265,7 @@ def display_strategy(strategy: dict, quantity: int) -> None:
     print(f"  Net Credit:        {s['net_credit']:.2f} per spread")
     print(f"  Max Profit:       ${s['max_profit'] * quantity:,.2f}")
     print(f"  Max Loss:         ${s['max_loss'] * quantity:,.2f}")
-    print(f"  Risk/Reward:       {s['ratio']:.2f}x  (target ~2.0x)")
+    print(f"  Risk/Reward:       {s['ratio']:.2f}x")
     print(f"  Lower Breakeven:   {s['lower_breakeven']:.2f}")
     print(f"  Upper Breakeven:   {s['upper_breakeven']:.2f}")
     print("=" * 70)
@@ -377,11 +386,71 @@ def _submit_bracket(
         print(f"  When profit target or stop-loss fills, the other is automatically cancelled.")
 
 
+def _submit_profit_target(
+    account_id: str, strategy: dict, quantity: int,
+    profit_target_pct: float,
+) -> None:
+    """Submit entry order, then a profit-target LMT order to close at the target percentage."""
+    from ibkr_client import submit_order
+
+    legs = strategy["legs"]
+    conidex_parts = [f"{leg['conid']}/{1 if leg['action'] == 'BUY' else -1}" for leg in legs]
+    conidex = f"{SPX_CONID};;;{','.join(conidex_parts)}"
+    net_credit = strategy["net_credit"]
+
+    entry_price = round(-net_credit, 2)
+    print(f"\n  [1/2] Submitting entry order: BUY combo LMT @ {entry_price} ...")
+    entry_body = {"orders": [{
+        "conidex": conidex, "orderType": "LMT", "side": "BUY",
+        "price": entry_price, "quantity": quantity, "tif": "DAY",
+    }]}
+    entry_oid = submit_order(account_id, entry_body)
+    if not entry_oid:
+        print("  ERROR: Entry order failed.")
+        sys.exit(1)
+
+    print(f"  Waiting for entry fill (order {entry_oid}) ...")
+    from ibkr_client import get_order_status
+    for _ in range(20):
+        time.sleep(2)
+        try:
+            status = get_order_status(entry_oid)
+            order_status = status.get("order_status", "").lower()
+            fills = status.get("size_and_fills", "")
+            if order_status == "filled":
+                print(f"  Entry filled! ({fills})")
+                break
+            print(f"  ... {order_status} ({fills})")
+        except Exception:
+            pass
+    else:
+        print("  Entry not filled after 40s. Submitting profit target anyway.")
+
+    close_credit = round(net_credit * (1.0 - profit_target_pct), 2)
+    profit_price = round(-close_credit, 2)
+    target_dollars = net_credit * profit_target_pct * quantity * 100
+    print(f"  [2/2] Submitting {profit_target_pct:.0%} profit target: SELL combo LMT @ {profit_price} "
+          f"(target ${target_dollars:,.0f}) ...")
+    profit_body = {"orders": [{
+        "conidex": conidex, "orderType": "LMT", "side": "SELL",
+        "price": profit_price, "quantity": quantity, "tif": "DAY",
+    }]}
+    profit_oid = submit_order(account_id, profit_body)
+
+    print(f"\n  Profit target submitted:")
+    print(f"    Entry:         Order {entry_oid}")
+    print(f"    Profit target: Order {profit_oid or 'FAILED'} ({profit_target_pct:.0%} = ${target_dollars:,.0f})")
+    print(f"  If not hit by expiry, position expires naturally.")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Build an SPX Iron Butterfly or Iron Condor order and save to JSON for submission."
     )
     parser.add_argument("expiry", help='"today", "tomorrow", or YYYY-MM-DD')
+    parser.add_argument("--strategy", "-s", type=int, choices=[1, 2, 3, 4], default=None,
+                        help="Strategy preset (1=Butterfly Hold, 2=Butterfly 60%% TP, "
+                             "3=Condor 60%% TP, 4=Condor Hold). Overrides --short-offset and --ratio.")
     parser.add_argument("--quantity", type=int, default=1, help="Number of contracts (default: 1)")
     parser.add_argument("--ratio", type=float, default=2.0,
                         help="Target max_loss/max_profit ratio (default: 2.0). Lower = tighter wings.")
@@ -396,12 +465,25 @@ def main() -> None:
                         help="Submit entry + bracket orders: profit target and stop-loss in dollars (e.g., --bracket 2000 4000). Implies --submit.")
     args = parser.parse_args()
 
+    if args.strategy is not None:
+        preset = STRATEGIES[args.strategy]
+        args.short_offset = preset["short_offset"]
+        args.ratio = preset["ratio"]
+
     expiry_date = parse_expiry(args.expiry)
     is_condor = args.short_offset > 0
     default_prefix = "iron_condor" if is_condor else "iron_butterfly"
     output_file = args.output or f"{default_prefix}_{expiry_date}.json"
-    strategy_type = "Iron Condor" if is_condor else "Iron Butterfly"
-    print(f"Strategy:      {strategy_type}" + (f" (shorts {args.short_offset}% OTM)" if is_condor else ""))
+
+    if args.strategy is not None:
+        preset = STRATEGIES[args.strategy]
+        strategy_type = f"Strategy {args.strategy}: {preset['name']}"
+    else:
+        strategy_type = "Iron Condor" if is_condor else "Iron Butterfly"
+        if is_condor:
+            strategy_type += f" (shorts {args.short_offset}% OTM)"
+
+    print(f"Strategy:      {strategy_type}")
     print(f"Target expiry: {expiry_date} ({expiry_date.strftime('%A')})")
     print(f"Quantity:      {args.quantity}")
     print(f"Output:        {output_file}")
@@ -412,13 +494,17 @@ def main() -> None:
     spx_price = get_spx_price()
     strategy = build_strategy(spx_price, expiry_date, ratio=args.ratio,
                               short_offset=args.short_offset)
-    display_strategy(strategy, args.quantity)
+    display_strategy(strategy, args.quantity, strategy_num=args.strategy)
 
     order_json = build_order_json(account_id, strategy, args.quantity)
 
     with open(output_file, "w") as f:
         json.dump(order_json, f, indent=2)
     print(f"\nOrder saved to: {output_file}")
+
+    profit_target_pct = None
+    if args.strategy is not None:
+        profit_target_pct = STRATEGIES[args.strategy].get("profit_target_pct")
 
     if args.bracket:
         bracket_profit = args.bracket[0]
@@ -428,6 +514,13 @@ def main() -> None:
             _submit_bracket(account_id, strategy, args.quantity, bracket_profit, bracket_stop)
         else:
             print("  [DRY RUN] Bracket order not submitted. Add --submit to execute.")
+    elif profit_target_pct is not None:
+        target_dollars = strategy["net_credit"] * profit_target_pct * args.quantity * 100
+        print(f"\n  Profit target: {profit_target_pct:.0%} of credit (${target_dollars:,.0f})")
+        if args.submit:
+            _submit_profit_target(account_id, strategy, args.quantity, profit_target_pct)
+        else:
+            print("  [DRY RUN] Profit target order not submitted. Add --submit to execute.")
     elif args.submit:
         submit_script = os.path.join(SCRIPT_DIR, "submit_order.py")
         print("\nSubmitting order ...")

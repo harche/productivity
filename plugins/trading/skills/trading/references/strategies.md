@@ -2,6 +2,42 @@
 
 Scripts for building, submitting, and managing options positions. All scripts are in `${CLAUDE_PLUGIN_ROOT}/scripts/` and import from the shared `ibkr_client.py` module.
 
+## Strategy Presets
+
+Use `--strategy N` (or `-s N`) to select a preset. This auto-configures short-offset, ratio, and exit rules. **When the user asks for an iron butterfly or iron condor without specifying parameters, suggest Strategy 3 as the default** — it has the best risk-adjusted returns.
+
+| # | Name | Type | Shorts | Wings | Exit |
+|---|------|------|--------|-------|------|
+| 1 | Iron Butterfly — Hold to Expiry | Butterfly | ATM | 3x credit | Hold to expiry |
+| 2 | Iron Butterfly — 60% Profit Target | Butterfly | ATM | 3x credit | Buy back at 40% of credit (keep 60%) |
+| 3 | **Iron Condor — 60% Profit Target** | Condor | 0.3% OTM | 3x credit | Buy back at 40% of credit (keep 60%) |
+| 4 | Iron Condor — Hold to Expiry | Condor | 0.3% OTM | 3x credit | Hold to expiry |
+
+**Strategy details:**
+
+- **Strategies 1 & 2 (Butterfly):** Short put + short call at ATM (nearest strike to SPX price). Max credit but narrower profit zone.
+- **Strategies 3 & 4 (Condor):** Short put at ATM−0.3%, short call at ATM+0.3%. Less credit but wider profit zone (~±22 pts).
+- **All strategies:** Wings placed at 3× net credit from shorts. Risk/reward target: 2:1 (max loss = 2× max profit).
+- **60% profit target (strategies 2 & 3):** After entry fills, a standing LMT order is placed to buy back the spread at 40% of the initial credit, locking in 60% profit. If not hit by expiry, position expires naturally. Typically hits around 12:30–1:15 PM ET for 0DTE.
+- **Hold to expiry (strategies 1 & 4):** No exit orders — all legs expire at close.
+
+```bash
+# Strategy 1: Iron butterfly, hold to expiry
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --strategy 1 --submit
+
+# Strategy 2: Iron butterfly, 60% profit target
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --strategy 2 --submit
+
+# Strategy 3: Iron condor, 60% profit target (recommended)
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --strategy 3 --submit
+
+# Strategy 4: Iron condor, hold to expiry
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --strategy 4 --submit
+
+# Preview any strategy without submitting (omit --submit)
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --strategy 3
+```
+
 ## Iron Butterfly / Iron Condor Builder: `iron_butterfly.py`
 
 Builds an SPX iron butterfly or iron condor order and saves it as a JSON file.
@@ -10,11 +46,12 @@ Builds an SPX iron butterfly or iron condor order and saves it as a JSON file.
 - **Iron Condor** (`--short-offset`): Short strikes placed N% OTM on each side of SPX price, giving a wider profit zone but less credit.
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py <expiry> [--quantity N] [--ratio R] [--short-offset PCT] [--output FILE] [--submit] [--bracket PROFIT STOP_LOSS]
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py <expiry> [--strategy N] [--quantity N] [--ratio R] [--short-offset PCT] [--output FILE] [--submit] [--bracket PROFIT STOP_LOSS]
 ```
 
 - `expiry`: "today", "tomorrow", or YYYY-MM-DD
 - **IMPORTANT**: When the user asks for a relative date like "1 day expiry" or "tomorrow", determine the actual calendar date first. If today is Friday, "tomorrow" is Saturday (no market) -- confirm with the user.
+- `--strategy N` / `-s N`: Strategy preset 1-4 (see table above). Overrides `--short-offset` and `--ratio`.
 - `--short-offset`: Place short strikes N% OTM from SPX price (default: 0 = ATM butterfly). E.g., `--short-offset 0.3` builds an iron condor with shorts 0.3% OTM on each side.
 - `--ratio`: Target max_loss/max_profit ratio (default: 2.0). Lower = tighter wings, less capital.
 - `--submit`: Immediately submits the order via `submit_order.py`
@@ -23,20 +60,20 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py <expiry> [--quantity N] 
 - Retries on transient 5xx API errors (up to 2 retries)
 
 ```bash
-# Iron butterfly (ATM shorts)
+# Using strategy presets (recommended)
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --strategy 3 --submit
+
+# Manual: Iron butterfly (ATM shorts)
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --submit
 
-# Iron condor (shorts 0.3% OTM) -- e.g., for Strategy 4
+# Manual: Iron condor (shorts 0.3% OTM)
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --short-offset 0.3 --submit
 
 # Iron condor with bracket orders
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --short-offset 0.3 --bracket 2000 4000 --submit
 
-# Build with custom risk/reward ratio
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --ratio 2.0
-
-# Build and immediately submit
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py 2026-03-10 --quantity 2 --submit
+# Build and immediately submit with custom quantity
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py 2026-03-10 --strategy 3 --quantity 2 --submit
 ```
 
 ## Order Submitter: `submit_order.py`

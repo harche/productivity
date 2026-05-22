@@ -1,5 +1,6 @@
 """Tests for iron_butterfly.py — strategy builder."""
 
+import argparse
 from datetime import date, datetime
 from unittest.mock import patch, MagicMock
 
@@ -184,3 +185,47 @@ class TestBuildOrderJson:
 
         result = ib.build_order_json("DUXXXXXXX", strategy, 5)
         assert result["orders"][0]["quantity"] == 5
+
+
+# ---------------------------------------------------------------------------
+# Strategy presets tests
+# ---------------------------------------------------------------------------
+
+class TestStrategyPresets:
+    def test_strategy_1_is_butterfly_hold(self) -> None:
+        preset = ib.STRATEGIES[1]
+        assert preset["short_offset"] == 0.0
+        assert preset["ratio"] == 2.0
+        assert preset["profit_target_pct"] is None
+
+    def test_strategy_2_is_butterfly_with_profit_target(self) -> None:
+        preset = ib.STRATEGIES[2]
+        assert preset["short_offset"] == 0.0
+        assert preset["ratio"] == 2.0
+        assert preset["profit_target_pct"] == 0.6
+
+    def test_strategy_3_is_condor_with_profit_target(self) -> None:
+        preset = ib.STRATEGIES[3]
+        assert preset["short_offset"] == 0.3
+        assert preset["ratio"] == 2.0
+        assert preset["profit_target_pct"] == 0.6
+
+    def test_strategy_4_is_condor_hold(self) -> None:
+        preset = ib.STRATEGIES[4]
+        assert preset["short_offset"] == 0.3
+        assert preset["ratio"] == 2.0
+        assert preset["profit_target_pct"] is None
+
+    def test_strategy_overrides_args(self) -> None:
+        args = argparse.Namespace(
+            strategy=3, short_offset=0.0, ratio=1.5,
+            expiry="today", quantity=1, output=None, submit=False, bracket=None,
+        )
+        preset = ib.STRATEGIES[args.strategy]
+        args.short_offset = preset["short_offset"]
+        args.ratio = preset["ratio"]
+        assert args.short_offset == 0.3
+        assert args.ratio == 2.0
+
+    def test_all_four_strategies_defined(self) -> None:
+        assert set(ib.STRATEGIES.keys()) == {1, 2, 3, 4}

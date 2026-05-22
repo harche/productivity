@@ -47,7 +47,7 @@
       "source": "./plugins/trading",
       "description": "Monitor portfolio, check positions, place trades, and analyze account performance on Interactive Brokers",
       "category": "misc",
-      "version": "3.2.0",
+      "version": "3.3.0",
       "dependencies": ["web-browser"]
     },
     {
