@@ -183,31 +183,53 @@ def build_strategy(spx_price: float, expiry_date: date, ratio: float = 2.0,
 
     print("[6/9] Calculating wing strikes ...")
     net_credit_shorts = sp_price["bid"] + sc_price["bid"]
-    # wing_width = net_credit * (ratio + 1) to achieve max_loss = ratio * max_profit
+    print(f"       Net credit from shorts: {net_credit_shorts:.2f}")
+
+    # Iteratively solve for wing_width so that max_loss = ratio * max_profit
+    # using actual wing prices (not just gross short credit).
+    # max_loss = wing_width - net_credit, max_profit = net_credit
+    # => wing_width = (ratio + 1) * net_credit
+    # Start with gross estimate, then refine with real wing costs.
     wing_width = round_to_strike((ratio + 1.0) * net_credit_shorts)
     if wing_width < STRIKE_INCREMENT:
         wing_width = STRIKE_INCREMENT
 
-    lp_strike = lower - wing_width
-    lc_strike = upper + wing_width
-    print(f"       Net credit from shorts: {net_credit_shorts:.2f}")
-    print(f"       Wing width: {wing_width} -> Long Put @ {lp_strike}, Long Call @ {lc_strike}")
+    max_iterations = 3
+    for iteration in range(max_iterations):
+        lp_strike = lower - wing_width
+        lc_strike = upper + wing_width
 
-    print("[7/9] Fetching wing option contracts ...")
-    lp_contract = get_option_contract_for_expiry(lp_strike, "P", expiry_date)
-    lc_contract = get_option_contract_for_expiry(lc_strike, "C", expiry_date)
-    print(f"       Long Put  conid={lp_contract['conid']}")
-    print(f"       Long Call conid={lc_contract['conid']}")
+        if iteration == 0:
+            print(f"       Initial wing width: {wing_width} -> Long Put @ {lp_strike}, Long Call @ {lc_strike}")
+            print("[7/9] Fetching wing option contracts ...")
+        else:
+            print(f"       Adjusted wing width: {wing_width} -> Long Put @ {lp_strike}, Long Call @ {lc_strike}")
+            print(f"       Re-fetching wing contracts (iteration {iteration + 1}) ...")
 
-    print("[8/9] Fetching wing option prices ...")
-    wing_prices = get_option_prices([lp_contract["conid"], lc_contract["conid"]])
-    lp_price = wing_prices[lp_contract["conid"]]
-    lc_price = wing_prices[lc_contract["conid"]]
-    print(f"       Long Put  bid={lp_price['bid']} ask={lp_price['ask']}")
-    print(f"       Long Call bid={lc_price['bid']} ask={lc_price['ask']}")
+        lp_contract = get_option_contract_for_expiry(lp_strike, "P", expiry_date)
+        lc_contract = get_option_contract_for_expiry(lc_strike, "C", expiry_date)
+        print(f"       Long Put  conid={lp_contract['conid']}")
+        print(f"       Long Call conid={lc_contract['conid']}")
 
-    if lp_price["ask"] is None or lc_price["ask"] is None:
-        raise RuntimeError("Could not get ask prices for long legs. Market may be closed.")
+        if iteration == 0:
+            print("[8/9] Fetching wing option prices ...")
+        wing_prices = get_option_prices([lp_contract["conid"], lc_contract["conid"]])
+        lp_price = wing_prices[lp_contract["conid"]]
+        lc_price = wing_prices[lc_contract["conid"]]
+        print(f"       Long Put  bid={lp_price['bid']} ask={lp_price['ask']}")
+        print(f"       Long Call bid={lc_price['bid']} ask={lc_price['ask']}")
+
+        if lp_price["ask"] is None or lc_price["ask"] is None:
+            raise RuntimeError("Could not get ask prices for long legs. Market may be closed.")
+
+        net_credit = net_credit_shorts - lp_price["ask"] - lc_price["ask"]
+        target_wing_width = round_to_strike((ratio + 1.0) * net_credit)
+        if target_wing_width < STRIKE_INCREMENT:
+            target_wing_width = STRIKE_INCREMENT
+
+        if target_wing_width == wing_width:
+            break
+        wing_width = target_wing_width
 
     print("[9/9] Calculating final strategy ...")
     net_credit = net_credit_shorts - lp_price["ask"] - lc_price["ask"]

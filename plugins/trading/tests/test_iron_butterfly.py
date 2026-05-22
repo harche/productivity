@@ -94,10 +94,12 @@ class TestBuildStrategy:
         mock_prices.side_effect = [
             {12345: {"bid": 20.0, "ask": 20.2, "last": 20.0}},
             {12345: {"bid": 0.5, "ask": 0.6, "last": 0.5}},
+            {12345: {"bid": 0.5, "ask": 0.6, "last": 0.5}},
         ]
 
         strategy = ib.build_strategy(6780.0, date(2026, 3, 11), ratio=2.0)
-        assert strategy["wing_width"] == 120
+        # net_credit = 40.0 - 1.2 = 38.8, wing_width = round(3.0 * 38.8) = 115
+        assert strategy["wing_width"] == 115
 
     @patch("iron_butterfly.get_option_prices")
     @patch("iron_butterfly.get_option_contract_for_expiry")
@@ -106,10 +108,12 @@ class TestBuildStrategy:
         mock_prices.side_effect = [
             {12345: {"bid": 20.0, "ask": 20.2, "last": 20.0}},
             {12345: {"bid": 0.5, "ask": 0.6, "last": 0.5}},
+            {12345: {"bid": 0.5, "ask": 0.6, "last": 0.5}},
         ]
 
         strategy = ib.build_strategy(6780.0, date(2026, 3, 11), ratio=1.5)
-        assert strategy["wing_width"] == 100
+        # net_credit = 40.0 - 1.2 = 38.8, wing_width = round(2.5 * 38.8) = round(97) = 95
+        assert strategy["wing_width"] == 95
 
     @patch("iron_butterfly.get_option_prices")
     @patch("iron_butterfly.get_option_contract_for_expiry")
@@ -117,6 +121,7 @@ class TestBuildStrategy:
         mock_contract.return_value = {"conid": 12345, "tradingClass": "SPXW"}
         mock_prices.side_effect = [
             {12345: {"bid": 20.0, "ask": 20.2, "last": 20.0}},
+            {12345: {"bid": 0.5, "ask": 0.6, "last": 0.5}},
             {12345: {"bid": 0.5, "ask": 0.6, "last": 0.5}},
         ]
 
@@ -141,6 +146,7 @@ class TestBuildStrategy:
         mock_contract.return_value = {"conid": 12345, "tradingClass": "SPXW"}
         mock_prices.side_effect = [
             {12345: {"bid": 20.0, "ask": 20.2, "last": 20.0}},
+            {12345: {"bid": 0.5, "ask": 0.6, "last": 0.5}},
             {12345: {"bid": 0.5, "ask": 0.6, "last": 0.5}},
         ]
 

@@ -1,5 +1,5 @@
 {
   "name": "trading",
   "description": "Monitor your brokerage portfolio, check positions and balances, place trades, and analyze account performance on Interactive Brokers. Use when the user asks about their portfolio, wants market data, or needs to manage trades.",
-  "version": "3.3.0"
+  "version": "3.4.0"
 }
