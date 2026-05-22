@@ -306,12 +306,16 @@ def build_order_json(account_id: str, strategy: dict, quantity: int) -> dict:
 
     combo_snap = get_combo_snapshot(conidex)
     combo_bid = combo_snap.get("bid")
-    if combo_bid is not None:
+    combo_ask = combo_snap.get("ask")
+    if combo_ask is not None:
+        limit_price = combo_ask
+        print(f"\n  Combo bid={combo_bid}  ask={combo_ask}  (using ask as entry limit)")
+    elif combo_bid is not None:
         limit_price = combo_bid
-        print(f"\n  Combo bid={combo_bid}  (using as entry limit)")
+        print(f"\n  Combo ask unavailable, using bid={combo_bid} as entry limit")
     else:
         limit_price = round(-strategy["net_credit"], 2)
-        print(f"\n  Combo bid unavailable, using leg-derived price: {limit_price}")
+        print(f"\n  Combo bid/ask unavailable, using leg-derived price: {limit_price}")
 
     return {
         "account_id": account_id,
@@ -355,15 +359,19 @@ def _submit_bracket(
     net_credit = strategy["net_credit"]
     oca_group = f"oca_SPX_{int(time.time())}"
 
-    # Step 1: Submit entry order using combo bid
+    # Step 1: Submit entry order using combo ask (conservative, fills reliably)
     combo_snap = get_combo_snapshot(conidex)
     combo_bid = combo_snap.get("bid")
-    if combo_bid is not None:
+    combo_ask = combo_snap.get("ask")
+    if combo_ask is not None:
+        entry_price = combo_ask
+        print(f"\n  Combo bid={combo_bid}  ask={combo_ask}  (using ask as entry limit)")
+    elif combo_bid is not None:
         entry_price = combo_bid
-        print(f"\n  Combo bid={combo_bid}  (using as entry limit)")
+        print(f"\n  Combo ask unavailable, using bid={combo_bid} as entry limit")
     else:
         entry_price = round(-net_credit, 2)
-        print(f"\n  Combo bid unavailable, using leg-derived price: {entry_price}")
+        print(f"\n  Combo bid/ask unavailable, using leg-derived price: {entry_price}")
     print(f"  [1/3] Submitting entry order: BUY combo LMT @ {entry_price} ...")
     entry_body = {"orders": [{
         "conidex": conidex, "orderType": "LMT", "side": "BUY",
