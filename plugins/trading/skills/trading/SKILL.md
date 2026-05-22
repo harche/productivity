@@ -52,16 +52,18 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/modify_order.py <orderId> --price -25.50
 
 Order types, bracket orders, raw curl examples, and confirmation flow -- see [references/trading.md](references/trading.md).
 
-## Build options strategies
+## Build options strategies (iron butterfly AND iron condor)
+
+**`iron_butterfly.py` handles BOTH iron butterflies and iron condors.** It auto-detects based on `--short-offset`. Use this script instead of manual API calls — it fetches SPX price, finds contracts, calculates wings, and builds the order automatically.
 
 ```bash
-# Iron butterfly on SPX (ATM shorts)
+# Iron butterfly on SPX 0DTE (ATM shorts)
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --submit
 
-# Iron condor on SPX (shorts 0.3% OTM)
+# Iron condor on SPX 0DTE (shorts 0.3% OTM) — use --short-offset to make it a condor
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py today --short-offset 0.3 --submit
 
-# With bracket orders
+# With bracket orders (profit target + stop-loss)
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/iron_butterfly.py 2026-03-10 --quantity 2 --bracket 2000 4000 --submit
 
 # Close a position by strikes (no JSON file needed)
