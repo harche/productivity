@@ -30,6 +30,7 @@ from ibkr_client import (
     api_post,
     check_staleness,
     get_account_id as _client_get_account_id,
+    get_combo_snapshot,
     get_market_snapshot,
     get_option_contract as _client_get_option_contract,
     initialize_session as _client_initialize_session,
@@ -302,7 +303,15 @@ def build_order_json(account_id: str, strategy: dict, quantity: int) -> dict:
         conidex_parts.append(f"{leg['conid']}/{ratio}")
 
     conidex = f"{SPX_CONID};;;{','.join(conidex_parts)}"
-    limit_price = round(-strategy["net_credit"], 2)
+
+    combo_snap = get_combo_snapshot(conidex)
+    combo_bid = combo_snap.get("bid")
+    if combo_bid is not None:
+        limit_price = combo_bid
+        print(f"\n  Combo bid={combo_bid}  (using as entry limit)")
+    else:
+        limit_price = round(-strategy["net_credit"], 2)
+        print(f"\n  Combo bid unavailable, using leg-derived price: {limit_price}")
 
     return {
         "account_id": account_id,
@@ -346,9 +355,16 @@ def _submit_bracket(
     net_credit = strategy["net_credit"]
     oca_group = f"oca_SPX_{int(time.time())}"
 
-    # Step 1: Submit entry order
-    entry_price = round(-net_credit, 2)
-    print(f"\n  [1/3] Submitting entry order: BUY combo LMT @ {entry_price} ...")
+    # Step 1: Submit entry order using combo bid
+    combo_snap = get_combo_snapshot(conidex)
+    combo_bid = combo_snap.get("bid")
+    if combo_bid is not None:
+        entry_price = combo_bid
+        print(f"\n  Combo bid={combo_bid}  (using as entry limit)")
+    else:
+        entry_price = round(-net_credit, 2)
+        print(f"\n  Combo bid unavailable, using leg-derived price: {entry_price}")
+    print(f"  [1/3] Submitting entry order: BUY combo LMT @ {entry_price} ...")
     entry_body = {"orders": [{
         "conidex": conidex, "orderType": "LMT", "side": "BUY",
         "price": entry_price, "quantity": quantity, "tif": "DAY",

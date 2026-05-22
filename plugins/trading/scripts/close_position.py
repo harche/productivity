@@ -7,7 +7,6 @@ from live positions by specifying strikes.
 
 Usage:
     python close_position.py iron_butterfly_2026-03-12.json
-    python close_position.py iron_butterfly_2026-03-12.json --buffer 1.0
     python close_position.py --strikes 7410P,7465P,7510C,7565C
     python close_position.py --strikes 7450P,7475P,7520C,7545C -y
 """
@@ -24,6 +23,7 @@ import time
 
 from ibkr_client import (
     cancel_order,
+    get_combo_snapshot,
     get_live_orders,
     get_market_snapshot,
     get_order_status,
@@ -111,8 +111,6 @@ def main() -> None:
                         help="JSON order file (from iron_butterfly.py). Not needed with --strikes.")
     parser.add_argument("--strikes", type=str, default=None,
                         help="Close by live positions: comma-separated strikes, e.g. 7410P,7465P,7510C,7565C")
-    parser.add_argument("--buffer", type=float, default=0.50,
-                        help="Buffer added to close price for fill certainty (default: 0.50)")
     parser.add_argument("-y", "--yes", action="store_true", help="Skip confirmation prompt")
     args = parser.parse_args()
 
@@ -185,24 +183,38 @@ def main() -> None:
         label = leg.get("label", f"{leg.get('strike')} {leg.get('right')}")
         print(f"  {label:<22} {action:<6} {close_action:<6} {bid_s:>8} {ask_s:>8} {used_s:>8}")
 
-    # Check for missing prices
-    missing_prices = any(
-        (leg["action"] == "SELL" and snapshots.get(leg["conid"], {}).get("ask") is None) or
-        (leg["action"] == "BUY" and snapshots.get(leg["conid"], {}).get("bid") is None)
-        for leg in legs
-    )
-    if missing_prices:
-        print(f"\n  WARNING: Some prices are missing. Combo close may fail — will fall back to individual legs.")
+    # Identify short legs — these are the risk and must be closed
+    short_legs = [l for l in legs if l["action"] == "SELL"]
+
+    # Build reverse conidex (flip the ratios)
+    base, _, leg_str = conidex.partition(";;;")
+    reversed_parts = []
+    for part in leg_str.split(","):
+        cid, ratio = part.rsplit("/", 1)
+        flipped = str(-int(ratio))
+        reversed_parts.append(f"{cid}/{flipped}")
+    reverse_conidex = f"{base};;;{','.join(reversed_parts)}"
+
+    # Check combo liquidity
+    print(f"\nChecking combo liquidity ...")
+    combo_snap = get_combo_snapshot(reverse_conidex)
+    combo_bid = combo_snap.get("bid")
+    combo_ask = combo_snap.get("ask")
+    has_combo_liquidity = combo_bid is not None and combo_ask is not None
 
     close_cost = round(close_cost, 2)
-    close_with_buffer = round(close_cost + args.buffer, 2)
-
     print(f"  {'-' * 60}")
-    print(f"  Close cost (market):  {close_cost:.2f}")
-    print(f"  Buffer:               {args.buffer:.2f}")
-    print(f"  Close price (limit):  {close_with_buffer:.2f}")
+    print(f"  Close cost (legs):    {close_cost:.2f}")
+    if has_combo_liquidity:
+        combo_close_price = combo_ask
+        print(f"  Combo bid={combo_bid}  ask={combo_ask}")
+        print(f"  Close price (limit):  {combo_close_price:.2f}")
+    else:
+        combo_close_price = None
+        print(f"  Combo: no liquidity (bid/ask missing)")
     if net_credit:
-        pnl = round((net_credit - close_with_buffer) * 100 * quantity, 2)
+        effective_price = combo_close_price if combo_close_price else close_cost
+        pnl = round((net_credit - effective_price) * 100 * quantity, 2)
         print(f"  Entry credit:         {net_credit:.2f}")
         print(f"  Estimated P/L:       ${pnl:,.2f}")
     print()
@@ -213,69 +225,76 @@ def main() -> None:
             print("Cancelled.")
             return
 
-    # Build reverse conidex (flip the ratios)
-    # Original: "416904;;;conid1/1,conid2/-1,..." -> flip signs
-    base, _, leg_str = conidex.partition(";;;")
-    reversed_parts = []
-    for part in leg_str.split(","):
-        cid, ratio = part.rsplit("/", 1)
-        flipped = str(-int(ratio))
-        reversed_parts.append(f"{cid}/{flipped}")
-    reverse_conidex = f"{base};;;{','.join(reversed_parts)}"
-
-    # Try combo close first
-    print(f"Submitting close order: BUY reverse combo LMT @ {close_with_buffer:.2f} ...")
-    close_body = {"orders": [{
-        "conidex": reverse_conidex,
-        "orderType": "LMT",
-        "side": "BUY",
-        "price": close_with_buffer,
-        "quantity": quantity,
-        "tif": "DAY",
-    }]}
-    close_oid = submit_order(account_id, close_body)
-
+    close_oid = None
     combo_filled = False
-    if close_oid:
-        print(f"  Close order submitted: {close_oid}")
-        # Wait and check if it filled
-        time.sleep(5)
-        try:
-            status = get_order_status(close_oid)
-            order_status = status.get("order_status", "")
-            if order_status == "Filled":
-                combo_filled = True
-                print(f"  Combo close filled.")
-            elif order_status == "Cancelled":
-                print(f"  Combo close was cancelled. Falling back to individual legs ...")
-            else:
-                # Still working — wait a bit more
-                time.sleep(5)
+
+    if has_combo_liquidity:
+        print(f"Submitting combo close: BUY reverse combo LMT @ {combo_close_price:.2f} ...")
+        close_body = {"orders": [{
+            "conidex": reverse_conidex,
+            "orderType": "LMT",
+            "side": "BUY",
+            "price": combo_close_price,
+            "quantity": quantity,
+            "tif": "DAY",
+        }]}
+        close_oid = submit_order(account_id, close_body)
+
+        if close_oid:
+            print(f"  Close order submitted: {close_oid}")
+            time.sleep(5)
+            try:
                 status = get_order_status(close_oid)
                 order_status = status.get("order_status", "")
                 if order_status == "Filled":
                     combo_filled = True
                     print(f"  Combo close filled.")
+                elif order_status == "Cancelled":
+                    print(f"  Combo close was cancelled. Falling back to short legs ...")
                 else:
-                    print(f"  Combo close status: {order_status}. Assuming filled if position is flat.")
-                    combo_filled = True  # Optimistic — will verify via positions
-        except Exception:
-            combo_filled = True  # Assume success if we can't check
+                    time.sleep(5)
+                    status = get_order_status(close_oid)
+                    order_status = status.get("order_status", "")
+                    if order_status == "Filled":
+                        combo_filled = True
+                        print(f"  Combo close filled.")
+                    else:
+                        print(f"  Combo close status: {order_status}. Cancelling and falling back to short legs ...")
+                        try:
+                            cancel_order(account_id, str(close_oid))
+                        except Exception:
+                            pass
+            except Exception as e:
+                print(f"  Error checking combo status: {e}. Cancelling and falling back to short legs ...")
+                try:
+                    cancel_order(account_id, str(close_oid))
+                except Exception:
+                    pass
+        else:
+            print("  Combo close failed. Falling back to short legs ...")
     else:
-        print("  Combo close failed. Falling back to individual legs ...")
+        print("  No combo liquidity (missing bid/ask). Closing short legs individually.")
 
-    # Fall back to individual legs if combo didn't work
+    # Fallback: close short legs individually with LMT (they always have liquidity)
     if not combo_filled:
-        print("\nClosing individual legs at market ...")
-        for leg in legs:
+        short_conids = [l["conid"] for l in short_legs]
+        print(f"\nRe-fetching fresh prices for short legs ...")
+        fresh_snaps = get_market_snapshot(short_conids)
+        print(f"Closing {len(short_legs)} short legs individually with LMT orders ...")
+        for leg in short_legs:
             cid = leg["conid"]
-            action = leg["action"]
-            close_side = "SELL" if action == "BUY" else "BUY"
+            snap = fresh_snaps.get(cid, {})
+            ask = snap.get("ask")
+            if ask is None:
+                label = leg.get("label", f"{leg.get('strike')} {leg.get('right')}")
+                print(f"  SKIPPED {label} — no ask price available")
+                continue
+            lmt_price = ask
             label = leg.get("label", f"{leg.get('strike')} {leg.get('right')}")
-            print(f"  {close_side} {quantity}x {label} (conid={cid}) ...")
+            print(f"  BUY {quantity}x {label} LMT @ {lmt_price:.2f} ...")
             leg_body = {"orders": [{
-                "conid": cid, "orderType": "MKT", "side": close_side,
-                "quantity": quantity, "tif": "DAY",
+                "conid": cid, "orderType": "LMT", "side": "BUY",
+                "price": lmt_price, "quantity": quantity, "tif": "DAY",
             }]}
             leg_oid = submit_order(account_id, leg_body)
             if leg_oid:
@@ -283,6 +302,9 @@ def main() -> None:
             else:
                 print(f"    FAILED")
             time.sleep(0.5)
+        long_labels = [l.get("label", f"{l.get('strike')}{l.get('right')}") for l in legs if l["action"] == "BUY"]
+        if long_labels:
+            print(f"\n  Long wings left to expire: {', '.join(long_labels)}")
 
     # Cancel related standing orders
     print("\nCancelling standing orders on same combo ...")

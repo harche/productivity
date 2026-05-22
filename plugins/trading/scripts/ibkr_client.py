@@ -168,6 +168,24 @@ def get_market_snapshot(conids: list[int], fields: str = "31,84,86") -> dict[int
     return results
 
 
+def get_combo_snapshot(conidex: str, fields: str = "31,84,86") -> dict:
+    """
+    Get market data snapshot for a combo order using its conidex.
+    Returns {"bid": float|None, "ask": float|None, "last": float|None}.
+    """
+    body = {"conids": [conidex], "fields": [int(f) for f in fields.split(",")]}
+    api_post("/iserver/marketdata/snapshot", json_body=body)
+    time.sleep(2.5)
+    data = api_post("/iserver/marketdata/snapshot", json_body=body)
+
+    snap = data[0] if isinstance(data, list) and data else {}
+    return {
+        "bid": parse_price(snap.get("84")),
+        "ask": parse_price(snap.get("86")),
+        "last": parse_price(snap.get("31")),
+    }
+
+
 def check_staleness(snapshots: dict[int, dict]) -> list[int]:
     """Return list of conids with stale data. Empty list means all fresh."""
     return [cid for cid, data in snapshots.items() if data.get("_stale")]
