@@ -1,195 +1,85 @@
-# Market Data Reference
+# Market Data & Pricing
 
-Endpoints for market data snapshots, historical data, contract search, and market scanners.
+## Requesting Prices
 
-> **Session:** An authenticated brokerage session is required for all market data endpoints.
-
-## Contract Search
-
-```bash
-# Search stock contracts by symbol
-curl -sk "https://localhost:5000/v1/api/trsrv/stocks?symbols=AAPL" | python3 -m json.tool
-
-# Search multiple symbols
-curl -sk "https://localhost:5000/v1/api/trsrv/stocks?symbols=AAPL,MSFT,GOOGL" | python3 -m json.tool
-
-# Search futures contracts
-curl -sk "https://localhost:5000/v1/api/trsrv/futures?symbols=ES" | python3 -m json.tool
-
-# Get security definitions by contract IDs
-curl -sk -X POST https://localhost:5000/v1/api/trsrv/secdef \
-  -H "Content-Type: application/json" \
-  -d '{"conids": [265598, 272093]}' | python3 -m json.tool
-
-# Get trading schedule for a symbol
-curl -sk "https://localhost:5000/v1/api/trsrv/secdef/schedule?assetClass=STK&symbol=AAPL" | python3 -m json.tool
+```python
+ticker = ib.reqMktData(contract)
+ib.sleep(3)
+# Read prices
+bid = ticker.bid
+ask = ticker.ask
+last = ticker.last
+close = ticker.close  # previous close
+# Clean up
+ib.cancelMktData(contract)
 ```
 
-**Common Contract IDs (conids):**
+**Wait at least 3 seconds** after `reqMktData` — data doesn't arrive instantly.
 
-| Symbol | ConID | Description |
-|---|---|---|
-| AAPL | 265598 | Apple Inc. |
-| MSFT | 272093 | Microsoft Corp. |
-| AMZN | 3691937 | Amazon.com Inc. |
-| GOOGL | 208813720 | Alphabet Inc. |
-| SPY | 756733 | SPDR S&P 500 ETF |
-| QQQ | 320227571 | Invesco QQQ Trust |
+**Always cancel** when done to avoid subscription leaks.
 
-Use `/trsrv/stocks` to look up conids for any symbol. The response nests conid inside `contracts`:
+## Invalid Prices
 
-```json
-{
-    "AAPL": [
-        {
-            "name": "APPLE INC",
-            "assetClass": "STK",
-            "contracts": [
-                { "conid": 265598, "exchange": "NASDAQ", "isUS": true }
-            ]
-        }
-    ]
-}
+ib_async uses two sentinels for missing data:
+
+| Value | Meaning | Check |
+|-------|---------|-------|
+| `nan` | Field not available | `util.isNan(val)` |
+| `-1` | Empty price (market closed) | `val == -1` |
+
+**Both must be treated as missing.** Use this helper:
+
+```python
+from ib_async import util
+
+def valid_price(val):
+    if util.isNan(val) or val == -1:
+        return None
+    return val
 ```
 
-Extract conid via: `data['SYMBOL'][0]['contracts'][0]['conid']`
+**Fallback:** When bid/ask are unavailable (market closed), use `ticker.close` (previous session close) as an estimate.
 
-## Market Data Snapshot
+## Greeks
 
-**PREREQUISITE:** You MUST call `/iserver/accounts` at least once per session before snapshots will work. Without this, snapshots return conid-only responses with no price fields.
+Greeks are on `ticker.modelGreeks` after requesting market data:
 
-**IMPORTANT:** Use `/iserver/marketdata/snapshot` (NOT `/md/snapshot`). The `/md/snapshot` endpoint may not return field values reliably.
-
-```bash
-# REQUIRED: Initialize iserver session first (call once per session)
-curl -sk https://localhost:5000/v1/api/iserver/accounts | python3 -m json.tool
-
-# Get snapshot (first call primes the subscription -- may return empty fields)
-curl -sk "https://localhost:5000/v1/api/iserver/marketdata/snapshot?conids=265598&fields=31,55,84,86" | python3 -m json.tool
-sleep 3
-# Second call returns actual data
-curl -sk "https://localhost:5000/v1/api/iserver/marketdata/snapshot?conids=265598&fields=31,55,84,86" | python3 -m json.tool
-
-# Multiple contracts
-curl -sk "https://localhost:5000/v1/api/iserver/marketdata/snapshot?conids=265598,272093&fields=31,55,84,86,70,71,82,83,7295" | python3 -m json.tool
+```python
+ticker = ib.reqMktData(contract)
+ib.sleep(3)
+g = ticker.modelGreeks
+if g:
+    delta = g.delta      # negative for puts, positive for calls
+    gamma = g.gamma
+    theta = g.theta
+    vega = g.vega
+    iv = g.impliedVol
 ```
 
-### Common Snapshot Fields
+Greeks may be `None` if the pricing model hasn't run yet — always check before use.
 
-| Field ID | Description |
-|---|---|
-| 31 | Last price |
-| 55 | Symbol |
-| 70 | High |
-| 71 | Low |
-| 82 | Change |
-| 83 | Change % |
-| 84 | Bid price |
-| 85 | Ask size |
-| 86 | Ask price |
-| 87 | Volume |
-| 88 | Bid size |
-| 7295 | Open price |
-| 7296 | Close price |
-| 7674 | EPS |
-| 7675 | Market cap |
-| 7676 | P/E ratio |
-| 7677 | 52-week high |
-| 7678 | 52-week low |
-| 7679 | Dividend yield |
-| 7308 | Option Delta |
-| 7309 | Option Gamma |
-| 7310 | Option Theta |
-| 7311 | Option Vega |
-| 7633 | Implied Volatility |
+## Multiple Contracts
 
-## Historical Data
+Request in parallel for speed:
 
-```bash
-# Get historical candlestick data
-curl -sk -X POST https://localhost:5000/v1/api/hmds/history \
-  -H "Content-Type: application/json" \
-  -d '{"conid": 265598, "period": "1d", "bar": "1h"}' | python3 -m json.tool
-
-# Weekly bars for 1 year
-curl -sk -X POST https://localhost:5000/v1/api/hmds/history \
-  -H "Content-Type: application/json" \
-  -d '{"conid": 265598, "period": "1y", "bar": "1w"}' | python3 -m json.tool
-
-# Include outside regular trading hours
-curl -sk -X POST https://localhost:5000/v1/api/hmds/history \
-  -H "Content-Type: application/json" \
-  -d '{"conid": 265598, "period": "5d", "bar": "15min", "outsideRth": true}' | python3 -m json.tool
+```python
+tickers = [ib.reqMktData(c) for c in contracts]
+ib.sleep(3)
+for t in tickers:
+    print(t.contract.localSymbol, valid_price(t.bid), valid_price(t.ask))
+for t in tickers:
+    ib.cancelMktData(t.contract)
 ```
 
-### Period Values
+## Price Rounding
 
-| Value | Description |
-|---|---|
-| `1min` - `30min` | Minutes |
-| `1h` - `8h` | Hours |
-| `1d` - `5d` | Days |
-| `1w` - `4w` | Weeks |
-| `1m` - `12m` | Months |
-| `1y` - `5y` | Years |
+Options prices must be rounded to the tick size:
 
-### Bar Sizes
+```python
+TICK_SIZE = 0.05  # SPX options on CBOE/SMART
 
-| Value | Description |
-|---|---|
-| `1min` | 1 minute bars |
-| `2min` | 2 minute bars |
-| `3min` | 3 minute bars |
-| `5min` | 5 minute bars |
-| `10min` | 10 minute bars |
-| `15min` | 15 minute bars |
-| `30min` | 30 minute bars |
-| `1h` | 1 hour bars |
-| `2h` | 2 hour bars |
-| `4h` | 4 hour bars |
-| `8h` | 8 hour bars |
-| `1d` | 1 day bars |
-| `1w` | 1 week bars |
-| `1m` | 1 month bars |
-
-## Market Scanner
-
-```bash
-curl -sk -X POST https://localhost:5000/v1/api/hmds/scanner \
-  -H "Content-Type: application/json" \
-  -d '{
-    "instrument": "STK",
-    "locations": "STK.US.MAJOR",
-    "scanCode": "TOP_PERC_GAIN",
-    "secType": "STK",
-    "filters": []
-  }' | python3 -m json.tool
+def round_to_tick(price, tick=0.05):
+    return round(round(price / tick) * tick, 2)
 ```
 
-### Common Scan Codes
-
-| Code | Description |
-|---|---|
-| `TOP_PERC_GAIN` | Top % gainers |
-| `TOP_PERC_LOSE` | Top % losers |
-| `MOST_ACTIVE` | Most active by volume |
-| `HOT_BY_VOLUME` | Hot by volume |
-| `TOP_TRADE_COUNT` | Top trade count |
-| `TOP_TRADE_RATE` | Top trade rate |
-| `TOP_PRICE_RANGE` | Top price range |
-| `HOT_BY_PRICE` | Hot by price |
-| `HIGH_DIVIDEND_YIELD_IB` | High dividend yield |
-| `TOP_OPEN_PERC_GAIN` | Top open % gain |
-| `TOP_OPEN_PERC_LOSE` | Top open % loss |
-
-### Scanner Locations
-
-| Location | Description |
-|---|---|
-| `STK.US.MAJOR` | US major exchanges |
-| `STK.US` | All US exchanges |
-| `STK.US.MINOR` | US minor exchanges |
-| `STK.EU` | European exchanges |
-| `STK.AMEX` | AMEX |
-| `STK.NYSE` | NYSE |
-| `STK.NASDAQ` | NASDAQ |
+The double-round prevents floating-point drift.
