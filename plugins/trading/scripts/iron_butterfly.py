@@ -76,16 +76,31 @@ def qualify_leg(ib, strike: float, right: str, expiry_str: str, trading_class: s
     return qualified[0]
 
 
+def _valid_price(val):
+    """Return None if price is NaN or -1 (ib_async emptyPrice)."""
+    if util.isNan(val) or val == -1:
+        return None
+    return val
+
+
 def get_leg_prices(ib, contracts: list) -> dict:
-    """Get bid/ask for a list of contracts via reqTickers."""
-    tickers = ib.reqTickers(*contracts)
-    ib.sleep(2)
+    """Get bid/ask for a list of contracts via reqMktData."""
+    tickers = [ib.reqMktData(c) for c in contracts]
+    ib.sleep(3)
     prices = {}
     for t in tickers:
+        bid = _valid_price(t.bid)
+        ask = _valid_price(t.ask)
+        close = _valid_price(t.close)
+        if bid is None and close is not None:
+            bid = close
+        if ask is None and close is not None:
+            ask = close
         prices[t.contract.conId] = {
-            "bid": t.bid if not util.isNan(t.bid) else None,
-            "ask": t.ask if not util.isNan(t.ask) else None,
-            "last": t.last if not util.isNan(t.last) else None,
+            "bid": bid,
+            "ask": ask,
+            "last": _valid_price(t.last),
+            "close": close,
         }
     for t in tickers:
         ib.cancelMktData(t.contract)
@@ -237,15 +252,12 @@ def build_combo_contract(strategy: dict) -> Contract:
 
 def get_combo_price(ib, bag: Contract) -> tuple[float | None, float | None]:
     """Get bid/ask for a combo contract."""
-    tickers = ib.reqTickers(bag)
-    ib.sleep(2)
-    if tickers:
-        t = tickers[0]
-        bid = t.bid if not util.isNan(t.bid) else None
-        ask = t.ask if not util.isNan(t.ask) else None
-        ib.cancelMktData(bag)
-        return bid, ask
-    return None, None
+    t = ib.reqMktData(bag)
+    ib.sleep(3)
+    bid = _valid_price(t.bid)
+    ask = _valid_price(t.ask)
+    ib.cancelMktData(bag)
+    return bid, ask
 
 
 def wait_for_fill(ib, trade, timeout: int = 40) -> bool:
