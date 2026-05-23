@@ -78,8 +78,8 @@ def main() -> None:
         matched = [{"conid": l["conid"], "action": l["action"],
                      "label": l.get("label", f"{l['action']} {l.get('strike')}{l.get('right')}")}
                     for l in legs]
-        quantity = 1
-        print(f"Close: {meta.get('strategy', 'combo')} {meta.get('expiry', '')}")
+        quantity = meta.get("quantity", 1)
+        print(f"Close: {meta.get('strategy', 'combo')} {meta.get('expiry', '')} qty={quantity}")
 
     # Build reverse combo
     bag = build_combo("SPX", [
@@ -119,12 +119,25 @@ def main() -> None:
             return
 
     trade = ib.placeOrder(bag, LimitOrder("BUY", quantity, close_price))
+    close_order_id = trade.order.orderId
     ib.sleep(5)
     print(f"  Status: {trade.orderStatus.status}")
 
-    # Cancel standing orders on same combo
+    if trade.orderStatus.status != "Filled":
+        print("  WARNING: Close order not filled. Closing short legs individually...")
+        for m in matched:
+            if m["action"] == "SELL":
+                leg_contract = Contract(conId=m["conid"], secType="OPT", exchange="SMART")
+                ib.qualifyContracts(leg_contract)
+                leg_trade = ib.placeOrder(leg_contract, LimitOrder("BUY", quantity, 0.05))
+                ib.sleep(3)
+                print(f"    BUY {m['label']}: {leg_trade.orderStatus.status}")
+
+    # Cancel standing orders on same combo (skip our own close order)
     our_conids = {m["conid"] for m in matched}
     for t in ib.openTrades():
+        if t.order.orderId == close_order_id:
+            continue
         if t.contract.secType == "BAG" and t.contract.comboLegs:
             if {leg.conId for leg in t.contract.comboLegs} == our_conids:
                 ib.cancelOrder(t.order)

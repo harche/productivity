@@ -40,9 +40,9 @@ def main() -> None:
 
     net_credit = meta.get("net_credit")
     legs = meta.get("legs", [])
-    quantity = 1
+    quantity = meta.get("quantity", 1)
 
-    if not net_credit or not legs:
+    if net_credit is None or not legs:
         sys.exit("ERROR: Order file missing metadata (net_credit or legs).")
 
     print(f"Auto-close: {meta.get('strategy', 'N/A')}  credit={net_credit}")

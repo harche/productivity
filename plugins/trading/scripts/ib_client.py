@@ -24,6 +24,7 @@ from ib_async import (
     Index,
     LimitOrder,
     Option,
+    Order,
     Ticker,
     Trade,
     util,
@@ -117,6 +118,8 @@ def box_trade(ib: IB, expiry: str, strike1: float, strike2: float, limit: float,
     else:
         print(f"Borrow {abs(quantity * int(limit * mul))} today, repay {quantity * (strike2 - strike1) * mul} on {expiry}")
 
+    print_margin_impact(ib, bag, "BUY", quantity, limit)
+
     if not execute:
         return None
 
@@ -141,6 +144,23 @@ def find_option_by_delta(tickers: list[Ticker], target_delta: float, side: str) 
             best_diff = diff
             best = t
     return best
+
+
+def print_margin_impact(ib: IB, bag: Contract, action: str, quantity: int, limit_price: float) -> None:
+    """Query IBKR whatIfOrder and print margin impact."""
+    whatif_order = Order(action=action, orderType="LMT", totalQuantity=quantity,
+                        lmtPrice=limit_price, tif="DAY")
+    try:
+        state = ib.whatIfOrder(bag, whatif_order)
+        if state and not isinstance(state, list):
+            print(f"\nMargin Impact (from IBKR):")
+            print(f"  Init Margin Change:    ${float(state.initMarginChange):>12,.2f}")
+            print(f"  Maint Margin Change:   ${float(state.maintMarginChange):>12,.2f}")
+            print(f"  Equity w/Loan Change:  ${float(state.equityWithLoanChange):>12,.2f}")
+        else:
+            print("\nMargin Impact: unavailable (market may be closed)")
+    except Exception as e:
+        print(f"\nMargin Impact: query failed ({e})")
 
 
 def build_combo(symbol: str, legs: list[tuple[Contract, str]], exchange: str = "SMART") -> Contract:
@@ -174,14 +194,15 @@ def sweep_fill(ib: IB, contract: Contract, action: str, quantity: int,
             ib.cancelOrder(trade.order)
             return None
 
-        if trade.filled() > 0:
-            print(f"  Filled {trade.filled()} @ {trade.orderStatus.avgFillPrice:.2f}")
-        if trade.filled() >= remaining:
+        filled = trade.filled()
+        if filled > 0:
+            print(f"  Filled {filled} @ {trade.orderStatus.avgFillPrice:.2f}")
+        if filled >= remaining:
             return trade
 
         ib.cancelOrder(trade.order)
         ib.sleep(3)
-        remaining -= trade.filled()
+        remaining -= filled
         last_trade = trade
 
     return last_trade

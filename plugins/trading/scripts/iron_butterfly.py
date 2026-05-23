@@ -27,7 +27,7 @@ from datetime import date, datetime, timedelta
 from ib_async import ComboLeg, Contract, Index, LimitOrder, Option, Order, util
 from ibkrbox.ibkrbox import get_last
 
-from ib_client import build_combo, connect, find_option_by_delta, round_to_tick, sweep_fill
+from ib_client import build_combo, connect, find_option_by_delta, print_margin_impact, round_to_tick, sweep_fill
 
 STRIKE_INCREMENT = 5
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -386,6 +386,7 @@ def main() -> None:
     display_strategy(strategy, args.quantity, strategy_num=args.strategy)
 
     bag = build_combo_contract(strategy)
+    print_margin_impact(ib, bag, "BUY", args.quantity, round_to_tick(-strategy["net_credit"]))
 
     serializable_legs = [
         {k: v for k, v in leg.items() if k != "contract"}
@@ -400,6 +401,7 @@ def main() -> None:
             "max_profit": strategy["max_profit"],
             "max_loss": strategy["max_loss"],
             "ratio": strategy["ratio"],
+            "quantity": args.quantity,
             "legs": serializable_legs,
         }
     }

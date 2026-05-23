@@ -101,7 +101,7 @@ def display_positions(ib, symbol_filter: Optional[str] = None, show_greeks: bool
             price_str = f"{p.marketPrice:.2f}" if not util.isNan(p.marketPrice) else "N/A"
 
             pct = None
-            if p.unrealizedPNL and p.averageCost and p.position:
+            if p.unrealizedPNL is not None and p.averageCost and p.position:
                 cost_basis = p.averageCost * abs(p.position)
                 if cost_basis != 0:
                     pct = (p.unrealizedPNL / cost_basis) * 100
@@ -115,9 +115,9 @@ def display_positions(ib, symbol_filter: Optional[str] = None, show_greeks: bool
             else:
                 print(f"  {desc:<36} {p.position:>6.0f} {price_str:>10} {format_currency(p.marketValue):>12} {format_pnl(p.unrealizedPNL):>12} {format_pct(pct):>8}")
 
-            if p.marketValue:
+            if p.marketValue is not None:
                 total_mktval += p.marketValue
-            if p.unrealizedPNL:
+            if p.unrealizedPNL is not None:
                 total_unrealized += p.unrealizedPNL
 
         print(f"  {'-' * 86}")

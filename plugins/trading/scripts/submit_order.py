@@ -92,8 +92,9 @@ def main() -> None:
         ])
         price = round_to_tick(-meta.get("net_credit", 0))
 
-        print(f"\nSubmitting: BUY combo LMT @ {price} ...")
-        trade = ib.placeOrder(bag, LimitOrder("BUY", 1, price))
+        quantity = meta.get("quantity", 1)
+        print(f"\nSubmitting: BUY {quantity}x combo LMT @ {price} ...")
+        trade = ib.placeOrder(bag, LimitOrder("BUY", quantity, price))
         ib.sleep(5)
         print(f"  Status: {trade.orderStatus.status}")
         if trade.orderStatus.status == "Filled":

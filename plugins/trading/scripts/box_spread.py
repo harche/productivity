@@ -45,7 +45,9 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    if args.months is None and args.limit is None and args.expiry is None:
+    if args.months is None and args.expiry is None:
+        if args.limit is not None:
+            parser.error("--limit requires --expiry (or use --months instead)")
         parser.error("Provide --months (or --expiry + --limit)")
     if args.amount is None and (args.s1 is None or args.s2 is None):
         parser.error("Provide --amount or both --s1 and --s2")

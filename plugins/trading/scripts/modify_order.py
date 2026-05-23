@@ -45,6 +45,10 @@ def main() -> None:
             print("Cancelled.")
             ib.disconnect()
             return
+        if idx < 0 or idx >= len(trades):
+            print(f"Invalid index. Must be 0-{len(trades)-1}.")
+            ib.disconnect()
+            return
 
     trade = trades[idx]
     old_price = trade.order.lmtPrice
