@@ -135,13 +135,18 @@ def wait_for_fill(ib, trade, timeout=40):
 
 ## What-If Margin
 
+Use `ib.whatIfOrder()` — it returns margin impact without placing an order:
+
 ```python
-order = LimitOrder('BUY', 1, entry_price)
-order.whatIf = True
-trade = ib.placeOrder(bag, order)
+order = LimitOrder('BUY', 1, entry_price, tif='GTC')
+margin = ib.whatIfOrder(contract, order)
 ib.sleep(3)
-# trade.orderStatus has margin fields
-init_margin = trade.orderStatus.initMarginChange
-maint_margin = trade.orderStatus.maintMarginChange
-ib.cancelOrder(order)
+print(f'Init Margin:  {margin.initMarginChange}')
+print(f'Maint Margin: {margin.maintMarginChange}')
+print(f'Equity:       {margin.equityWithLoanChange}')
 ```
+
+- **Use `tif='GTC'`** — the gateway may override DAY orders and reject them (error 10349)
+- Works with BAG/combo contracts
+- Works outside market hours
+- No need to cancel — `whatIfOrder` doesn't place a real order

@@ -21,9 +21,20 @@ Use `ib.sleep(N)`, never `time.sleep(N)`. ib_async is event-driven — `time.sle
 ```python
 from ib_async import Index
 spx = ib.qualifyContracts(Index('SPX', 'CBOE'))[0]
-[ticker] = ib.reqTickers(spx)
-ib.sleep(2)
-price = ticker.marketPrice()  # or ticker.last / ticker.close
+ticker = ib.reqMktData(spx)
+ib.sleep(3)
+price = ticker.marketPrice()
+ib.cancelMktData(spx)
+```
+
+**When market is closed**, `marketPrice()` returns NaN. Fallback chain:
+
+```python
+from ib_async import util
+for val in [ticker.last, ticker.close]:
+    if not util.isNan(val) and val != -1:
+        price = val
+        break
 ```
 
 ## Keepalive
