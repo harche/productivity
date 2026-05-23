@@ -2,6 +2,10 @@
 
 A box spread is a synthetic loan using options. The payoff at expiry is exactly the strike width, so the difference between what you pay/receive now and the width is the interest.
 
+## Finding Strikes
+
+Use https://www.boxtrades.com/ to find optimal strikes, expirations, and implied rates before building the spread.
+
 ## Long Box (Lending)
 
 You pay upfront, receive strike width at expiry. Equivalent to lending money at an implied rate.
