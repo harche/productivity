@@ -12,6 +12,19 @@ ib.connect('127.0.0.1', 4002, clientId=1, timeout=20)
 - **Always use `clientId=1`** — reusing the same ID prevents stale sessions leaking in IB Gateway
 - Always call `ib.disconnect()` when done
 
+## Port Fallback
+
+When unsure which port is active, try both:
+
+```python
+from ib_async import IB
+ib = IB()
+try:
+    ib.connect('127.0.0.1', 4002, clientId=1, timeout=10)
+except ConnectionRefusedError:
+    ib.connect('127.0.0.1', 4001, clientId=1, timeout=10)
+```
+
 ## Async Waits
 
 Use `ib.sleep(N)`, never `time.sleep(N)`. ib_async is event-driven — `time.sleep` blocks the event loop and prevents data from arriving.

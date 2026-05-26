@@ -26,6 +26,16 @@ for tag in key_tags:
 - `accountValues()` returns ALL tags — filter by base currency to avoid duplicates
 - Multi-currency accounts have separate values per currency
 
+## Multi-Currency Cash Balances
+
+The summary tags (e.g. `TotalCashValue`) report in the base currency. To see cash per currency, use `CashBalance`:
+
+```python
+for v in ib.accountValues(account='UXXXXXXX1'):
+    if v.tag == 'CashBalance' and v.currency != 'BASE':
+        print(f'  {v.currency}: ${float(v.value):,.2f}')
+```
+
 ## List Positions
 
 ```python

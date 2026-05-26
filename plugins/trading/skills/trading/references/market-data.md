@@ -40,6 +40,20 @@ def valid_price(val):
 
 **Fallback:** When bid/ask are unavailable (market closed), use `ticker.close` (previous session close) as an estimate.
 
+## Delayed Data Fallback
+
+If you get error 10089 ("requires additional subscription"), fall back to delayed data. **Always tell the user the prices are delayed.**
+
+```python
+ib.reqMarketDataType(3)  # 3 = delayed
+ticker = ib.reqMktData(contract)
+ib.sleep(5)
+# Prices arrive in ticker.last, ticker.bid, ticker.ask as usual
+# IMPORTANT: inform the user these are delayed (typically 15 min)
+```
+
+Reset to live data with `ib.reqMarketDataType(1)` when done.
+
 ## Greeks
 
 Greeks are on `ticker.modelGreeks` after requesting market data:
