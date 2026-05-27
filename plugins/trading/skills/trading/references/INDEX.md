@@ -45,3 +45,23 @@ Dependencies are in `${CLAUDE_PLUGIN_ROOT}/pyproject.toml` — `uv run` auto-ins
 ## Position Management: Rolling, Adjustments, Exits
 
 | position-management.md
+
+## Historical Data & Price Analysis
+
+| historical-data.md
+
+## Contract Search & Details
+
+| contract-search.md
+
+## Market Scanners
+
+| scanners.md
+
+## News
+
+| news.md
+
+## Analysis Tools: What-If, Options Math, P&L, Order History
+
+| analysis-tools.md

@@ -1,6 +1,6 @@
 ---
 name: trading
-description: "Monitor your brokerage portfolio, check positions and balances, place trades, and analyze account performance on Interactive Brokers. Use when the user asks about their portfolio, wants market data, or needs to manage trades."
+description: "Monitor your brokerage portfolio, check positions and balances, place trades, and analyze account performance on Interactive Brokers. Use when the user asks about their portfolio, wants market data, or needs to manage trades. Also use for: historical price charts, stock/company lookup, market scanners (top gainers, most active, high dividend), company news, margin/commission preview (what-if orders), and options pricing analysis."
 allowed-tools: Bash(uv:*),Bash(python3:*)
 ---
 
