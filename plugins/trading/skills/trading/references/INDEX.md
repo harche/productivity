@@ -33,3 +33,15 @@ Dependencies are in `${CLAUDE_PLUGIN_ROOT}/pyproject.toml` — `uv run` auto-ins
 ## Box Spreads
 
 | box-spreads.md
+
+## Portfolio Greeks & Risk
+
+| portfolio-greeks.md
+
+## Economic Calendar & Pre-Trade Checks
+
+| economic-calendar.md
+
+## Position Management: Rolling, Adjustments, Exits
+
+| position-management.md

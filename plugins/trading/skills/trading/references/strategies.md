@@ -8,8 +8,12 @@ Default recommendation: **Strategy 3** — best risk-adjusted returns.
 |---|------|--------------|------|
 | 1 | Iron Butterfly — Hold to Expiry | ATM | Hold |
 | 2 | Iron Butterfly — 60% Profit Target | ATM | Buy back at 40% of credit |
-| 3 | **Iron Condor — 60% Profit Target** | 0.3% OTM each side | Buy back at 40% of credit |
+| 3 | Iron Condor — 60% Profit Target | 0.3% OTM each side | Buy back at 40% of credit |
 | 4 | Iron Condor — Hold to Expiry | 0.3% OTM each side | Hold |
+| 5 | **Iron Condor — 16-Delta, 60% PT** | 16-delta each side | Buy back at 40% of credit |
+| 6 | Iron Condor — 16-Delta, Hold | 16-delta each side | Hold |
+
+Strategies 5-6 use delta-based strike selection (see [options.md](options.md) `find_strike_by_delta`). Preferred over percentage-based when Greeks are available — delta adapts to current volatility.
 
 ## Constructing an Iron Butterfly / Condor
 
@@ -37,7 +41,20 @@ short_put_strike = atm
 short_call_strike = atm
 ```
 
-**Iron Condor (OTM):** place shorts N% away from SPX.
+**Iron Condor — Delta-Based (Strategies 5-6):** select by delta for volatility-aware positioning. See [options.md](options.md) for `find_strike_by_delta`.
+
+```python
+from ib_async import Option
+
+short_put_strike, sp_delta = find_strike_by_delta(
+    ib, expiry, tc, -0.16, 'P', spx_price, avail_strikes)
+short_call_strike, sc_delta = find_strike_by_delta(
+    ib, expiry, tc, 0.16, 'C', spx_price, avail_strikes)
+print(f'Short put:  {short_put_strike} (delta {sp_delta:.3f})')
+print(f'Short call: {short_call_strike} (delta {sc_delta:.3f})')
+```
+
+**Iron Condor — Percentage-Based (Strategies 3-4):** fixed offset, use as fallback when Greeks unavailable.
 
 ```python
 offset_pct = 0.003  # 0.3%
@@ -112,6 +129,18 @@ if long_put_strike not in avail_strikes:
 if long_call_strike not in avail_strikes:
     long_call_strike = min(s for s in avail_strikes if s >= long_call_strike)
 ```
+
+### Ratio Selection Guide
+
+The `ratio` controls max_loss:max_profit. Default 2.0 assumes active position management (see [position-management.md](position-management.md)).
+
+| Ratio | Max Loss:Profit | Credit | Best for |
+|-------|----------------|--------|----------|
+| 1.5 | 1.5:1 | Lower | Passive — no rolling or adjustments |
+| **2.0** | **2:1** | **Moderate** | **Active management (60% PT + exit rules)** |
+| 2.5 | 2.5:1 | Higher | Aggressive — strict stop-losses required |
+
+The 2:1 ratio only has positive expected value if you cut losers before max loss. With the time-based exits and rolling rules, average realized loss drops to ~1.0-1.3x, making the math work.
 
 ### Step 6: Qualify wings and price them
 

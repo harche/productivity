@@ -87,17 +87,84 @@ Example: SPX at 7473.5 → nearest strikes are 7470 and 7475.
 
 ## Finding Strikes by Delta
 
-```python
-# Get all options for an expiry
-contracts = [Option('SPX', expiry, s, 'P', 'SMART', tradingClass='SPXW')
-             for s in range(7400, 7550, 5)]
-qualified = ib.qualifyContracts(*contracts)
-tickers = [ib.reqMktData(c) for c in qualified if c.conId > 0]
-ib.sleep(5)
+Professional strike selection uses delta, not fixed percentages. Common targets:
 
-# Find put closest to -0.16 delta
-for t in tickers:
-    g = t.modelGreeks
-    if g and g.delta:
-        print(f'{t.contract.strike}P delta={g.delta:.3f}')
+| Target | Delta (put) | Delta (call) | Approx. probability OTM |
+|--------|-------------|--------------|------------------------|
+| 1 SD   | -0.16       | +0.16        | ~84%                   |
+| Conservative | -0.10  | +0.10        | ~90%                   |
+| Aggressive   | -0.25  | +0.25        | ~75%                   |
+
+### Scan a range of strikes for target delta
+
+```python
+STRIKE_INC = 5
+
+def find_strike_by_delta(ib, expiry, tc, target_delta, right, spx_price, avail_strikes):
+    """Find the strike closest to target_delta.
+    
+    Args:
+        target_delta: negative for puts (e.g. -0.16), positive for calls (e.g. 0.16)
+        right: 'P' or 'C'
+    Returns:
+        (strike, actual_delta) or (None, None) if Greeks unavailable
+    """
+    # Scan 200 points around ATM in 5-point increments
+    scan_low = round_to_strike(spx_price - 200)
+    scan_high = round_to_strike(spx_price + 200)
+    scan_strikes = [s for s in range(scan_low, scan_high + 1, STRIKE_INC)
+                    if s in avail_strikes]
+
+    contracts = [Option('SPX', expiry, s, right, 'SMART', tradingClass=tc)
+                 for s in scan_strikes]
+    qualified = [c for c in ib.qualifyContracts(*contracts) if c.conId > 0]
+    if not qualified:
+        return None, None
+
+    tickers = [ib.reqMktData(c) for c in qualified]
+    ib.sleep(5)
+
+    best_strike, best_delta, best_diff = None, None, float('inf')
+    for t in tickers:
+        g = t.modelGreeks
+        if g and g.delta is not None:
+            diff = abs(g.delta - target_delta)
+            if diff < best_diff:
+                best_diff = diff
+                best_strike = t.contract.strike
+                best_delta = g.delta
+
+    for t in tickers:
+        ib.cancelMktData(t.contract)
+
+    return best_strike, best_delta
+```
+
+### Find both sides for an iron condor
+
+```python
+# 16-delta iron condor: ~1 standard deviation on each side
+put_strike, put_delta = find_strike_by_delta(
+    ib, expiry, tc, -0.16, 'P', spx_price, avail_strikes)
+call_strike, call_delta = find_strike_by_delta(
+    ib, expiry, tc, 0.16, 'C', spx_price, avail_strikes)
+
+if put_strike and call_strike:
+    print(f'Short put:  {put_strike} (delta {put_delta:.3f})')
+    print(f'Short call: {call_strike} (delta {call_delta:.3f})')
+else:
+    print('Greeks unavailable — fall back to percentage-based strikes')
+    # See strategies.md Step 2 for percentage fallback
+```
+
+### Fallback when Greeks are unavailable
+
+Greeks require live market data. During off-hours or without data subscriptions, `modelGreeks` returns None. Fall back to the percentage-based approach and warn the user:
+
+```python
+if put_strike is None:
+    offset_pct = 0.003  # 0.3% ≈ rough 16-delta proxy for short-dated SPX
+    put_strike = round_to_strike(spx_price * (1 - offset_pct))
+    call_strike = round_to_strike(spx_price * (1 + offset_pct))
+    print(f'WARNING: Using {offset_pct*100:.1f}% offset (Greeks unavailable)')
 ```
