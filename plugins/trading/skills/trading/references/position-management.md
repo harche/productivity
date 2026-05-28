@@ -83,6 +83,8 @@ old_short = ib.qualifyContracts(Option('SPX', expiry, old_short_strike, 'P', 'SM
 old_long  = ib.qualifyContracts(Option('SPX', expiry, old_long_strike, 'P', 'SMART', tradingClass=tc))[0]
 new_short = ib.qualifyContracts(Option('SPX', expiry, new_short_strike, 'P', 'SMART', tradingClass=tc))[0]
 new_long  = ib.qualifyContracts(Option('SPX', expiry, new_long_strike, 'P', 'SMART', tradingClass=tc))[0]
+if None in (old_short, old_long, new_short, new_long):
+    raise RuntimeError('One or more roll legs could not be qualified')
 
 # Build the roll as a single 4-leg combo:
 # Close old spread (buy back short, sell long) + open new spread (sell new short, buy new long)
@@ -125,6 +127,8 @@ Same pattern but use a different `expiry` for the new legs. Rolling out in time 
 new_expiry = '20260603'  # next week
 new_short = ib.qualifyContracts(Option('SPX', new_expiry, new_short_strike, 'P', 'SMART', tradingClass=tc))[0]
 new_long  = ib.qualifyContracts(Option('SPX', new_expiry, new_long_strike, 'P', 'SMART', tradingClass=tc))[0]
+if new_short is None or new_long is None:
+    raise RuntimeError(f'Roll target legs do not exist at {new_expiry}')
 # Then build the same 4-leg roll_bag as above
 ```
 
@@ -163,6 +167,8 @@ adj_long_call_strike = adj_short_call_strike + 30  # 30-point wing
 
 adj_sc = ib.qualifyContracts(Option('SPX', expiry, adj_short_call_strike, 'C', 'SMART', tradingClass=tc))[0]
 adj_lc = ib.qualifyContracts(Option('SPX', expiry, adj_long_call_strike, 'C', 'SMART', tradingClass=tc))[0]
+if adj_sc is None or adj_lc is None:
+    raise RuntimeError(f'Adjustment legs not found: short={adj_short_call_strike} long={adj_long_call_strike}')
 
 adj_bag = Contract(
     symbol='SPX', secType='BAG', exchange='SMART', currency='USD',

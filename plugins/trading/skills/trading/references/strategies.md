@@ -85,6 +85,8 @@ for chain in chains:
 # Qualify short legs
 short_put = ib.qualifyContracts(Option('SPX', expiry, short_put_strike, 'P', 'SMART', tradingClass=tc))[0]
 short_call = ib.qualifyContracts(Option('SPX', expiry, short_call_strike, 'C', 'SMART', tradingClass=tc))[0]
+if short_put is None or short_call is None:
+    raise RuntimeError(f'Short leg not found: put={short_put_strike} call={short_call_strike}')
 ```
 
 ### Step 4: Price the shorts
@@ -147,6 +149,8 @@ The 2:1 ratio only has positive expected value if you cut losers before max loss
 ```python
 long_put = ib.qualifyContracts(Option('SPX', expiry, long_put_strike, 'P', 'SMART', tradingClass=tc))[0]
 long_call = ib.qualifyContracts(Option('SPX', expiry, long_call_strike, 'C', 'SMART', tradingClass=tc))[0]
+if long_put is None or long_call is None:
+    raise RuntimeError(f'Long leg not found: put={long_put_strike} call={long_call_strike}')
 
 tickers = [ib.reqMktData(long_put), ib.reqMktData(long_call)]
 ib.sleep(3)

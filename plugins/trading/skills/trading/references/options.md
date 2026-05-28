@@ -51,7 +51,7 @@ opt = Option(
     tradingClass='SPXW'
 )
 qualified = ib.qualifyContracts(opt)
-if not qualified or qualified[0].conId == 0:
+if qualified[0] is None:
     raise RuntimeError(f'Contract does not exist: {opt}')
 contract = qualified[0]
 # contract.conId is now populated
@@ -80,7 +80,7 @@ SPX strikes come in 5-point increments:
 STRIKE_INCREMENT = 5
 
 def round_to_strike(value):
-    return int(round(value / STRIKE_INCREMENT) * STRIKE_INCREMENT)
+    return round(value / STRIKE_INCREMENT) * STRIKE_INCREMENT
 ```
 
 Example: SPX at 7473.5 → nearest strikes are 7470 and 7475.
@@ -117,7 +117,7 @@ def find_strike_by_delta(ib, expiry, tc, target_delta, right, spx_price, avail_s
 
     contracts = [Option('SPX', expiry, s, right, 'SMART', tradingClass=tc)
                  for s in scan_strikes]
-    qualified = [c for c in ib.qualifyContracts(*contracts) if c.conId > 0]
+    qualified = [c for c in ib.qualifyContracts(*contracts) if c is not None]
     if not qualified:
         return None, None
 

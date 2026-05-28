@@ -23,6 +23,9 @@ legs = [
     Option('SPX', expiry, s2, 'P', 'SMART', tradingClass='SPX'),
 ]
 qualified = ib.qualifyContracts(*legs)
+if any(c is None for c in qualified):
+    failed = [l.strike for l, c in zip(legs, qualified) if c is None]
+    raise RuntimeError(f'Box spread legs failed to qualify: {failed}')
 actions = ['BUY', 'SELL', 'SELL', 'BUY']
 
 bag = Contract(
