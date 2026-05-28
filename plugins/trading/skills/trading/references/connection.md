@@ -8,21 +8,28 @@ ib = IB()
 ib.connect('127.0.0.1', 4002, clientId=1, timeout=20)
 ```
 
-- Port **4002** = paper trading, **4001** = live
+- **Gateway** ports: **4002** = paper, **4001** = live
+- **TWS** ports: **7497** = paper, **7496** = live
 - **Always use `clientId=1`** — reusing the same ID prevents stale sessions leaking in IB Gateway
 - Always call `ib.disconnect()` when done
 
 ## Port Fallback
 
-When unsure which port is active, try both:
+Try all known ports — paper first, then live, across both TWS and Gateway:
 
 ```python
 from ib_async import IB
 ib = IB()
-try:
-    ib.connect('127.0.0.1', 4002, clientId=1, timeout=10)
-except ConnectionRefusedError:
-    ib.connect('127.0.0.1', 4001, clientId=1, timeout=10)
+connected = False
+for port in [7497, 4002, 7496, 4001]:
+    try:
+        ib.connect('127.0.0.1', port, clientId=1, timeout=10)
+        connected = True
+        break
+    except ConnectionRefusedError:
+        continue
+if not connected:
+    raise RuntimeError('Could not connect — start TWS or IB Gateway and enable API')
 ```
 
 ## Async Waits
