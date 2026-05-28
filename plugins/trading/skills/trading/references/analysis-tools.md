@@ -7,9 +7,10 @@ Preview the margin impact and commission of an order without placing it:
 ```python
 from ib_async import LimitOrder
 
+account = ...  # from AskUserQuestion — see connection.md Multi-Account Selection
 order = LimitOrder('BUY', 100, 300.0)
-order.account = 'UXXXXXXX3'     # required for multi-account setups
-order.tif = 'GTC'              # required when market is closed
+order.account = account            # required for multi-account setups
+order.tif = 'GTC'                  # required when market is closed
 
 state = ib.whatIfOrder(contract, order)
 print(f'Margin before:  ${float(state.initMarginBefore):,.2f}')
@@ -73,25 +74,26 @@ if price_result and not isinstance(price_result, list):
 ### Per Account
 
 ```python
-pnl = ib.reqPnL('UXXXXXXX3')
+account = ...  # from AskUserQuestion — see connection.md Multi-Account Selection
+pnl = ib.reqPnL(account)
 ib.sleep(2)
 print(f'Daily P&L:      ${pnl.dailyPnL:,.2f}')
 print(f'Unrealized P&L: ${pnl.unrealizedPnL:,.2f}')
 print(f'Realized P&L:   ${pnl.realizedPnL:,.2f}')
-ib.cancelPnL('UXXXXXXX3')  # always cancel when done
+ib.cancelPnL(account)  # always cancel when done
 ```
 
 ### Per Position
 
 ```python
-pnl_single = ib.reqPnLSingle('UXXXXXXX3', '', conId=265598)  # AAPL conId
+pnl_single = ib.reqPnLSingle(account, '', conId=265598)  # AAPL conId
 ib.sleep(2)
 print(f'Position: {pnl_single.position}')
 print(f'Daily P&L: ${pnl_single.dailyPnL:,.2f}')
 print(f'Unrealized: ${pnl_single.unrealizedPnL:,.2f}')
 print(f'Realized: ${pnl_single.realizedPnL:,.2f}')
 print(f'Market value: ${pnl_single.value:,.2f}')
-ib.cancelPnLSingle('UXXXXXXX3', '', conId=265598)
+ib.cancelPnLSingle(account, '', conId=265598)
 ```
 
 ## Completed Orders (Order History)

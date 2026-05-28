@@ -31,7 +31,8 @@ for tag in key_tags:
 The summary tags (e.g. `TotalCashValue`) report in the base currency. To see cash per currency, use `CashBalance`:
 
 ```python
-for v in ib.accountValues(account='UXXXXXXX1'):
+account = ...  # from AskUserQuestion — see connection.md Multi-Account Selection
+for v in ib.accountValues(account=account):
     if v.tag == 'CashBalance' and v.currency != 'BASE':
         print(f'  {v.currency}: ${float(v.value):,.2f}')
 ```

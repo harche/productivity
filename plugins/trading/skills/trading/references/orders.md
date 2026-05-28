@@ -55,11 +55,13 @@ ib.cancelMktData(bag)
 
 ## Submitting a Combo Order
 
+**Always use `tif='GTC'`** — the gateway may override DAY orders and reject them with error 10349.
+
 ```python
 # Credit spread: you're "buying" a combo that pays you credit
 # Entry price is negative (you receive money)
 entry_price = round_to_tick(combo_ask)  # use ask for entry
-order = LimitOrder('BUY', quantity, entry_price)
+order = LimitOrder('BUY', quantity, entry_price, tif='GTC')
 trade = ib.placeOrder(bag, order)
 ```
 
