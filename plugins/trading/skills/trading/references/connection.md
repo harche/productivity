@@ -34,18 +34,18 @@ if not connected:
 
 ## Market Data Type
 
-**Always call `ib.reqMarketDataType(4)` after connecting.** Type 1 (live real-time) does not deliver bid/ask for options via the API, even with valid subscriptions. Types 2–4 work correctly. The official ib_async option_chain notebook uses type 4.
+**Always call `ib.reqMarketDataType(2)` after connecting.** Type 2 (frozen) auto-switches to live streaming during market hours, and falls back to last known bid/ask/greeks when markets are closed or between sessions. This makes it the safest default — your code works regardless of market state.
 
 ```python
-ib.reqMarketDataType(4)  # delayed-frozen — works for all instruments
+ib.reqMarketDataType(2)  # frozen — live when open, last known when closed
 ```
 
 | Type | Name | Behavior |
 |------|------|----------|
-| 1 | Live | Streaming real-time — **broken for options bid/ask via API** |
-| 2 | Frozen | Last data at market close — returns bid/ask correctly |
+| 1 | Live | Streaming real-time — only returns data during market hours |
+| 2 | Frozen | **Recommended default** — live when open, last known when closed. Returns bid/ask and greeks |
 | 3 | Delayed | 15-20 min delayed — auto-upgrades to live if subscribed |
-| 4 | Delayed-Frozen | Delayed + frozen fallback — **recommended default** |
+| 4 | Delayed-Frozen | Delayed + frozen fallback |
 
 ## Async Waits
 
