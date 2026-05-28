@@ -32,6 +32,21 @@ if not connected:
     raise RuntimeError('Could not connect — start TWS or IB Gateway and enable API')
 ```
 
+## Market Data Type
+
+**Always call `ib.reqMarketDataType(4)` after connecting.** Type 1 (live real-time) does not deliver bid/ask for options via the API, even with valid subscriptions. Types 2–4 work correctly. The official ib_async option_chain notebook uses type 4.
+
+```python
+ib.reqMarketDataType(4)  # delayed-frozen — works for all instruments
+```
+
+| Type | Name | Behavior |
+|------|------|----------|
+| 1 | Live | Streaming real-time — **broken for options bid/ask via API** |
+| 2 | Frozen | Last data at market close — returns bid/ask correctly |
+| 3 | Delayed | 15-20 min delayed — auto-upgrades to live if subscribed |
+| 4 | Delayed-Frozen | Delayed + frozen fallback — **recommended default** |
+
 ## Async Waits
 
 Use `ib.sleep(N)`, never `time.sleep(N)`. ib_async is event-driven — `time.sleep` blocks the event loop and prevents data from arriving.
