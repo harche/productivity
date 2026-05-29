@@ -34,16 +34,17 @@ if not connected:
 
 ## Market Data Type
 
-**Always call `ib.reqMarketDataType(2)` after connecting.** Type 2 (frozen) auto-switches to live streaming during market hours, and falls back to last known bid/ask/greeks when markets are closed or between sessions. This makes it the safest default — your code works regardless of market state.
+**Always call `ib.reqMarketDataType()` after connecting.** Use type 1 (live) when placing orders during market hours — you need real-time prices. Use type 2 (frozen) only for research or off-hours work where stale data is acceptable.
 
 ```python
-ib.reqMarketDataType(2)  # frozen — live when open, last known when closed
+ib.reqMarketDataType(1)  # live — use when trading during market hours
+ib.reqMarketDataType(2)  # frozen — use for research or off-hours (falls back to last known)
 ```
 
-| Type | Name | Behavior |
-|------|------|----------|
-| 1 | Live | Streaming real-time — only returns data during market hours |
-| 2 | Frozen | **Recommended default** — live when open, last known when closed. Returns bid/ask and greeks |
+| Type | Name | When to use |
+|------|------|-------------|
+| 1 | Live | **Order placement, active trading** — streaming real-time, market hours only |
+| 2 | Frozen | **Research, off-hours** — live when open, last known when closed |
 | 3 | Delayed | 15-20 min delayed — auto-upgrades to live if subscribed |
 | 4 | Delayed-Frozen | Delayed + frozen fallback |
 

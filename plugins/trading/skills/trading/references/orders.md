@@ -43,9 +43,8 @@ bag = Contract(
 Combo bid/ask is the **spread price**, not individual legs:
 
 ```python
-ticker = ib.reqMktData(bag)
-ib.sleep(3)
-# bid/ask here is the net price of the whole combo
+ticker = ib.reqMktData(bag, '', False, False)
+ib.sleep(8)  # combos need 6-8s to populate — 3s returns NaN
 combo_bid = ticker.bid   # what you'd receive selling
 combo_ask = ticker.ask   # what you'd pay buying
 ib.cancelMktData(bag)
