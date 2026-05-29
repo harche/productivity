@@ -9,68 +9,35 @@ SPX has two trading classes:
 | **SPXW** | Weeklies (Mon–Fri, daily 0DTE) | `SPXW  260527P07450000` |
 | **SPX** | Monthlies (3rd Friday) | `SPX   260620P07450000` |
 
-## Finding the Right Trading Class for an Expiry
+The `tradingClass` field in the response tells you which one you got.
 
-```python
-from ib_async import Index
-spx = ib.qualifyContracts(Index('SPX', 'CBOE'))[0]
-chains = ib.reqSecDefOptParams(spx.symbol, '', spx.secType, spx.conId)
+## Finding Available Expirations
 
-expiry = '20260527'
-trading_class = 'SPXW'  # default
-for chain in chains:
-    if chain.exchange == 'SMART' and expiry in chain.expirations:
-        trading_class = chain.tradingClass
-        break
+```bash
+curl -sk -X POST "https://localhost:5000/v1/api/iserver/secdef/search" \
+  -H "Content-Type: application/json" \
+  -d '{"symbol": "SPX", "secType": "OPT"}'
 ```
 
-Always check `reqSecDefOptParams` — if the expiry isn't in any chain, the contract doesn't exist.
-
-## Available Expirations
-
-```python
-chains = ib.reqSecDefOptParams(spx.symbol, '', spx.secType, spx.conId)
-for chain in chains:
-    if chain.exchange == 'SMART':
-        print(f'{chain.tradingClass}: {sorted(chain.expirations)[:10]}...')
-```
-
-Use this to verify an expiry exists before building a strategy.
-
-## Qualifying a Contract
-
-```python
-from ib_async import Option
-opt = Option(
-    symbol='SPX',
-    lastTradeDateOrContractMonth=expiry,  # '20260527'
-    strike=7450,
-    right='P',          # 'P' or 'C'
-    exchange='SMART',
-    currency='USD',
-    tradingClass='SPXW'
-)
-qualified = ib.qualifyContracts(opt)
-if qualified[0] is None:
-    raise RuntimeError(f'Contract does not exist: {opt}')
-contract = qualified[0]
-# contract.conId is now populated
-```
-
-**Always qualify before use** — it fills in `conId` and validates the contract exists.
+Response includes a `sections` array. The OPT section has a `months` field with available expirations like `"MAY26;JUN26;JUL26;AUG26;..."`.
 
 ## Available Strikes
 
-```python
-chains = ib.reqSecDefOptParams(spx.symbol, '', spx.secType, spx.conId)
-for chain in chains:
-    if chain.exchange == 'SMART' and chain.tradingClass == 'SPXW':
-        strikes = sorted(chain.strikes)
-        print(f'Strikes: {strikes[:5]}...{strikes[-5:]}')
-        break
+```bash
+curl -sk "https://localhost:5000/v1/api/iserver/secdef/strikes?conid=416904&sectype=OPT&month=JUN26&exchange=SMART"
 ```
 
-Use this to verify a strike exists before trying to qualify it.
+Returns `{"call": [7000, 7005, ...], "put": [7000, 7005, ...]}`.
+
+## Getting a Specific Option Contract
+
+```bash
+curl -sk "https://localhost:5000/v1/api/iserver/secdef/info?conid=416904&sectype=OPT&month=JUN26&exchange=SMART&strike=7450&right=P"
+```
+
+Returns an array of contracts matching the criteria. Each has `conid`, `desc2` (human-readable like `"JUN 27 '26 7450 Put"`), `maturityDate`, `tradingClass`, `multiplier`.
+
+Multiple results = multiple expiry dates within that month. Pick by `maturityDate`.
 
 ## Strike Rounding
 
@@ -83,88 +50,88 @@ def round_to_strike(value):
     return round(value / STRIKE_INCREMENT) * STRIKE_INCREMENT
 ```
 
-Example: SPX at 7473.5 → nearest strikes are 7470 and 7475.
-
 ## Finding Strikes by Delta
 
-Professional strike selection uses delta, not fixed percentages. Common targets:
-
-| Target | Delta (put) | Delta (call) | Approx. probability OTM |
-|--------|-------------|--------------|------------------------|
-| 1 SD   | -0.16       | +0.16        | ~84%                   |
-| Conservative | -0.10  | +0.10        | ~90%                   |
-| Aggressive   | -0.25  | +0.25        | ~75%                   |
-
-### Scan a range of strikes for target delta
+Scan candidate strikes and pick the one closest to target delta:
 
 ```python
-STRIKE_INC = 5
+import requests, time, urllib3
+urllib3.disable_warnings()
 
-def find_strike_by_delta(ib, expiry, tc, target_delta, right, spx_price, avail_strikes):
-    """Find the strike closest to target_delta.
-    
-    Args:
-        target_delta: negative for puts (e.g. -0.16), positive for calls (e.g. 0.16)
-        right: 'P' or 'C'
-    Returns:
-        (strike, actual_delta) or (None, None) if Greeks unavailable
+BASE = "https://localhost:5000/v1/api"
+
+def find_strike_by_delta(underlying_conid, month, right, target_delta, spx_price):
+    """Find strike closest to target_delta.
+    target_delta: negative for puts (e.g. -0.16), positive for calls (e.g. 0.16)
     """
-    # Scan 200 points around ATM in 5-point increments
-    scan_low = round_to_strike(spx_price - 200)
-    scan_high = round_to_strike(spx_price + 200)
-    scan_strikes = [s for s in range(scan_low, scan_high + 1, STRIKE_INC)
-                    if s in avail_strikes]
-
-    contracts = [Option('SPX', expiry, s, right, 'SMART', tradingClass=tc)
-                 for s in scan_strikes]
-    qualified = [c for c in ib.qualifyContracts(*contracts) if c is not None]
-    if not qualified:
-        return None, None
-
-    tickers = [ib.reqMktData(c) for c in qualified]
-    ib.sleep(5)
-
-    best_strike, best_delta, best_diff = None, None, float('inf')
-    for t in tickers:
-        g = t.modelGreeks
-        if g and g.delta is not None:
-            diff = abs(g.delta - target_delta)
-            if diff < best_diff:
-                best_diff = diff
-                best_strike = t.contract.strike
-                best_delta = g.delta
-
-    for t in tickers:
-        ib.cancelMktData(t.contract)
-
+    # Get available strikes
+    strikes_data = requests.get(
+        f"{BASE}/iserver/secdef/strikes",
+        params={"conid": underlying_conid, "sectype": "OPT", "month": month, "exchange": "SMART"},
+        verify=False
+    ).json()
+    
+    strike_list = strikes_data["put"] if right == "P" else strikes_data["call"]
+    
+    # Narrow to ~200 points around ATM
+    candidates = [s for s in strike_list if abs(s - spx_price) <= 200]
+    
+    # Get conids for candidate strikes
+    contracts = []
+    for strike in candidates:
+        resp = requests.get(
+            f"{BASE}/iserver/secdef/info",
+            params={"conid": underlying_conid, "sectype": "OPT", "month": month,
+                    "exchange": "SMART", "strike": strike, "right": right},
+            verify=False
+        ).json()
+        if isinstance(resp, list) and resp:
+            contracts.append({"conid": resp[0]["conid"], "strike": strike})
+    
+    # Get deltas via snapshot
+    conids = ",".join(str(c["conid"]) for c in contracts)
+    requests.get(f"{BASE}/iserver/marketdata/snapshot?conids={conids}&fields=7308", verify=False)
+    time.sleep(3)
+    data = requests.get(f"{BASE}/iserver/marketdata/snapshot?conids={conids}&fields=7308", verify=False).json()
+    
+    best_strike, best_delta, best_diff = None, None, float("inf")
+    for item in data:
+        delta_val = item.get("7308")
+        if delta_val is None:
+            continue
+        delta = float(str(delta_val).lstrip("CHT"))
+        diff = abs(delta - target_delta)
+        conid = item["conid"]
+        strike = next(c["strike"] for c in contracts if c["conid"] == conid)
+        if diff < best_diff:
+            best_diff = diff
+            best_strike = strike
+            best_delta = delta
+    
     return best_strike, best_delta
 ```
 
-### Find both sides for an iron condor
+### Common delta targets
 
-```python
-# 16-delta iron condor: ~1 standard deviation on each side
-put_strike, put_delta = find_strike_by_delta(
-    ib, expiry, tc, -0.16, 'P', spx_price, avail_strikes)
-call_strike, call_delta = find_strike_by_delta(
-    ib, expiry, tc, 0.16, 'C', spx_price, avail_strikes)
-
-if put_strike and call_strike:
-    print(f'Short put:  {put_strike} (delta {put_delta:.3f})')
-    print(f'Short call: {call_strike} (delta {call_delta:.3f})')
-else:
-    print('Greeks unavailable — fall back to percentage-based strikes')
-    # See strategies.md Step 2 for percentage fallback
-```
+| Target | Delta (put) | Delta (call) | Approx. probability OTM |
+|--------|-------------|--------------|------------------------|
+| 1 SD | -0.16 | +0.16 | ~84% |
+| Conservative | -0.10 | +0.10 | ~90% |
+| Aggressive | -0.25 | +0.25 | ~75% |
 
 ### Fallback when Greeks are unavailable
 
-Greeks require live market data. During off-hours or without data subscriptions, `modelGreeks` returns None. Fall back to the percentage-based approach and warn the user:
-
 ```python
-if put_strike is None:
+if best_strike is None:
     offset_pct = 0.003  # 0.3% ≈ rough 16-delta proxy for short-dated SPX
     put_strike = round_to_strike(spx_price * (1 - offset_pct))
     call_strike = round_to_strike(spx_price * (1 + offset_pct))
-    print(f'WARNING: Using {offset_pct*100:.1f}% offset (Greeks unavailable)')
+    print(f"WARNING: Using {offset_pct*100:.1f}% offset (Greeks unavailable)")
 ```
+
+## Gotchas
+
+- `/iserver/secdef/info` can return transient 500 errors — retry up to 2 times.
+- Month format is `MAY26`, `JUN26`, `JAN27` — NOT `20260527`.
+- Multiple results from `/iserver/secdef/info` mean multiple expiry dates — filter by `maturityDate`.
+- The `strike` parameter must exactly match an available strike — use `/iserver/secdef/strikes` first.

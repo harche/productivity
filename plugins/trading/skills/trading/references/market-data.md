@@ -1,99 +1,116 @@
 # Market Data & Pricing
 
-## Requesting Prices
+## Requesting Prices (Two-Call Pattern)
 
-```python
-ticker = ib.reqMktData(contract)
-ib.sleep(3)
-# Read prices
-bid = ticker.bid
-ask = ticker.ask
-last = ticker.last
-close = ticker.close  # previous close
-# Clean up
-ib.cancelMktData(contract)
+Snapshots require two calls — first primes the subscription, second reads data:
+
+```bash
+# Prime
+curl -sk "https://localhost:5000/v1/api/iserver/marketdata/snapshot?conids=265598&fields=31,84,86"
+sleep 3
+# Read
+curl -sk "https://localhost:5000/v1/api/iserver/marketdata/snapshot?conids=265598&fields=31,84,86"
 ```
 
-**Wait at least 3 seconds** after `reqMktData` — data doesn't arrive instantly.
-
-**Always cancel** when done to avoid subscription leaks.
-
-## Invalid Prices
-
-ib_async uses two sentinels for missing data:
-
-| Value | Meaning | Check |
-|-------|---------|-------|
-| `nan` | Field not available | `util.isNan(val)` |
-| `-1` | Empty price (market closed) | `val == -1` |
-
-**Both must be treated as missing.** Use this helper:
+Multiple contracts: comma-separated conids.
 
 ```python
-from ib_async import util
+import requests, time, urllib3
+urllib3.disable_warnings()
 
-def valid_price(val):
-    if util.isNan(val) or val == -1:
+BASE = "https://localhost:5000/v1/api"
+conids = "265598,272093"
+fields = "31,84,86"
+url = f"{BASE}/iserver/marketdata/snapshot?conids={conids}&fields={fields}"
+
+requests.get(url, verify=False)  # prime
+time.sleep(2.5)
+data = requests.get(url, verify=False).json()  # read
+```
+
+**Use `/iserver/marketdata/snapshot`**, NOT `/md/snapshot`.
+
+## Snapshot Field IDs
+
+| Field | Description |
+|-------|-------------|
+| 31 | Last price |
+| 55 | Symbol |
+| 70 | High |
+| 71 | Low |
+| 82 | Change |
+| 83 | Change % |
+| 84 | Bid price |
+| 85 | Bid size |
+| 86 | Ask price |
+| 87 | Volume |
+| 7295 | Open |
+| 7296 | Close |
+| 7308 | Delta |
+| 7309 | Gamma |
+| 7310 | Theta |
+| 7311 | Vega |
+| 7633 | Implied Volatility |
+
+## Price Parsing
+
+Snapshot values are strings that may have prefixes:
+
+| Prefix | Meaning |
+|--------|---------|
+| `C` | Derived from close (e.g. `"C39.36"`) |
+| `H` | Halted |
+
+Strip the prefix before converting to float:
+
+```python
+def parse_price(val):
+    if val is None:
         return None
-    return val
+    s = str(val).lstrip("CHT")
+    try:
+        return float(s)
+    except (ValueError, TypeError):
+        return None
 ```
 
-**Fallback:** When bid/ask are unavailable (market closed), use `ticker.close` (previous session close) as an estimate.
+## Staleness Detection
 
-## Delayed Data Fallback
-
-If you get error 10089 ("requires additional subscription"), fall back to delayed data. **Always tell the user the prices are delayed.**
+Each snapshot includes an `_updated` timestamp (epoch milliseconds). Check if data is stale:
 
 ```python
-ib.reqMarketDataType(3)  # 3 = delayed
-ticker = ib.reqMktData(contract)
-ib.sleep(5)
-# Prices arrive in ticker.last, ticker.bid, ticker.ask as usual
-# IMPORTANT: inform the user these are delayed (typically 15 min)
-```
+import time
 
-Reset to live data with `ib.reqMarketDataType(1)` when done.
+updated_ms = item.get("_updated", 0)
+age_seconds = (time.time() * 1000 - updated_ms) / 1000
+if age_seconds > 10:
+    print(f"WARNING: snapshot is {age_seconds:.0f}s old")
+```
 
 ## Greeks
 
-Greeks are on `ticker.modelGreeks` after requesting market data:
+Request Greeks via snapshot fields 7308-7311 and 7633:
 
-```python
-ticker = ib.reqMktData(contract)
-ib.sleep(3)
-g = ticker.modelGreeks
-if g:
-    delta = g.delta      # negative for puts, positive for calls
-    gamma = g.gamma
-    theta = g.theta
-    vega = g.vega
-    iv = g.impliedVol
+```bash
+curl -sk "https://localhost:5000/v1/api/iserver/marketdata/snapshot?conids=OPTION_CONID&fields=84,86,7308,7309,7310,7311,7633"
 ```
 
-Greeks may be `None` if the pricing model hasn't run yet — always check before use.
-
-## Multiple Contracts
-
-Request in parallel for speed:
-
-```python
-tickers = [ib.reqMktData(c) for c in contracts]
-ib.sleep(3)
-for t in tickers:
-    print(t.contract.localSymbol, valid_price(t.bid), valid_price(t.ask))
-for t in tickers:
-    ib.cancelMktData(t.contract)
-```
+Parse with `parse_price()` — Greek values may also have string prefixes.
 
 ## Price Rounding
 
-Options prices must be rounded to the tick size:
+SPX option prices must be rounded to 0.05 tick size:
 
 ```python
-TICK_SIZE = 0.05  # SPX options on CBOE/SMART
+TICK_SIZE = 0.05
 
 def round_to_tick(price, tick=0.05):
     return round(round(price / tick) * tick, 2)
 ```
 
-The double-round prevents floating-point drift.
+## Gotchas
+
+- First snapshot call always returns minimal data — always do the two-call pattern.
+- Combo snapshots need 6-8 seconds to populate, not 2.5.
+- Field values are strings, not floats — always parse.
+- During market close, some fields return `None` or are absent entirely.

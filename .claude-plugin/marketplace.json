@@ -45,9 +45,9 @@
     {
       "name": "trading",
       "source": "./plugins/trading",
-      "description": "Monitor portfolio, check positions, place trades, and analyze account performance on Interactive Brokers. Also: historical charts, stock lookup, scanners, news, what-if orders, options math",
+      "description": "Monitor portfolio, check positions, place trades, and analyze account performance on Interactive Brokers. Also: historical charts, stock lookup, scanners, options pricing",
       "category": "misc",
-      "version": "5.3.3",
+      "version": "6.0.0",
       "dependencies": ["web-browser"]
     },
     {

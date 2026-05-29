@@ -10,36 +10,29 @@ Use https://www.boxtrades.com/ to find optimal strikes, expirations, and implied
 
 You pay upfront, receive strike width at expiry. Equivalent to lending money at an implied rate.
 
+Legs: `[call@s1 BUY, call@s2 SELL, put@s1 SELL, put@s2 BUY]`
+
 ```python
-# Legs: [call@s1, call@s2, put@s1, put@s2]
-# Actions: BUY, SELL, SELL, BUY
 s1, s2 = 7400, 7500  # strike width = 100 points = $10,000 per contract
-expiry = '20260820'   # ~3 months out
+month = "AUG26"
 
-legs = [
-    Option('SPX', expiry, s1, 'C', 'SMART', tradingClass='SPX'),
-    Option('SPX', expiry, s2, 'C', 'SMART', tradingClass='SPX'),
-    Option('SPX', expiry, s1, 'P', 'SMART', tradingClass='SPX'),
-    Option('SPX', expiry, s2, 'P', 'SMART', tradingClass='SPX'),
-]
-qualified = ib.qualifyContracts(*legs)
-if any(c is None for c in qualified):
-    failed = [l.strike for l, c in zip(legs, qualified) if c is None]
-    raise RuntimeError(f'Box spread legs failed to qualify: {failed}')
-actions = ['BUY', 'SELL', 'SELL', 'BUY']
+# Get conids for all 4 legs
+c1 = get_contract(s1, "C", month)  # see options.md get_contract
+c2 = get_contract(s2, "C", month)
+p1 = get_contract(s1, "P", month)
+p2 = get_contract(s2, "P", month)
 
-bag = Contract(
-    symbol='SPX', secType='BAG', exchange='SMART', currency='USD',
-    comboLegs=[ComboLeg(conId=c.conId, ratio=1, action=a, exchange='SMART')
-               for c, a in zip(qualified, actions)]
-)
+# Build conidex: BUY c1, SELL c2, SELL p1, BUY p2
+conidex = f"{SPX_CONID};;;{c1['conid']}/1,{c2['conid']}/-1,{p1['conid']}/-1,{p2['conid']}/1"
 ```
 
 ## Short Box (Borrowing)
 
-You receive upfront, pay strike width at expiry. Equivalent to borrowing.
+You receive upfront, pay strike width at expiry. Reverse all ratios:
 
-Reverse all actions: `['SELL', 'BUY', 'BUY', 'SELL']`
+```python
+conidex = f"{SPX_CONID};;;{c1['conid']}/-1,{c2['conid']}/1,{p1['conid']}/1,{p2['conid']}/-1"
+```
 
 ## Pricing / Implied Rate
 
@@ -51,21 +44,9 @@ interest = width - cost  # 1.50
 annualized_rate = (interest / cost) * (365 / days_to_expiry) * 100
 ```
 
-## Checking Margin Impact
-
-```python
-order = LimitOrder('BUY', 1, credit_price, tif='GTC')
-margin = ib.whatIfOrder(bag, order)
-ib.sleep(3)
-print(f'Init Margin: {margin.initMarginChange}')
-print(f'Maint Margin: {margin.maintMarginChange}')
-```
-
-See [orders.md](orders.md) for `whatIfOrder` details. Always use `tif='GTC'`.
-
 ## Gotchas
 
-- **Use monthly trading class (`SPX`)** for box spreads, not weeklies (`SPXW`) — more liquidity at longer expirations
-- Box spreads are European-style (SPX) — no early exercise risk
-- IBKR may flag box spreads as "guaranteed to lose" if priced at exactly the width — price slightly below
-- **Always use `tif='GTC'`** for box spread orders — the gateway may override DAY and reject
+- **Use monthly trading class (`SPX`)** for box spreads, not weeklies (`SPXW`) — more liquidity at longer expirations. When using `/iserver/secdef/info`, check the `tradingClass` field.
+- Box spreads are European-style (SPX) — no early exercise risk.
+- IBKR may flag box spreads as "guaranteed to lose" if priced at exactly the width — price slightly below.
+- **Always use `tif: "GTC"`** for box spread orders.

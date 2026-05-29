@@ -5,149 +5,161 @@
 ## Single Contract Order
 
 ```python
-from ib_async import LimitOrder
-order = LimitOrder('BUY', 10, 150.00)
-trade = ib.placeOrder(contract, order)
-ib.sleep(30)  # wait for fill
-print(f'Status: {trade.orderStatus.status}, Filled: {trade.filled()}')
+import requests, urllib3
+urllib3.disable_warnings()
+
+BASE = "https://localhost:5000/v1/api"
+account_id = "U8265837"
+
+body = {"orders": [{
+    "conid": 265598,
+    "orderType": "LMT",
+    "side": "BUY",
+    "price": 150.00,
+    "quantity": 10,
+    "tif": "DAY"
+}]}
+
+resp = requests.post(f"{BASE}/iserver/account/{account_id}/orders",
+                     json=body, verify=False).json()
 ```
 
-## Combo (BAG) Contracts
+## Confirmation Chain
 
-A BAG contract bundles multiple legs into one order. IBKR prices and fills it as a unit.
+Order responses may require confirmation. If the response contains a `replyId`, confirm it:
 
 ```python
-from ib_async import Contract, ComboLeg
-
-bag = Contract(
-    symbol='SPX',
-    secType='BAG',
-    exchange='SMART',
-    currency='USD',
-    comboLegs=[
-        ComboLeg(conId=long_put.conId,   ratio=1, action='BUY',  exchange='SMART'),
-        ComboLeg(conId=short_put.conId,  ratio=1, action='SELL', exchange='SMART'),
-        ComboLeg(conId=short_call.conId, ratio=1, action='SELL', exchange='SMART'),
-        ComboLeg(conId=long_call.conId,  ratio=1, action='BUY',  exchange='SMART'),
-    ]
-)
+def submit_with_confirmation(account_id, order_body, max_confirms=5):
+    resp = requests.post(f"{BASE}/iserver/account/{account_id}/orders",
+                         json=order_body, verify=False).json()
+    
+    for _ in range(max_confirms):
+        if not isinstance(resp, list):
+            break
+        item = resp[0]
+        
+        if "order_id" in item or "orderId" in item:
+            order_id = item.get("order_id") or item.get("orderId")
+            return order_id
+        
+        if "id" in item:  # replyId confirmation needed
+            reply_id = item["id"]
+            resp = requests.post(f"{BASE}/iserver/reply/{reply_id}",
+                                 json={"confirmed": True}, verify=False).json()
+            continue
+        break
+    
+    return None
 ```
 
-- **Leg order matters** — convention: Long Put, Short Put, Short Call, Long Call
-- **Ratio is always 1** — quantity goes on the order, not the legs
-- **Actions are per-leg**: independent of the overall order direction
-- **For closing**, reverse all actions: BUY→SELL, SELL→BUY
+## Combo Orders (conidex)
 
-## Combo Pricing
+Combos use the `conidex` format instead of `conid`:
 
-Combo bid/ask is the **spread price**, not individual legs:
+```
+"underlyingConid;;;legConid1/ratio1,legConid2/ratio2,..."
+```
+
+Positive ratio = BUY, negative = SELL.
 
 ```python
-ticker = ib.reqMktData(bag, '', False, False)
-ib.sleep(8)  # combos need 6-8s to populate — 3s returns NaN
-combo_bid = ticker.bid   # what you'd receive selling
-combo_ask = ticker.ask   # what you'd pay buying
-ib.cancelMktData(bag)
+# Iron butterfly: BUY long put, SELL short put, SELL short call, BUY long call
+conidex = f"416904;;;{lp_conid}/1,{sp_conid}/-1,{sc_conid}/-1,{lc_conid}/1"
+
+body = {"orders": [{
+    "conidex": conidex,
+    "orderType": "LMT",
+    "side": "BUY",
+    "price": -72.20,  # negative = credit received
+    "quantity": 1,
+    "tif": "GTC"  # REQUIRED for combos
+}]}
 ```
 
-**Negative prices are normal** for credit spreads — they represent money received.
+- **Leg order**: Long Put, Short Put, Short Call, Long Call
+- **Always use `tif: "GTC"` for combos** — DAY orders may be rejected (error 10349)
+- **Negative prices are normal** for credit spreads — you receive money
+- **For closing**, reverse all ratios: `/1` becomes `/-1` and vice versa
 
-## Submitting a Combo Order
+## Bracket Orders
 
-**Always use `tif='GTC'`** — the gateway may override DAY orders and reject them with error 10349.
+Submit as an array of 3 orders. Child orders reference the parent:
 
 ```python
-# Credit spread: you're "buying" a combo that pays you credit
-# Entry price is negative (you receive money)
-entry_price = round_to_tick(combo_ask)  # use ask for entry
-order = LimitOrder('BUY', quantity, entry_price, tif='GTC')
-trade = ib.placeOrder(bag, order)
+body = {"orders": [
+    {  # Parent: entry
+        "conid": 265598,
+        "orderType": "LMT",
+        "side": "BUY",
+        "price": 150.00,
+        "quantity": 1,
+        "tif": "DAY"
+    },
+    {  # Child: profit target
+        "conid": 265598,
+        "orderType": "LMT",
+        "side": "SELL",
+        "price": 165.00,
+        "quantity": 1,
+        "tif": "GTC",
+        "parentId": "PLACEHOLDER",
+        "isClose": True
+    },
+    {  # Child: stop-loss
+        "conid": 265598,
+        "orderType": "STP",
+        "side": "SELL",
+        "price": 140.00,
+        "quantity": 1,
+        "tif": "GTC",
+        "parentId": "PLACEHOLDER",
+        "isClose": True
+    }
+]}
 ```
 
-## Bracket Orders (Parent + Profit Target + Stop-Loss)
+## Order Types
 
-```python
-import time
-
-# 1. Entry (parent) — don't transmit yet
-entry = LimitOrder('BUY', 1, entry_price)
-entry.transmit = False
-entry_trade = ib.placeOrder(bag, entry)
-
-# 2. Profit target (child) — transmit triggers parent
-profit = LimitOrder('SELL', 1, profit_price)
-profit.parentId = entry.orderId
-profit.transmit = True
-ib.placeOrder(bag, profit)
-```
-
-- **Parent must have `transmit=False`** initially
-- **Child's `transmit=True` triggers parent transmission**
-- `parentId` is the orderId assigned after `placeOrder()` returns
-
-## OCA Groups (One-Cancels-All)
-
-Link profit target and stop-loss so one cancels the other:
-
-```python
-oca_group = f'oca_SPX_{int(time.time())}'
-
-profit_order = LimitOrder('SELL', 1, profit_price)
-profit_order.ocaGroup = oca_group
-profit_order.ocaType = 1  # cancel others when this fills
-ib.placeOrder(bag, profit_order)
-
-stop_order = Order()
-stop_order.action = 'SELL'
-stop_order.totalQuantity = 1
-stop_order.orderType = 'STP LMT'
-stop_order.auxPrice = stop_trigger  # stop trigger price
-stop_order.lmtPrice = stop_limit    # limit after triggered
-stop_order.ocaGroup = oca_group
-stop_order.ocaType = 1
-ib.placeOrder(bag, stop_order)
-```
+| orderType | Description |
+|-----------|-------------|
+| `LMT` | Limit |
+| `MKT` | Market (NEVER for options) |
+| `STP` | Stop |
+| `STP_LIMIT` | Stop limit (`price` = limit, `auxPrice` = stop trigger) |
+| `MIDPRICE` | Midpoint |
+| `TRAIL` | Trailing stop |
+| `MOC` | Market on close |
+| `LOC` | Limit on close |
 
 ## Cancel & Modify
 
-```python
+```bash
 # Cancel
-ib.cancelOrder(trade.order)
+curl -sk -X DELETE "https://localhost:5000/v1/api/iserver/account/ACCOUNT_ID/order/ORDER_ID"
 
-# Modify price
-trade.order.lmtPrice = new_price
-ib.placeOrder(trade.contract, trade.order)
-
-# List open orders
-orders = ib.openOrders()
-trades = ib.openTrades()
+# Modify
+curl -sk -X POST "https://localhost:5000/v1/api/iserver/account/ACCOUNT_ID/order/ORDER_ID" \
+  -H "Content-Type: application/json" \
+  -d '{"price": 155.00, "quantity": 10}'
 ```
 
-## Wait for Fill
+## List Open Orders
 
-```python
-def wait_for_fill(ib, trade, timeout=40):
-    for _ in range(timeout):
-        ib.sleep(1)
-        if trade.orderStatus.status == 'Filled':
-            return True
-    return False
+```bash
+curl -sk https://localhost:5000/v1/api/iserver/account/orders
 ```
 
-## What-If Margin
+## Poll for Fill
 
-Use `ib.whatIfOrder()` — it returns margin impact without placing an order:
-
-```python
-order = LimitOrder('BUY', 1, entry_price, tif='GTC')
-margin = ib.whatIfOrder(contract, order)
-ib.sleep(3)
-print(f'Init Margin:  {margin.initMarginChange}')
-print(f'Maint Margin: {margin.maintMarginChange}')
-print(f'Equity:       {margin.equityWithLoanChange}')
+```bash
+curl -sk "https://localhost:5000/v1/api/iserver/account/order/status/ORDER_ID"
 ```
 
-- **Use `tif='GTC'`** — the gateway may override DAY orders and reject them (error 10349)
-- Works with BAG/combo contracts
-- Works outside market hours
-- No need to cancel — `whatIfOrder` doesn't place a real order
+Check `status` field: `Submitted`, `Filled`, `Cancelled`, `Inactive`.
+
+## Gotchas
+
+- Always handle the confirmation chain — most orders return at least one `replyId`.
+- `conidex` and `conid` are mutually exclusive — use one or the other.
+- Order `side` is the overall direction: `BUY` to open a credit spread (you receive the combo).
+- Modify response also requires confirmation chain handling.

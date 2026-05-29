@@ -15,19 +15,27 @@ Default recommendation: **Strategy 3** — best risk-adjusted returns.
 
 Strategies 5-6 use delta-based strike selection (see [options.md](options.md) `find_strike_by_delta`). Preferred over percentage-based when Greeks are available — delta adapts to current volatility.
 
+For pre-trade event checks, use the `financial-research:economic-data` skill to check VIX, FOMC dates, CPI releases, etc.
+
 ## Constructing an Iron Butterfly / Condor
 
 ### Step 1: Get SPX price
 
 ```python
-from ib_async import IB, Index, Option, Contract, ComboLeg, LimitOrder, util
+import requests, time, urllib3
+urllib3.disable_warnings()
 
-ib = IB()
-ib.connect('127.0.0.1', 4002, clientId=1, timeout=20)
-spx = ib.qualifyContracts(Index('SPX', 'CBOE'))[0]
-[ticker] = ib.reqTickers(spx)
-ib.sleep(2)
-spx_price = ticker.marketPrice()
+BASE = "https://localhost:5000/v1/api"
+SPX_CONID = 416904
+
+# Initialize session
+requests.get(f"{BASE}/iserver/accounts", verify=False)
+
+# Get SPX price
+requests.get(f"{BASE}/iserver/marketdata/snapshot?conids={SPX_CONID}&fields=31", verify=False)
+time.sleep(3)
+data = requests.get(f"{BASE}/iserver/marketdata/snapshot?conids={SPX_CONID}&fields=31", verify=False).json()
+spx_price = float(str(data[0].get("31", "0")).lstrip("CHT"))
 ```
 
 ### Step 2: Pick short strikes
@@ -41,20 +49,9 @@ short_put_strike = atm
 short_call_strike = atm
 ```
 
-**Iron Condor — Delta-Based (Strategies 5-6):** select by delta for volatility-aware positioning. See [options.md](options.md) for `find_strike_by_delta`.
+**Iron Condor — Delta-Based (Strategies 5-6):** see [options.md](options.md) for `find_strike_by_delta`.
 
-```python
-from ib_async import Option
-
-short_put_strike, sp_delta = find_strike_by_delta(
-    ib, expiry, tc, -0.16, 'P', spx_price, avail_strikes)
-short_call_strike, sc_delta = find_strike_by_delta(
-    ib, expiry, tc, 0.16, 'C', spx_price, avail_strikes)
-print(f'Short put:  {short_put_strike} (delta {sp_delta:.3f})')
-print(f'Short call: {short_call_strike} (delta {sc_delta:.3f})')
-```
-
-**Iron Condor — Percentage-Based (Strategies 3-4):** fixed offset, use as fallback when Greeks unavailable.
+**Iron Condor — Percentage-Based (Strategies 3-4):**
 
 ```python
 offset_pct = 0.003  # 0.3%
@@ -62,51 +59,51 @@ short_put_strike = int(round((spx_price * (1 - offset_pct)) / STRIKE_INC) * STRI
 short_call_strike = int(round((spx_price * (1 + offset_pct)) / STRIKE_INC) * STRIKE_INC)
 ```
 
-### Step 3: Find trading class and qualify shorts
+### Step 3: Find option contracts for short legs
 
 ```python
-expiry = '20260527'  # YYYYMMDD
+month = "MAY26"  # adjust to target month
 
-# Find trading class
-chains = ib.reqSecDefOptParams('SPX', '', 'IND', spx.conId)
-tc = 'SPXW'
-for chain in chains:
-    if chain.exchange == 'SMART' and expiry in chain.expirations:
-        tc = chain.tradingClass
-        break
+# Get contract conids for short legs
+def get_contract(strike, right, month, maturity=None):
+    resp = requests.get(f"{BASE}/iserver/secdef/info",
+        params={"conid": SPX_CONID, "sectype": "OPT", "month": month,
+                "exchange": "SMART", "strike": strike, "right": right},
+        verify=False).json()
+    if not isinstance(resp, list) or not resp:
+        raise RuntimeError(f"Contract not found: {strike}{right} {month}")
+    if maturity:
+        match = [c for c in resp if c["maturityDate"] == maturity]
+        return match[0] if match else resp[0]
+    return resp[0]
 
-# Also grab available strikes to validate later
-avail_strikes = set()
-for chain in chains:
-    if chain.exchange == 'SMART' and chain.tradingClass == tc:
-        avail_strikes = set(chain.strikes)
-        break
-
-# Qualify short legs
-short_put = ib.qualifyContracts(Option('SPX', expiry, short_put_strike, 'P', 'SMART', tradingClass=tc))[0]
-short_call = ib.qualifyContracts(Option('SPX', expiry, short_call_strike, 'C', 'SMART', tradingClass=tc))[0]
-if short_put is None or short_call is None:
-    raise RuntimeError(f'Short leg not found: put={short_put_strike} call={short_call_strike}')
+sp = get_contract(short_put_strike, "P", month)
+sc = get_contract(short_call_strike, "C", month)
 ```
 
 ### Step 4: Price the shorts
 
 ```python
-tickers = [ib.reqMktData(short_put), ib.reqMktData(short_call)]
-ib.sleep(3)
+conids = f"{sp['conid']},{sc['conid']}"
+requests.get(f"{BASE}/iserver/marketdata/snapshot?conids={conids}&fields=84,86", verify=False)
+time.sleep(3)
+data = requests.get(f"{BASE}/iserver/marketdata/snapshot?conids={conids}&fields=84,86", verify=False).json()
 
-def get_price(t):
-    for val in [t.bid, t.ask, t.close]:
-        if not util.isNan(val) and val != -1:
-            return val
-    return None
+def parse_price(val):
+    if val is None: return None
+    try: return float(str(val).lstrip("CHT"))
+    except: return None
 
-sp_price = get_price(tickers[0])
-sc_price = get_price(tickers[1])
-net_credit_shorts = sp_price + sc_price
+prices = {}
+for item in data:
+    prices[item["conid"]] = {
+        "bid": parse_price(item.get("84")),
+        "ask": parse_price(item.get("86"))
+    }
 
-for t in tickers:
-    ib.cancelMktData(t.contract)
+sp_mid = (prices[sp["conid"]]["bid"] + prices[sp["conid"]]["ask"]) / 2
+sc_mid = (prices[sc["conid"]]["bid"] + prices[sc["conid"]]["ask"]) / 2
+net_credit_shorts = sp_mid + sc_mid
 ```
 
 ### Step 5: Calculate wing strikes
@@ -122,19 +119,9 @@ long_put_strike = short_put_strike - wing_width
 long_call_strike = short_call_strike + wing_width
 ```
 
-**Verify strikes exist** before qualifying:
-
-```python
-if long_put_strike not in avail_strikes:
-    # Find nearest available strike
-    long_put_strike = max(s for s in avail_strikes if s <= long_put_strike)
-if long_call_strike not in avail_strikes:
-    long_call_strike = min(s for s in avail_strikes if s >= long_call_strike)
-```
+Verify strikes exist using `/iserver/secdef/strikes`.
 
 ### Ratio Selection Guide
-
-The `ratio` controls max_loss:max_profit. Default 2.0 assumes active position management (see [position-management.md](position-management.md)).
 
 | Ratio | Max Loss:Profit | Credit | Best for |
 |-------|----------------|--------|----------|
@@ -142,58 +129,79 @@ The `ratio` controls max_loss:max_profit. Default 2.0 assumes active position ma
 | **2.0** | **2:1** | **Moderate** | **Active management (60% PT + exit rules)** |
 | 2.5 | 2.5:1 | Higher | Aggressive — strict stop-losses required |
 
-The 2:1 ratio only has positive expected value if you cut losers before max loss. With the time-based exits and rolling rules, average realized loss drops to ~1.0-1.3x, making the math work.
-
-### Step 6: Qualify wings and price them
+### Step 6: Get wing contracts and price them
 
 ```python
-long_put = ib.qualifyContracts(Option('SPX', expiry, long_put_strike, 'P', 'SMART', tradingClass=tc))[0]
-long_call = ib.qualifyContracts(Option('SPX', expiry, long_call_strike, 'C', 'SMART', tradingClass=tc))[0]
-if long_put is None or long_call is None:
-    raise RuntimeError(f'Long leg not found: put={long_put_strike} call={long_call_strike}')
+lp = get_contract(long_put_strike, "P", month)
+lc = get_contract(long_call_strike, "C", month)
 
-tickers = [ib.reqMktData(long_put), ib.reqMktData(long_call)]
-ib.sleep(3)
-lp_price = get_price(tickers[0])
-lc_price = get_price(tickers[1])
-for t in tickers:
-    ib.cancelMktData(t.contract)
+wing_conids = f"{lp['conid']},{lc['conid']}"
+requests.get(f"{BASE}/iserver/marketdata/snapshot?conids={wing_conids}&fields=84,86", verify=False)
+time.sleep(3)
+wing_data = requests.get(f"{BASE}/iserver/marketdata/snapshot?conids={wing_conids}&fields=84,86", verify=False).json()
+
+for item in wing_data:
+    prices[item["conid"]] = {
+        "bid": parse_price(item.get("84")),
+        "ask": parse_price(item.get("86"))
+    }
+
+lp_mid = (prices[lp["conid"]]["bid"] + prices[lp["conid"]]["ask"]) / 2
+lc_mid = (prices[lc["conid"]]["bid"] + prices[lc["conid"]]["ask"]) / 2
 ```
 
 ### Step 7: Calculate strategy metrics
 
 ```python
-net_credit = net_credit_shorts - lp_price - lc_price
+net_credit = net_credit_shorts - lp_mid - lc_mid
 actual_wing = max(short_put_strike - long_put_strike, long_call_strike - short_call_strike)
 max_profit = net_credit * 100
 max_loss = (actual_wing - net_credit) * 100
 
-print(f'Net Credit:  ${net_credit:.2f} (${max_profit:,.0f})')
-print(f'Max Loss:    ${max_loss:,.0f}')
-print(f'Wing Width:  {actual_wing} points')
-print(f'Breakevens:  {short_put_strike - net_credit:.2f} / {short_call_strike + net_credit:.2f}')
+print(f"Net Credit:  ${net_credit:.2f} (${max_profit:,.0f})")
+print(f"Max Loss:    ${max_loss:,.0f}")
+print(f"Wing Width:  {actual_wing} points")
+print(f"Breakevens:  {short_put_strike - net_credit:.2f} / {short_call_strike + net_credit:.2f}")
 ```
 
-### Step 8: Build combo and submit
+### Step 8: Build conidex and submit
 
-See [orders.md](orders.md) for combo construction and submission.
+```python
+conidex = f"{SPX_CONID};;;{lp['conid']}/1,{sp['conid']}/-1,{sc['conid']}/-1,{lc['conid']}/1"
 
-Leg order: Long Put, Short Put, Short Call, Long Call.
+body = {"orders": [{
+    "conidex": conidex,
+    "orderType": "LMT",
+    "side": "BUY",
+    "price": round(net_credit * -1, 2),  # negative = credit
+    "quantity": 1,
+    "tif": "GTC"
+}]}
+```
 
-Actions: BUY, SELL, SELL, BUY.
+See [orders.md](orders.md) for confirmation chain handling.
 
 ### 60% Profit Target Exit
 
 After entry fills, place a standing LMT order to buy back at 40% of credit:
 
 ```python
-close_price = round(net_credit * 0.40, 2)  # pay 40% to close
-profit_order = LimitOrder('SELL', quantity, round_to_tick(-close_price))
+close_conidex = reverse_conidex(conidex)  # see positions.md
+close_price = round(net_credit * 0.40, 2)
+
+close_body = {"orders": [{
+    "conidex": close_conidex,
+    "orderType": "LMT",
+    "side": "BUY",
+    "price": round(close_price, 2),
+    "quantity": 1,
+    "tif": "GTC"
+}]}
 ```
 
 ## Gotchas
 
-- Wing strikes may not exist for all expirations — always validate against `chain.strikes`
-- Iterating wing width: wing ask prices reduce net credit, which reduces required wing width. May need 2-3 iterations to converge.
+- Wing strikes may not exist for all expirations — always validate with `/iserver/secdef/strikes`.
+- Iterating wing width: wing prices reduce net credit, which changes required wing width. May need 2-3 iterations.
 - SPX options settle to cash (European style) — no exercise risk before expiry.
 - 0DTE options have extreme gamma — small moves cause large P/L swings.

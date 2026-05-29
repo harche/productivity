@@ -1,93 +1,71 @@
 # Contract Search & Details
 
-## Search by Name or Ticker
+## Search by Symbol
 
-```python
-matches = ib.reqMatchingSymbols('Tesla')
-for m in matches:
-    c = m.contract
-    print(f'{c.symbol} | {c.secType} | {c.primaryExchange} | {c.currency} | conId={c.conId}')
-    if m.derivativeSecTypes:
-        print(f'  Derivatives available: {m.derivativeSecTypes}')
+```bash
+curl -sk "https://localhost:5000/v1/api/trsrv/stocks?symbols=AAPL,MSFT"
 ```
 
-Searches by ticker symbol or partial company name. Returns up to ~16 results across all exchanges and currencies.
-
-`derivativeSecTypes` shows what's available: `['OPT', 'WAR', 'CFD', 'BAG']` etc.
-
-## Contract Details
+Response is keyed by symbol. Each entry has `name`, `assetClass`, and `contracts` array:
 
 ```python
-from ib_async import Stock
-
-aapl = ib.qualifyContracts(Stock('AAPL', 'SMART', 'USD'))[0]
-details = ib.reqContractDetails(aapl)
-d = details[0]
-
-print(f'Name:       {d.longName}')        # APPLE INC
-print(f'Industry:   {d.industry}')         # Technology
-print(f'Category:   {d.category}')         # Computers
-print(f'Subcategory:{d.subcategory}')      # Computers
-print(f'Stock type: {d.stockType}')        # COMMON
-print(f'Min tick:   {d.minTick}')          # 0.01
-print(f'Timezone:   {d.timeZoneId}')       # US/Eastern
-print(f'ISIN:       {d.secIdList}')        # [TagValue(tag='ISIN', value='US0378331005')]
+data = requests.get(f"{BASE}/trsrv/stocks?symbols=AAPL", verify=False).json()
+for contract in data["AAPL"]:
+    conid = contract["contracts"][0]["conid"]
+    exchange = contract["contracts"][0]["exchange"]
+    print(f'{contract["name"]} | conid={conid} | {exchange}')
 ```
 
-### Trading Hours
+**Note:** conid is nested in `contracts[0]`, not at the top level.
 
-```python
-print(f'Regular:  {d.liquidHours}')
-# 20260527:0930-20260527:1600;20260528:0930-20260528:1600;...
+## Search by Name
 
-print(f'Extended: {d.tradingHours}')
-# 20260527:0400-20260527:2000;20260528:0400-20260528:2000;...
+```bash
+curl -sk -X POST "https://localhost:5000/v1/api/iserver/secdef/search" \
+  -H "Content-Type: application/json" \
+  -d '{"symbol": "Tesla", "secType": "STK"}'
 ```
 
-### Valid Exchanges
+Returns matching contracts with `conid`, `companyName`, `description` (exchange), and `sections` showing available derivative types (OPT, FUT, etc.).
 
-```python
-print(f'Exchanges: {d.validExchanges}')
-# SMART,AMEX,NYSE,CBOE,ARCA,NASDAQ,IEX,BATS,...
+## Futures Search
+
+```bash
+curl -sk "https://localhost:5000/v1/api/trsrv/futures?symbols=ES"
 ```
 
-## Common Use Cases
+## Security Definition by ConID
 
-### Find a stock across exchanges
-
-```python
-matches = ib.reqMatchingSymbols('AAPL')
-for m in matches:
-    c = m.contract
-    if c.secType == 'STK':
-        print(f'{c.symbol} on {c.primaryExchange} ({c.currency})')
-# AAPL on NASDAQ (USD)
-# AAPL on MEXI (MXN)
-# AAPL on EBS (CHF)
-# AAPL on TSE (CAD)
+```bash
+curl -sk -X POST "https://localhost:5000/v1/api/trsrv/secdef" \
+  -H "Content-Type: application/json" \
+  -d '{"conids": [265598]}'
 ```
 
-### Check if options are available
+Returns detailed contract info including `name`, `assetClass`, `exchange`, `listingExchange`, `currency`.
 
-```python
-matches = ib.reqMatchingSymbols('SHOP')
-for m in matches:
-    if m.contract.secType == 'STK' and 'OPT' in (m.derivativeSecTypes or []):
-        print(f'{m.contract.symbol} on {m.contract.primaryExchange} has options')
+## Trading Schedule
+
+```bash
+curl -sk "https://localhost:5000/v1/api/trsrv/secdef/schedule?assetClass=STK&symbol=AAPL&exchange=NASDAQ"
 ```
 
-### Get ISIN for a stock
+## Common ConIDs
 
-```python
-details = ib.reqContractDetails(contract)
-for tag in details[0].secIdList:
-    if tag.tag == 'ISIN':
-        print(f'ISIN: {tag.value}')
-```
+| Symbol | ConID | Exchange | Description |
+|--------|-------|----------|-------------|
+| AAPL | 265598 | NASDAQ | Apple Inc |
+| MSFT | 272093 | NASDAQ | Microsoft Corp |
+| AMZN | 3691937 | NASDAQ | Amazon.com |
+| GOOGL | 208813720 | NASDAQ | Alphabet Inc |
+| SPY | 756733 | ARCA | SPDR S&P 500 ETF |
+| QQQ | 320227571 | NASDAQ | Invesco QQQ Trust |
+| SPX | 416904 | CBOE | S&P 500 Index |
+| VIX | 13455763 | CBOE | CBOE Volatility Index |
 
 ## Gotchas
 
-- `reqMatchingSymbols` is rate-limited — don't call it in a tight loop.
-- Results include bonds, warrants, and other instruments — filter by `secType == 'STK'` for stocks.
-- A `conId` of `-1` means the contract isn't directly tradeable (e.g., bond placeholder).
-- `reqContractDetails` can return multiple items for ambiguous contracts. Always qualify first with `qualifyContracts` to get a specific result.
+- `/trsrv/stocks` is rate-limited — don't call in a tight loop.
+- Results include all exchanges and currencies — filter by `isUS: true` for US-listed.
+- `secdef/search` can return bonds, warrants, and other instruments — filter by `secType` in the request body.
+- `/trsrv/secdef/info` (used for options) can return transient 500 errors — retry up to 2 times.

@@ -1,13 +1,10 @@
 [project]
 name = "trading"
-version = "0.1.0"
-description = "Add your description here"
+version = "6.0.0"
+description = "IB Client Portal REST API trading skill"
 requires-python = ">=3.11"
 dependencies = [
-    "ib-async>=2.1.0",
-    "ibkrbox>=0.6.0",
-    "numpy<2",
-    "pandas>=1.5.1,<2",
+    "requests>=2.31.0",
 ]
 
 [dependency-groups]

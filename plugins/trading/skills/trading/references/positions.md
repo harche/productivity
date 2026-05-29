@@ -2,109 +2,120 @@
 
 ## Account Summary
 
-```python
-values = ib.accountValues()
-base_currency = None
-for v in values:
-    if v.tag == 'NetLiquidation' and v.value:
-        base_currency = v.currency
-        break
-
-key_tags = [
-    'NetLiquidation', 'TotalCashValue', 'GrossPositionValue',
-    'BuyingPower', 'AvailableFunds', 'ExcessLiquidity',
-    'InitMarginReq', 'MaintMarginReq',
-]
-shown = set()
-for tag in key_tags:
-    for v in values:
-        if v.tag == tag and v.currency == base_currency and tag not in shown:
-            print(f'  {tag:<24} ${float(v.value):>14,.2f}')
-            shown.add(tag)
+```bash
+curl -sk "https://localhost:5000/v1/api/portfolio/ACCOUNT_ID/summary"
 ```
 
-- `accountValues()` returns ALL tags — filter by base currency to avoid duplicates
-- Multi-currency accounts have separate values per currency
+Key fields in response: `netliquidation`, `totalcashvalue`, `grosspositionvalue`, `buyingpower`, `availablefunds`, `excessliquidity`, `initmarginreq`, `maintmarginreq`.
 
-## Multi-Currency Cash Balances
-
-The summary tags (e.g. `TotalCashValue`) report in the base currency. To see cash per currency, use `CashBalance`:
-
-```python
-account = ...  # from AskUserQuestion — see connection.md Multi-Account Selection
-for v in ib.accountValues(account=account):
-    if v.tag == 'CashBalance' and v.currency != 'BASE':
-        print(f'  {v.currency}: ${float(v.value):,.2f}')
-```
+Each field has `amount`, `currency`, `isNull`, `severity`, `timestamp`.
 
 ## List Positions
 
+Positions are paginated — 30 per page, starting at page 0:
+
+```bash
+curl -sk "https://localhost:5000/v1/api/portfolio/ACCOUNT_ID/positions/0"
+```
+
+Fetch all pages:
+
 ```python
-positions = ib.positions()
-for pos in positions:
-    c = pos.contract
-    print(f'{c.symbol} {c.secType} {c.strike}{c.right} pos={pos.position} avg={pos.avgCost}')
+import requests, urllib3
+urllib3.disable_warnings()
+
+BASE = "https://localhost:5000/v1/api"
+
+def get_all_positions(account_id):
+    positions = []
+    page = 0
+    while True:
+        data = requests.get(f"{BASE}/portfolio/{account_id}/positions/{page}", verify=False).json()
+        if not data:
+            break
+        positions.extend(data)
+        if len(data) < 30:
+            break
+        page += 1
+    return positions
+```
+
+Position fields: `conid`, `contractDesc`, `position`, `mktPrice`, `mktValue`, `avgCost`, `unrealizedPnl`, `assetClass` (`STK`, `OPT`, `FUT`, `CASH`).
+
+## Force Cache Refresh
+
+If positions seem stale:
+
+```bash
+curl -sk -X POST "https://localhost:5000/v1/api/portfolio/ACCOUNT_ID/positions/invalidate"
 ```
 
 ## Portfolio with P/L
 
 ```python
-portfolio = ib.portfolio()
-for p in portfolio:
-    c = p.contract
-    pnl = p.unrealizedPNL
-    mkt_val = p.marketValue
-    print(f'{c.localSymbol or c.symbol}  qty={p.position}  P/L={pnl:.2f}  mktVal={mkt_val:.2f}')
+positions = get_all_positions(account_id)
+for p in positions:
+    desc = p.get("contractDesc", "")
+    qty = p.get("position", 0)
+    pnl = p.get("unrealizedPnl", 0)
+    mkt_val = p.get("mktValue", 0)
+    print(f"{desc}  qty={qty}  P/L={pnl:.2f}  mktVal={mkt_val:.2f}")
 ```
 
 - `position > 0` = long (bought), `< 0` = short (sold)
-- `marketPrice` may be NaN — check with `util.isNan()`
-- Asset classes: `OPT`, `STK`, `FUT`, `CASH`
 
 ## Closing a Position
 
 Reverse the action: long → SELL, short → BUY.
 
 ```python
-for pos in ib.positions():
-    c = pos.contract
-    if c.symbol == 'SPX' and c.secType == 'OPT' and pos.position != 0:
-        action = 'SELL' if pos.position > 0 else 'BUY'
-        qty = abs(pos.position)
-        # Get current price
-        t = ib.reqMktData(c)
-        ib.sleep(3)
-        price = t.ask if action == 'BUY' else t.bid
-        ib.cancelMktData(c)
-        # Place closing order
-        order = LimitOrder(action, qty, round_to_tick(price))
-        trade = ib.placeOrder(c, order)
+action = "SELL" if position > 0 else "BUY"
+qty = abs(position)
+body = {"orders": [{
+    "conid": conid,
+    "orderType": "LMT",
+    "side": action,
+    "price": limit_price,
+    "quantity": qty,
+    "tif": "DAY"
+}]}
 ```
 
 ## Closing a Combo Position
 
-Build a BAG with reversed actions (BUY↔SELL) from the original entry:
+Reverse all conidex ratios:
 
 ```python
-# Original entry had: BUY lp, SELL sp, SELL sc, BUY lc
-# Closing reverses:   SELL lp, BUY sp, BUY sc, SELL lc
-close_bag = Contract(
-    symbol='SPX', secType='BAG', exchange='SMART', currency='USD',
-    comboLegs=[
-        ComboLeg(conId=lp_conid, ratio=1, action='SELL', exchange='SMART'),
-        ComboLeg(conId=sp_conid, ratio=1, action='BUY',  exchange='SMART'),
-        ComboLeg(conId=sc_conid, ratio=1, action='BUY',  exchange='SMART'),
-        ComboLeg(conId=lc_conid, ratio=1, action='SELL', exchange='SMART'),
-    ]
-)
+# Original entry: "416904;;;conid1/1,conid2/-1,conid3/-1,conid4/1"
+# Closing:        "416904;;;conid1/-1,conid2/1,conid3/1,conid4/-1"
+
+def reverse_conidex(conidex):
+    prefix, legs = conidex.split(";;;")
+    reversed_legs = []
+    for leg in legs.split(","):
+        conid, ratio = leg.rsplit("/", 1)
+        new_ratio = str(-int(ratio))
+        reversed_legs.append(f"{conid}/{new_ratio}")
+    return f"{prefix};;;{','.join(reversed_legs)}"
 ```
+
+## Trade History
+
+```bash
+curl -sk https://localhost:5000/v1/api/iserver/account/trades
+```
+
+Returns recent executions with `symbol`, `side`, `price`, `size`, `time`.
 
 ## Open Orders
 
-```python
-orders = ib.openOrders()
-trades = ib.openTrades()
-for t in trades:
-    o = t.order
-    print(f'  OrderId={o.orderId} {o.action} {o.totalQuantity}x @ {o.lmtPrice} [{t.orderStatus.status}]')
+```bash
+curl -sk https://localhost:5000/v1/api/iserver/account/orders
 ```
+
+## Gotchas
+
+- Positions are paginated — always check if more pages exist.
+- `avgCost` is per-share (not per-contract). Multiply by position and 100 for total cost basis.
+- For combo (BAG) entries, IBKR may report `avgCost` per-leg or per-combo depending on fill. Verify against trade confirmations.
+- Call `/portfolio/accounts` before accessing `/portfolio/{accountId}/...` endpoints.

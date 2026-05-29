@@ -1,10 +1,8 @@
 # Trading Skill Reference Index
 
-Reference files contain tribal knowledge and non-obvious patterns for the `ib_async` library against Interactive Brokers. For discoverable details, read the ib_async docs or source.
+Reference files contain tribal knowledge and non-obvious patterns for the IB Client Portal REST API at `https://localhost:5000/v1/api`.
 
-All code runs via: `cd ${CLAUDE_PLUGIN_ROOT} && uv run python3 -c "..."`
-
-Dependencies are in `${CLAUDE_PLUGIN_ROOT}/pyproject.toml` — `uv run` auto-installs them.
+All code runs via: `curl -sk` or `cd ${CLAUDE_PLUGIN_ROOT} && uv run python3 -c "..."`
 
 ## Connection & Session
 
@@ -38,10 +36,6 @@ Dependencies are in `${CLAUDE_PLUGIN_ROOT}/pyproject.toml` — `uv run` auto-ins
 
 | portfolio-greeks.md
 
-## Economic Calendar & Pre-Trade Checks
-
-| economic-calendar.md
-
 ## Position Management: Rolling, Adjustments, Exits
 
 | position-management.md
@@ -57,11 +51,3 @@ Dependencies are in `${CLAUDE_PLUGIN_ROOT}/pyproject.toml` — `uv run` auto-ins
 ## Market Scanners
 
 | scanners.md
-
-## News
-
-| news.md
-
-## Analysis Tools: What-If, Options Math, P&L, Order History
-
-| analysis-tools.md

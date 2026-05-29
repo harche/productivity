@@ -1,94 +1,57 @@
 # Connection & Session
 
-## Connect
+Base URL: `https://localhost:5000/v1/api`
 
-```python
-from ib_async import IB
-ib = IB()
-ib.connect('127.0.0.1', 4002, clientId=1, timeout=20)
+All calls use `-k` (curl) or `verify=False` (Python) — the gateway uses a self-signed cert.
+
+## Check Authentication
+
+```bash
+curl -sk https://localhost:5000/v1/api/iserver/auth/status
 ```
 
-- **Gateway** ports: **4002** = paper, **4001** = live
-- **TWS** ports: **7497** = paper, **7496** = live
-- **Always use `clientId=1`** — reusing the same ID prevents stale sessions leaking in IB Gateway
-- Always call `ib.disconnect()` when done
+Returns `{"authenticated": true, ...}` if session is active.
 
-## Port Fallback
+## Initialize Session
 
-Try all known ports — paper first, then live, across both TWS and Gateway:
+**MUST call before any market data or trading calls.** This initializes the iserver session.
 
-```python
-from ib_async import IB
-ib = IB()
-connected = False
-for port in [7497, 4002, 7496, 4001]:
-    try:
-        ib.connect('127.0.0.1', port, clientId=1, timeout=10)
-        connected = True
-        break
-    except ConnectionRefusedError:
-        continue
-if not connected:
-    raise RuntimeError('Could not connect — start TWS or IB Gateway and enable API')
+```bash
+curl -sk https://localhost:5000/v1/api/iserver/accounts
 ```
 
-## Market Data Type
-
-**Always call `ib.reqMarketDataType()` after connecting.** Use type 1 (live) when placing orders during market hours — you need real-time prices. Use type 2 (frozen) only for research or off-hours work where stale data is acceptable.
-
-```python
-ib.reqMarketDataType(1)  # live — use when trading during market hours
-ib.reqMarketDataType(2)  # frozen — use for research or off-hours (falls back to last known)
-```
-
-| Type | Name | When to use |
-|------|------|-------------|
-| 1 | Live | **Order placement, active trading** — streaming real-time, market hours only |
-| 2 | Frozen | **Research, off-hours** — live when open, last known when closed |
-| 3 | Delayed | 15-20 min delayed — auto-upgrades to live if subscribed |
-| 4 | Delayed-Frozen | Delayed + frozen fallback |
-
-## Async Waits
-
-Use `ib.sleep(N)`, never `time.sleep(N)`. ib_async is event-driven — `time.sleep` blocks the event loop and prevents data from arriving.
-
-## SPX Price
-
-```python
-from ib_async import Index
-spx = ib.qualifyContracts(Index('SPX', 'CBOE'))[0]
-ticker = ib.reqMktData(spx)
-ib.sleep(3)
-price = ticker.marketPrice()
-ib.cancelMktData(spx)
-```
-
-**When market is closed**, `marketPrice()` returns NaN. Fallback chain:
-
-```python
-from ib_async import util
-for val in [ticker.last, ticker.close]:
-    if not util.isNan(val) and val != -1:
-        price = val
-        break
-```
-
-**When market IS open but price is still NaN**, the gateway is likely not connected to the US data farm (`usfarm`). This happens when the gateway starts in a stale state. Fix: kill the gateway, restart it, and re-authenticate at `https://localhost:5000`. Verify farm status by listening for error events on connect — look for `code=2104, msg="Market data farm connection is OK:usfarm"`. If you only see `hfarm` or other non-US farms, the gateway needs a restart.
-
-## Multi-Account Selection
-
-With multiple accounts (e.g. TFSA, RRSP, Individual), use `managedAccounts()` to list them and `order.account` to target a specific one:
-
-```python
-accounts = ib.managedAccounts()  # returns list of account IDs
-# Present accounts to user via AskUserQuestion and let them pick
-```
-
-- **`ib.managedAccounts()`** — returns `list[str]` of account IDs, available immediately after `connect()`
-- **`order.account`** — set before `placeOrder()` to route to that account; defaults to `''` (primary account)
-- **Never assume an account** — always present the list via `AskUserQuestion` and use the one the user selects
-- **Do NOT use `reqManagedAccts()`** — it does not exist in `ib_async`; use `managedAccounts()` instead
+Without this, snapshot and order endpoints return empty or error responses.
 
 ## Keepalive
 
-ib_async handles keepalive automatically — no tickle calls needed.
+Session expires after ~6 minutes of inactivity. Ping periodically:
+
+```bash
+curl -sk -X POST https://localhost:5000/v1/api/tickle
+```
+
+If session has expired, re-initialize:
+
+```bash
+curl -sk -X POST https://localhost:5000/v1/api/iserver/auth/ssodh/init
+```
+
+If that doesn't work, re-authenticate at `https://localhost:5000` in the browser.
+
+## Multi-Account Selection
+
+```bash
+curl -sk https://localhost:5000/v1/api/portfolio/accounts
+```
+
+Returns a list of account objects with `id`, `accountId`, `type`, `currency`. Present to user via AskUserQuestion — never assume an account.
+
+## Rate Limit
+
+10 requests/second per authenticated username. HTTP 429 = throttled — back off and retry after 1 second.
+
+## Logout
+
+```bash
+curl -sk -X POST https://localhost:5000/v1/api/logout
+```

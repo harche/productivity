@@ -2,20 +2,28 @@
 
 ## Running a Scan
 
-```python
-from ib_async import ScannerSubscription
+```bash
+curl -sk -X POST "https://localhost:5000/v1/api/hmds/scanner" \
+  -H "Content-Type: application/json" \
+  -d '{"instrument": "STK", "locations": "STK.US.MAJOR", "scanCode": "TOP_PERC_GAIN", "secType": "STK", "filters": []}'
+```
 
-sub = ScannerSubscription(
-    instrument='STK',
-    locationCode='STK.US.MAJOR',
-    scanCode='TOP_PERC_GAIN',
-    numberOfRows=10,
-)
-results = ib.reqScannerData(sub)
-for r in results:
-    c = r.contractDetails.contract
-    name = r.contractDetails.longName
-    print(f'{r.rank}: {c.symbol:6} | {name}')
+```python
+import requests, urllib3
+urllib3.disable_warnings()
+
+BASE = "https://localhost:5000/v1/api"
+
+results = requests.post(f"{BASE}/hmds/scanner", json={
+    "instrument": "STK",
+    "locations": "STK.US.MAJOR",
+    "scanCode": "TOP_PERC_GAIN",
+    "secType": "STK",
+    "filters": []
+}, verify=False).json()
+
+for item in results.get("contracts", []):
+    print(f'{item.get("symbol", "")} | {item.get("con_id", "")}')
 ```
 
 ## Useful Scan Codes
@@ -36,24 +44,12 @@ for r in results:
 | `LOW_VS_13W_HL` | Near 13-week low |
 | `HIGH_VS_52W_HL` | Near 52-week high |
 | `LOW_VS_52W_HL` | Near 52-week low |
-| `HIGH_OPT_IMP_VOLAT` | Highest option implied volatility |
-| `LOW_OPT_IMP_VOLAT` | Lowest option implied volatility |
+| `HIGH_OPT_IMP_VOLAT` | Highest option IV |
+| `LOW_OPT_IMP_VOLAT` | Lowest option IV |
 | `HIGH_OPT_IMP_VOLAT_OVER_HIST` | High IV vs historical (IV rank) |
 | `OPT_VOLUME_MOST_ACTIVE` | Most active options |
 | `HIGH_PE_RATIO` | Highest P/E ratio |
 | `LOW_PE_RATIO` | Lowest P/E ratio |
-
-There are **477 scan types** total. To see all of them:
-
-```python
-import xml.etree.ElementTree as ET
-xml = ib.reqScannerParameters()
-root = ET.fromstring(xml)
-for st in root.findall('.//ScanType'):
-    code = st.findtext('scanCode', '')
-    name = st.findtext('displayName', '')
-    print(f'{code}: {name}')
-```
 
 ## Location Codes
 
@@ -61,38 +57,37 @@ for st in root.findall('.//ScanType'):
 |-------------|-------------|
 | `STK.US.MAJOR` | US major exchanges |
 | `STK.US` | All US stocks |
-| `STK.US.MINOR` | US minor exchanges |
-| `STK.NA` | North America |
-| `STK.EU` | Europe |
-| `STK.AMEX` | AMEX only |
 | `STK.NYSE` | NYSE only |
 | `STK.NASDAQ.NMS` | NASDAQ NMS |
-| `STK.NASDAQ.SCM` | NASDAQ SmallCap |
+| `STK.AMEX` | AMEX only |
+| `STK.NA` | North America |
+| `STK.EU` | Europe |
 | `STK.TSE` | Toronto (Canadian stocks) |
 
 ## Instrument Types
 
-`STK`, `STK.ETF.US` (US equity ETFs), `STK.ETF.FI.US` (US fixed income ETFs), `FUT.US` (US futures), `IND.US` (US indexes), `BOND` (corporate bonds).
+`STK`, `STK.ETF.US`, `FUT.US`, `IND.US`, `BOND`.
 
 ## Filtering
 
 ```python
-sub = ScannerSubscription(
-    instrument='STK',
-    locationCode='STK.US.MAJOR',
-    scanCode='TOP_PERC_GAIN',
-    numberOfRows=20,
-    abovePrice=10.0,          # min price
-    belowPrice=500.0,         # max price
-    aboveVolume=1000000,      # min average volume
-    marketCapAbove=1e9,       # min market cap ($1B)
-)
+results = requests.post(f"{BASE}/hmds/scanner", json={
+    "instrument": "STK",
+    "locations": "STK.US.MAJOR",
+    "scanCode": "TOP_PERC_GAIN",
+    "secType": "STK",
+    "filters": [
+        {"code": "priceAbove", "value": 10},
+        {"code": "priceBelow", "value": 500},
+        {"code": "volumeAbove", "value": 1000000},
+        {"code": "marketCapAbove1e6", "value": 1000}  # $1B
+    ]
+}, verify=False).json()
 ```
 
 ## Gotchas
 
-- `longName` may be empty in scan results — use the contract symbol as fallback.
-- Scan results are a snapshot; they don't update automatically. Call `reqScannerData` again for fresh results.
+- Scan results are a snapshot — call again for fresh results.
 - Rate-limited: don't run more than a few scans per minute.
 - Some scan codes only work with specific instrument/location combinations.
-- `reqScannerParameters` returns a ~1.7MB XML — parse it, don't print it.
+- Response format includes `contracts` array with `symbol`, `con_id`, and other fields.
