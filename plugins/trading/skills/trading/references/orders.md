@@ -9,7 +9,7 @@ import requests, urllib3
 urllib3.disable_warnings()
 
 BASE = "https://localhost:5000/v1/api"
-account_id = "U8265837"
+account_id = "ACCOUNT_ID"
 
 body = {"orders": [{
     "conid": 265598,
