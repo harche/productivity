@@ -45,11 +45,11 @@ eval "$(cpi completions zsh)"
 
 ```bash
 cpi list                                # all plugins across all marketplaces
-cpi install github                      # install one plugin
-cpi install redhat-detective github     # install multiple (deps auto-resolved)
+cpi install workspace                   # install one plugin
+cpi install trading node-support        # install multiple (deps auto-resolved)
 cpi install all                         # install everything
 cpi uninstall google                    # remove a plugin and its deps
-cpi search detective                    # search by name or description
+cpi search node                         # search by name or description
 ```
 
 **How it works:**
@@ -79,10 +79,6 @@ security add-generic-password -a "$USER" -s "JIRA_API_TOKEN" -w "your-jira-token
 # Red Hat API offline token
 security add-generic-password -a "$USER" -s "RH_API_OFFLINE_TOKEN" -w "your-offline-token" -U
 
-# OpenShift pull secret (compact JSON)
-security add-generic-password -a "$USER" -s "OCP_PULL_SECRET" \
-  -w "$(cat pull-secret.json | python3 -c 'import sys,json; print(json.dumps(json.load(sys.stdin), separators=(",",":")))')" -U
-
 # FRED API key (free from https://fred.stlouisfed.org/docs/api/api_key.html)
 security add-generic-password -s "fred-api-key" -a "fred" -w "your-fred-api-key" -U
 
@@ -101,10 +97,6 @@ secret-tool store --label="JIRA_API_TOKEN" service jira key JIRA_API_TOKEN
 
 # Red Hat API offline token
 secret-tool store --label="RH_API_OFFLINE_TOKEN" service redhat key RH_API_OFFLINE_TOKEN
-
-# OpenShift pull secret
-cat pull-secret.json | python3 -c 'import sys,json; print(json.dumps(json.load(sys.stdin), separators=(",",":")))' | \
-  secret-tool store --label="OCP Pull Secret" service ocp-install username "$USER" key OCP_PULL_SECRET
 ```
 
 | Platform | Secret store | Install |
@@ -116,15 +108,5 @@ cat pull-secret.json | python3 -c 'import sys,json; print(json.dumps(json.load(s
 
 **Investigate a support case — Jira, KB, docs, and metrics in one plugin:**
 ```bash
-cpi install redhat-detective github
-```
-
-**Get a daily developer briefing — what needs your attention across Jira and GitHub:**
-```bash
-cpi install dev-digest
-```
-
-**Spin up a cluster and start working:**
-```bash
-cpi install cluster-installer redhat-detective github
+cpi install node-support
 ```

@@ -1,5 +1,0 @@
-{
-  "name": "dev-digest",
-  "description": "Generate a developer attention briefing from Jira issues, GitHub PRs, and GitHub issues — highlighting what needs your action",
-  "version": "0.1.0"
-}

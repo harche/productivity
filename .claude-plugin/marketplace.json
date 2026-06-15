@@ -8,13 +8,6 @@
   },
   "plugins": [
     {
-      "name": "github",
-      "source": "./plugins/github",
-      "description": "GitHub repos, PRs, issues, and actions via gh CLI",
-      "category": "workflow",
-      "version": "1.0.2"
-    },
-    {
       "name": "workspace",
       "source": "./plugins/workspace",
       "description": "Manage email, calendar, and documents across Google Workspace",
@@ -22,18 +15,11 @@
       "version": "2.0.0"
     },
     {
-      "name": "redhat-detective",
-      "source": "./plugins/redhat-detective",
-      "description": "Red Hat debugging and investigation toolkit: Jira issues, Knowledge Base, support cases, platform docs, Prometheus metrics, debug binary deployment to RHCOS nodes, and CVO deployment with Lightspeed integration",
+      "name": "node-support",
+      "source": "./plugins/node-support",
+      "description": "OpenShift Node team assistant: kubelet, MCO, CRI-O, crun, conmonrs, Kueue operator, Jira (OCPNODE/OCPBUGS), Red Hat Knowledge Base, support cases, Prometheus, K8s/OCP docs, and debug-binary + CVO deployment",
       "category": "workflow",
-      "version": "3.3.0"
-    },
-    {
-      "name": "cluster-installer",
-      "source": "./plugins/cluster-installer",
-      "description": "Create, manage, and destroy Kubernetes and OpenShift clusters (kind, GKE, OpenShift)",
-      "category": "infra",
-      "version": "1.0.2"
+      "version": "0.16.0"
     },
     {
       "name": "web-browser",
@@ -72,21 +58,6 @@
       "version": "1.0.0"
     },
     {
-      "name": "dev-digest",
-      "source": "./plugins/dev-digest",
-      "description": "Generate developer attention briefings from Jira issues, GitHub PRs, and GitHub issues",
-      "category": "workflow",
-      "version": "0.1.0",
-      "dependencies": ["redhat-detective", "github"]
-    },
-    {
-      "name": "tech-news",
-      "source": "./plugins/tech-news",
-      "description": "Discover trending tech news and developer discussions on Hacker News",
-      "category": "misc",
-      "version": "1.0.0"
-    },
-    {
       "name": "financial-research",
       "source": "./plugins/financial-research",
       "description": "Research company fundamentals, economic trends, and financial data from SEC filings and Federal Reserve datasets",
@@ -99,13 +70,6 @@
       "description": "Find peer-reviewed medical evidence, clinical trials, and scientific papers across PubMed, Europe PMC, Semantic Scholar, and OpenAlex",
       "category": "misc",
       "version": "1.0.0"
-    },
-    {
-      "name": "lightspeed-assistant",
-      "source": "./plugins/lightspeed-assistant",
-      "description": "Navigate and work with the LightspeedProposal system — CRD-based automated remediation platform for OpenShift. Includes dev environment setup, repo cloning, and submodule management.",
-      "category": "workflow",
-      "version": "1.2.2"
     }
   ]
 }
