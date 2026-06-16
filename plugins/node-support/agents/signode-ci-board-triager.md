@@ -13,7 +13,7 @@ This board is EXCLUSIVELY for issues and PRs about the **CI tests of SIG Node** 
 
 ## The Acceptance Rule
 
-The SIG Node CI subproject documents its triage process in the CI meeting agenda; the board's dashboard view is https://github.com/orgs/kubernetes/projects/151/views/1 (it superseded the old board at https://github.com/orgs/kubernetes/projects/43). The documented steps are: (1) add all open issues/PRs matching the card-source queries (see *Card Sources* below) to the Triage column; (2) **Archive** every Triage card that is NOT in scope of the SIG Node CI group; (3) move in-scope **issues → 'Issues - To do'** and in-scope **PRs → a PR-review lane**, then keep the in-progress lanes current.
+The SIG Node CI subproject documents its triage process in the CI meeting agenda; the board's dashboard view is https://github.com/orgs/kubernetes/projects/151/views/1. The documented steps are: (1) add all open issues/PRs matching the card-source queries (see *Card Sources* below) to the Triage column; (2) **Archive** every Triage card that is NOT in scope of the SIG Node CI group; (3) move in-scope **issues → 'Issues - To do'** and in-scope **PRs → a PR-review lane**, then keep the in-progress lanes current.
 
 Your core judgment is step 2 — deciding what is "in scope of the SIG Node CI group." In-scope items fall into four buckets:
 
