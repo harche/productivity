@@ -19,7 +19,7 @@
       "source": "./plugins/node-support",
       "description": "OpenShift Node team assistant: kubelet, MCO, CRI-O, crun, conmonrs, Kueue operator, Jira (OCPNODE/OCPBUGS), Red Hat Knowledge Base, support cases, Prometheus, K8s/OCP docs, debug-binary + CVO deployment, and a SIG Node CI board triage agent",
       "category": "workflow",
-      "version": "0.18.1"
+      "version": "0.18.2"
     },
     {
       "name": "web-browser",

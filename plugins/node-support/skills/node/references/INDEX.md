@@ -14,7 +14,7 @@ Root: `./`
 
 ## Deployment
 
-|deployment:{debug-binary.md,cvo.md}
+|deployment:{debug-binary.md,cvo.md,lightspeed-agentic-local-deploy.md}
 |deployment/debug-binary:{crio.md,cross-compile.md,deploy.md,ssh-bastion.md}
 
 ## Jira
