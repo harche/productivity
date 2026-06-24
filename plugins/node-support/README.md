@@ -25,14 +25,7 @@ The skill starts at [`skills/node/references/INDEX.md`](skills/node/references/I
 - **Red Hat Support** — KB articles and support cases (`support.md`)
 - **Platform Documentation** — version-aware Kubernetes and OpenShift docs lookup (`platform-docs.md`)
 - **Prometheus** — node-layer metrics queries (`prometheus.md`)
-
-## Agents
-
-### `signode-ci-board-triager`
-
-Triages the **Triage column of the upstream Kubernetes SIG Node CI/Test project board** ([project 151](https://github.com/orgs/kubernetes/projects/151)). For each issue/PR it gives a keep/remove recommendation against the board's empirical CI/test acceptance rule, and emits ready-to-run `gh` commands for accepting (Prow `/triage accepted` + card move) or removing (`gh project item-delete`) items.
-
-Invoke it with the Agent tool (e.g. "triage the SIG Node CI board"). The agent keeps project-scoped memory of the board's field/option IDs, recurring patterns, and past borderline decisions to stay consistent across sessions.
+- **SIG Node CI Board Triage** — upstream Kubernetes SIG Node CI/Test board (project 151) triage process (`signode-ci-board-triage.md`)
 
 ## Configuration
 

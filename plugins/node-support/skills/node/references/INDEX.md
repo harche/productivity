@@ -32,3 +32,7 @@ Root: `./`
 ## Prometheus
 
 |prometheus.md
+
+## SIG Node CI Board Triage
+
+|signode-ci-board-triage.md
