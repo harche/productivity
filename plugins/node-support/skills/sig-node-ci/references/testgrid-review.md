@@ -117,4 +117,4 @@ Practical consequences:
 - Never rely on tab name == job name; resolve `.query` before putting a job name in an issue.
 - Never draft an issue from a FLAKY tab without the user asking — the ≥3-consecutive-failures bar is what justifies `kind/failing-test`.
 - If a summary entry is STALE/BROKEN or has empty status, report it as "needs manual look" instead of guessing.
-- Newly filed issues land in the SIG Node CI board triage flow — see `signode-ci-board-triage.md` for what happens next; mention that connection in the report when relevant.
+- Newly filed issues land in the SIG Node CI board triage flow — see `board-triage.md` for what happens next; mention that connection in the report when relevant.

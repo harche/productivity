@@ -32,8 +32,3 @@ Root: `./`
 ## Prometheus
 
 |prometheus.md
-
-## SIG Node CI
-
-|signode-ci-board-triage.md — triage the SIG Node CI/Test project board (project 151)
-|signode-ci-testgrid-review.md — weekly TestGrid review: find FAILING jobs via JSON API, check/draft k/k tracking issues (recommend-only)

@@ -10,11 +10,11 @@ This plugin is the team's umbrella: a hierarchical overview of how the Node team
 /plugin install node-support@productivity-tools
 ```
 
-## Skill
+## Skills
 
 ### `node`
 
-A single skill that activates on any OpenShift node-layer task. It routes through a set of reference documents that capture tribal knowledge and non-obvious nuances rather than discoverable details (which Claude reads from source directly).
+Activates on any OpenShift node-layer task. It routes through a set of reference documents that capture tribal knowledge and non-obvious nuances rather than discoverable details (which Claude reads from source directly).
 
 The skill starts at [`skills/node/references/INDEX.md`](skills/node/references/INDEX.md), which maps topics to the relevant reference:
 
@@ -25,7 +25,13 @@ The skill starts at [`skills/node/references/INDEX.md`](skills/node/references/I
 - **Red Hat Support** — KB articles and support cases (`support.md`)
 - **Platform Documentation** — version-aware Kubernetes and OpenShift docs lookup (`platform-docs.md`)
 - **Prometheus** — node-layer metrics queries (`prometheus.md`)
-- **SIG Node CI Board Triage** — upstream Kubernetes SIG Node CI/Test board (project 151) triage process (`signode-ci-board-triage.md`)
+
+### `sig-node-ci`
+
+Activates on upstream Kubernetes SIG Node CI work. Same router pattern, starting at [`skills/sig-node-ci/references/INDEX.md`](skills/sig-node-ci/references/INDEX.md). All workflows are recommend-only toward upstream repos (never creates issues/PRs/board changes without explicit approval):
+
+- **Board Triage** — SIG Node CI/Test project board (kubernetes project 151) keep/remove triage (`board-triage.md`)
+- **TestGrid Review** — weekly failing-job review of the sig-node TestGrid dashboards via the JSON API, root-cause clustering, and drafting kubernetes/kubernetes failing-test issues (`testgrid-review.md`)
 
 ## Configuration
 
