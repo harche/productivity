@@ -10,7 +10,7 @@ Root: `./`
 
 ## Development
 
-|development:{kubelet-dev.md,mco-dev.md,crio-dev.md,crun-conmon.md,kueue-operator-dev.md,worktrees.md}
+|development:{kubelet-dev.md,mco-dev.md,crio-dev.md,crun-conmon.md,kueue-operator-dev.md,worktrees.md,fleet.md}
 
 ## Deployment
 

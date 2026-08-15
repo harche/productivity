@@ -2,6 +2,8 @@
 
 Create isolated workspaces using `git worktree` with a `wt/<name>` branch under `.worktrees/<name>/`. When submodules are present, each one gets its own worktree and branch inside the workspace.
 
+For running a whole fleet of autonomous Claude sessions across many task worktrees at once (conductor + workers pattern), see `fleet.md`.
+
 ## Repo Resolution
 
 When given a GitHub PR or issue URL, resolve the local repo before creating a worktree.
