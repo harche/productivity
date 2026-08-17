@@ -50,7 +50,7 @@ The no-push/no-PR/no-issue guardrail is what makes a large autonomous fleet safe
 
 Non-Claude agents can't be messaged, so scraping is the only channel unless you give them one. Keep them **interactive in a tmux pane** (the user wants to step in and steer directly — don't push them into `-p`/JSON mode), and make the **report file the source of truth**:
 
-- Launch: `agent --yolo --model <model> "$(cat prompt.txt)"` (Cursor CLI; `--yolo` = run everything; `agent --list-models` for IDs, e.g. `cursor-grok-4.6-high`). Same pane-liveness check applies (`node` running / `zsh` exited).
+- Launch: `agent --yolo --model <model> "$(cat prompt.txt)"` (Cursor CLI; `--yolo` = run everything; `agent --list-models` for IDs, e.g. `cursor-grok-4.6-xhigh` — the `-xhigh` "Extra High" tier, verified working; plain `-high` is a lower tier). Same pane-liveness check applies (`node` running / `zsh` exited).
 - Append this boilerplate to every non-Claude prompt:
 
 > Write your report to `.agent-reports/<name>.md` in this worktree. Line 1 is `STATUS: RUNNING|DONE|FAILED|BLOCKED` plus a timestamp — update it as you go, not only at the end. Append a section after each major step with the exact commands and the relevant output (pass/fail lines, checks) — I cannot see your terminal. If you need a decision, set `STATUS: BLOCKED`, write the question, and stop.
