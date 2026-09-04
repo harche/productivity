@@ -11,7 +11,7 @@ $ARGUMENTS
 If the task, scope, or expected behavior is materially ambiguous, identify the blocking questions before writing code. Do not silently invent API or behavioral requirements.
 
 BOUNDARIES:
-- Read and obey all applicable AGENTS.md and other repository instructions first.
+- Read and obey all applicable AGENTS.md, CLAUDE.md, and repository instructions first.
 - Record the repository state, base revision, relevant packages, and dirty files.
 - Preserve unrelated user changes.
 - Do not edit generated files directly.
@@ -23,39 +23,9 @@ BOUNDARIES:
 - Report unavailable agents, spawn limits, merge conflicts, and blocked decisions explicitly.
 
 ORCHESTRATION:
-
-PI MODEL ROUTING:
-- This policy applies when running under Pi.
-- Keep the parent coordinator on `openai/gpt-5.6-sol` with `xhigh` thinking. All child model calls also use `xhigh` thinking.
-- Choose the subagent role first based on tools and responsibility, then choose the model based on task risk and authority.
-- Model tiers:
-  - `openai/gpt-5.6-sol`: highest-assurance tier for open-ended semantic reasoning, implementation, omission-sensitive review, ambiguous research, cross-component analysis, synthesis, and final decisions.
-  - `openai/gpt-5.6-terra`: bounded-work tier for well-specified analysis, verification, comparison, transformation, and support tasks whose output is independently checkable.
-  - `openai/gpt-5.6-luna`: factual-work tier for repository reconnaissance, extraction, inventory, classification, and mechanical formatting that carries no decision authority.
-- Default role routing:
-  - `worker`, `reviewer`, `oracle`, and `researcher` use `openai/gpt-5.6-sol:xhigh`.
-  - `delegate` uses `openai/gpt-5.6-terra:xhigh`.
-  - `scout` uses `openai/gpt-5.6-luna:xhigh`.
-- In Pi, prefer native subagents when exact model routing is required; external CLI agents do not support Pi's native per-run model overrides.
-- The parent may promote any task to a stronger model whenever scope, ambiguity, risk, or conflicting evidence warrants it.
-- The parent may use a lower-cost model only when the task is narrowly bounded, supplied with complete context, independently verifiable, and carries no consequential decision authority.
-- Luna may collect or transform evidence but must not make semantic, architectural, severity, acceptance, or completeness decisions.
-- Terra may analyze bounded questions but must escalate ambiguity, conflicting evidence, broad impact, security concerns, compatibility concerns, and cross-component behavior to Sol.
-- If uncertain, use Sol.
-- Verify the resolved model mapping before launching agents. When overriding a role default, pass the exact model explicitly in the child launch; do not silently substitute models.
-- If a required model or agent is unavailable, report the limitation instead of weakening the routing policy.
-
-IMPLEMENTATION-SPECIFIC ROUTING:
-- Use `scout` with `openai/gpt-5.6-luna:xhigh` for factual repository reconnaissance, ownership mapping, and locating implementation and test seams. Scouts must not modify project source files.
-- Use `delegate` with `openai/gpt-5.6-terra:xhigh` for bounded support work such as comparison, transformation, checklist preparation, and independently checkable analysis. Delegates must not make architecture or acceptance decisions or modify project source files in this workflow.
-- Use `worker` with `openai/gpt-5.6-sol:xhigh` for every implementation writer, integration writer, and confirmed-fix writer.
-- Use `reviewer` with `openai/gpt-5.6-sol:xhigh` for contract analysis, adversarial review, finding verification, and completeness criticism.
-- Use `researcher` with `openai/gpt-5.6-sol:xhigh` when external specifications, upstream behavior, security guidance, or compatibility contracts materially affect the implementation.
-- Use `oracle` with `openai/gpt-5.6-sol:xhigh` only for unresolved architecture, difficult root causes, or conflicts that the coordinator cannot settle from source and test evidence.
-- Only Sol workers may modify project source files. Terra and Luna agents provide advisory evidence or bounded support output to the Sol coordinator and workers.
-
 - Use the host's native dynamic multi-agent orchestration rather than treating this as a single-agent task.
 - In Pi, use one coordinated subagent workflow with dynamic fanout and keep all phases inside that workflow.
+- In Claude Code, use parallel specialized agents and isolated worktrees for concurrent writers.
 
 CONTRACT PHASE:
 1. Extract and state:
