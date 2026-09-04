@@ -1,0 +1,8 @@
+{
+  "name": "ultracode",
+  "description": "On-demand adversarial multi-agent review and isolated implementation workflows for Claude Code and Pi.",
+  "version": "1.0.1",
+  "author": {
+    "name": "harpatil"
+  }
+}

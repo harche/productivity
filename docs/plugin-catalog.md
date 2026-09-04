@@ -14,6 +14,7 @@ claude plugin install --scope local <name>@productivity-tools
 |--------|-------------|--------------|
 | `workspace` | Manage email, calendar, and documents across Google Workspace | — |
 | `node-support` | OpenShift Node team assistant: kubelet/MCO/CRI-O/crun/conmonrs/Kueue development, debug-binary + CVO deployment, Jira (OCPNODE/OCPBUGS), Knowledge Base, support cases, platform docs (k8s + OpenShift), and Prometheus metrics | — |
+| `ultracode` | On-demand adversarial multi-agent review and isolated implementation workflows for Claude Code and Pi | — |
 | `knowledge-base` | Build and maintain knowledge bases: ingest sources (conversations, articles, URLs), compile structured wikis, and lint for consistency. Obsidian-compatible. | — |
 
 ### Infra
@@ -82,3 +83,4 @@ See the full examples in the [README](../README.md#authentication--secrets).
 | `financial-research` | SEC EDGAR: no auth; FRED: API key from Keychain (`fred-api-key`) |
 | `medical-research` | Europe PMC and ClinicalTrials.gov: no auth; Semantic Scholar and OpenAlex: API keys from Keychain (optional/free) |
 | `knowledge-base` | No auth required |
+| `ultracode` | No auth required |
