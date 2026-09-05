@@ -31,9 +31,9 @@ CONTRACT PHASE:
 1. Extract and state:
    - current behavior
    - required behavior
-   - API and compatibility constraints
-   - invariants and failure behavior
-   - acceptance criteria
+   - API, compatibility, and sentinel/default semantics across backends
+   - invariants, failure behavior, and mechanisms ensuring recovery progress
+   - acceptance criteria, including behavior preserved during partial failure
    - required tests and negative controls
    - relevant repository-generation rules
 2. Discover the available executable specialist agents.
@@ -56,8 +56,8 @@ IMPLEMENTATION PHASE:
    - read the relevant implementation and tests in full
    - modify only assigned files
    - keep changes focused
-   - add focused tests
-   - add a negative control where practical
+   - test required behavior, including relevant sentinel and partial-failure cases
+   - where practical, demonstrate failure on the base and success on the fix, or use an equivalent negative control; report unverified cases
    - run the narrowest relevant tests
    - report changed files, diff summary, commands run, failures, uncertainties, and blocked items
 8. Do not allow overlapping parallel writers. If ownership overlaps, sequence the work or consolidate it under one writer.
@@ -87,10 +87,10 @@ ADVERSARIAL PHASE:
     - concurrency, lifecycle, and error handling
     - test completeness and false-positive tests
     - security and trust boundaries where relevant
-16. Dynamically verify every important finding with refutation/reproduction and impact reviewers.
-17. Apply only confirmed fixes.
-18. Run a completeness critic for missed interactions, untested paths, and incomplete acceptance criteria.
-19. Verify and resolve any new critic findings.
+16. Track material concerns, including proposed rejections. Dynamically verify important candidates with refutation/reproduction and impact reviewers. Independently challenge consequential dismissals based on intent, pre-existence, unreachability, sentinel semantics, or assumed retry progress.
+17. Apply only confirmed fixes; rerun affected checks and review the fix diff.
+18. Give a completeness critic the integrated diff and acceptance criteria before prior verdicts, then the concern ledger for reconciliation.
+19. Verify new or reopened findings. The parent must audit final dispositions. Source proof is valid; blocked execution remains unverified, not disproven.
 
 FINAL GATE:
 Report:
@@ -100,9 +100,9 @@ Report:
 - commands actually run and their outcomes
 - commands not run and why
 - confirmed review findings and resolutions
-- rejected findings and reasons
+- rejected findings with evidence, and unresolved concerns
 - residual risks
 - blocked or open decisions
-- whether every acceptance criterion was satisfied
+- each acceptance criterion's status: satisfied, failed, or unverified
 
 Do not stop at the first compiling result. Finish with evidence from the integrated tree.

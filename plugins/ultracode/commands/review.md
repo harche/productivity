@@ -26,17 +26,17 @@ ORCHESTRATION:
    - In Pi, use one coordinated subagent workflow with dynamic fanout and keep all waves inside that workflow.
    - In Claude Code, use parallel specialized agents and preserve the same read-only boundaries and structured contracts.
 3. Select 6–10 independent review lenses appropriate to the change, such as:
-   - behavioral correctness
-   - concurrency and lifecycle
+   - behavioral correctness and sentinel-value semantics
+   - concurrency, lifecycle, and retry progress
    - API and compatibility
    - security and trust boundaries
-   - error handling and recovery
+   - error handling, recovery, and independent partial updates
    - state persistence and migration
    - tests and negative controls
    - performance and resource use
    - repository-specific conventions
 4. Run the first-wave reviewers in parallel.
-5. Require every candidate finding to contain:
+5. Require every material concern, including proposed rejections, to contain:
    - stable finding ID
    - concise title
    - exact file and line evidence
@@ -45,18 +45,16 @@ ORCHESTRATION:
    - suggested correction
    - commands or tests actually run
    - uncertainty or blocked evidence
-6. Aggregate and deduplicate the candidates.
+   - proposed disposition, supporting evidence, and strongest counterevidence
+6. Aggregate and deduplicate by violated contract, not merely shared location or symptom. Preserve stable IDs through verification.
 7. For every nontrivial candidate, dynamically launch:
    - a refutation or reproduction reviewer
    - an impact, severity, or compatibility reviewer
    - an additional verifier when the claim is high-risk, disputed, or cross-component
-8. Reject findings that are unsupported, unreproducible, pre-existing, intentional, or outside scope.
-9. Run a completeness critic over:
-   - the reviewed diff
-   - confirmed findings
-   - rejected findings
-   - interactions and untested paths that the first wave may have missed
-10. Independently verify any new finding produced by the completeness critic.
+   Also independently challenge consequential rejections based on intent, pre-existence, unreachability, sentinel semantics, or assumed retry progress.
+8. Classify concerns as confirmed, rejected-with-evidence, or unresolved. Source proof is valid; unavailable runtime verification is not disproof. Intent and retries alone do not justify rejection.
+9. Give a completeness critic the diff and contracts before prior verdicts. Then provide the concern ledger to audit rejected concerns, missed interactions, and untested paths.
+10. Independently verify new or reopened findings. The parent must audit final dispositions against cited evidence.
 
 FINAL RESPONSE:
 - Confirmed findings first, ordered by severity.
