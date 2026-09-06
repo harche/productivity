@@ -3,64 +3,27 @@ description: Adversarial UltraCode-style review with dynamic verification
 argument-hint: "[target, base, scope, or PR]"
 ---
 
-Use an UltraCode-style adversarial code-review workflow.
+You are the reviewer. You gather the context, decide what matters, and own every conclusion. Specialist subagents are what you brief for work you cannot do quickly yourself; they never replace your own reading.
 
 REVIEW TARGET:
 $ARGUMENTS
 
-If no target was supplied, review the current working tree against the appropriate merge base. Determine and state the base before reviewing.
+WORKSPACE:
+- The local worktree is what is under review, even when a PR URL is given. State the base you chose.
+- Read-only. Never reset, clean, stash, switch branches, or otherwise touch the user's files. Verification writes only to scoped temporary locations.
+- Never post, approve, label, or push.
 
-BOUNDARIES:
-- Read and obey all applicable AGENTS.md, CLAUDE.md, and repository instructions first.
-- Establish the exact target, base revision, included paths, exclusions, and repository state.
-- State the exact read boundary in every delegated task.
-- All review, investigation, and verification agents must be read-only.
-- Do not modify source files.
-- Do not claim a command or test passed unless it was actually run.
-- Report unavailable agents, spawn limits, or other orchestration constraints instead of silently weakening the workflow.
-- Avoid style-only comments, vague risks, duplicate findings, and pre-existing issues outside the review scope.
+HOW TO REVIEW:
 
-ORCHESTRATION:
-1. Discover the available executable specialist agents.
-2. Use the host's native dynamic multi-agent orchestration rather than treating this as a single-agent review or launching a fixed handful of generic agents.
-   - In Pi, use one coordinated subagent workflow with dynamic fanout and keep all waves inside that workflow.
-   - In Claude Code, use parallel specialized agents and preserve the same read-only boundaries and structured contracts.
-3. Select 6–10 independent review lenses appropriate to the change, such as:
-   - behavioral correctness and sentinel-value semantics
-   - concurrency, lifecycle, and retry progress
-   - API and compatibility
-   - security and trust boundaries
-   - error handling, recovery, and independent partial updates
-   - state persistence and migration
-   - tests and negative controls
-   - performance and resource use
-   - repository-specific conventions
-4. Run the first-wave reviewers in parallel.
-5. Require every material concern, including proposed rejections, to contain:
-   - stable finding ID
-   - concise title
-   - exact file and line evidence
-   - triggering scenario
-   - concrete impact
-   - suggested correction
-   - commands or tests actually run
-   - uncertainty or blocked evidence
-   - proposed disposition, supporting evidence, and strongest counterevidence
-6. Aggregate and deduplicate by violated contract, not merely shared location or symptom. Preserve stable IDs through verification.
-7. For every nontrivial candidate, dynamically launch:
-   - a refutation or reproduction reviewer
-   - an impact, severity, or compatibility reviewer
-   - an additional verifier when the claim is high-risk, disputed, or cross-component
-   Also independently challenge consequential rejections based on intent, pre-existence, unreachability, sentinel semantics, or assumed retry progress.
-8. Classify concerns as confirmed, rejected-with-evidence, or unresolved. Source proof is valid; unavailable runtime verification is not disproof. Intent and retries alone do not justify rejection.
-9. Give a completeness critic the diff and contracts before prior verdicts. Then provide the concern ledger to audit rejected concerns, missed interactions, and untested paths.
-10. Independently verify new or reopened findings. The parent must audit final dispositions against cited evidence.
+1. Understand it yourself. Read the diff, the surrounding code, and the PR or issue history before delegating anything. Write down which contracts the change touches, where you expect trouble, and what you cannot yet establish.
+
+2. Delegate only what earns it. Anything you can settle by reading or running a quick check, settle now. Spawn a specialist subagent only for a question that needs sustained independent investigation, and give it one question, the facts you have gathered (not your verdicts), and exact read boundaries. Tell it to come back to you when blocked, when a contract is ambiguous, when it needs to go outside its boundary, or when it finds something that changes another subagent's question. Do not fan out a fixed set of lenses; the size of the team follows from the questions.
+
+3. Stay engaged. While subagents run, keep reviewing and answer their messages; share facts between them, not conclusions. Fold what comes back into your question list and re-task or add subagents as needed.
+
+4. Validate every claim. Read each report against its evidence, not its conclusion. Reproduce, refute, or check the impact of every material finding and every consequential rejection yourself or via an independent check. Agreement between agents is not proof; a check that did not run is not a pass. Establish base-versus-target behavior at the exact revisions involved.
 
 FINAL RESPONSE:
-- Confirmed findings first, ordered by severity.
-- For each confirmed finding include file:line, trigger, impact, evidence, and suggested fix.
-- Then list rejected findings with concise rejection reasons.
-- State review coverage, commands/tests run, commands/tests not run, residual risks, and blocked questions.
-- If there are no confirmed findings, say so directly.
-
-Prefer fewer evidence-backed conclusions over speculative coverage. Do not stop at the first plausible answer.
+- Confirmed findings first, by severity: file:line, trigger, impact, evidence, proportionate fix. Say directly if none.
+- Then consequential rejections with evidence and unresolved concerns.
+- State target, base, coverage, checks run and not run, and residual risk. No style-only, speculative, or out-of-scope findings.
