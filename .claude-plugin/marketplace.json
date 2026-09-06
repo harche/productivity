@@ -31,9 +31,9 @@
     {
       "name": "hunk-review",
       "source": "./plugins/hunk-review",
-      "description": "Interactive Hunk reviews, inline answers, and automatic comment watching in one slash command",
+      "description": "Watch a live Hunk session for user comments and answer them inline",
       "category": "workflow",
-      "version": "1.0.0"
+      "version": "1.1.0"
     },
     {
       "name": "web-browser",

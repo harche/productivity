@@ -15,7 +15,7 @@ claude plugin install --scope local <name>@productivity-tools
 | `workspace` | Manage email, calendar, and documents across Google Workspace | — |
 | `node-support` | OpenShift Node team assistant: kubelet/MCO/CRI-O/crun/conmonrs/Kueue development, debug-binary + CVO deployment, Jira (OCPNODE/OCPBUGS), Knowledge Base, support cases, platform docs (k8s + OpenShift), and Prometheus metrics | — |
 | `ultracode` | On-demand adversarial multi-agent review and isolated implementation workflows for Claude Code and Pi | — |
-| `hunk-review` | Interactive Hunk reviews, inline answers, and automatic comment watching in one slash command ([usage](../plugins/hunk-review/README.md)) | — |
+| `hunk-review` | Watch a live Hunk session for user comments and answer them inline (loads Hunk's own skill via `hunk skill path`) ([usage](../plugins/hunk-review/README.md)) | — |
 | `knowledge-base` | Build and maintain knowledge bases: ingest sources (conversations, articles, URLs), compile structured wikis, and lint for consistency. Obsidian-compatible. | — |
 
 ### Infra
@@ -44,7 +44,7 @@ External CLI tools and API tokens required by specific plugins. Only install wha
 |------|---------|-------|-------|
 | [`gog`](https://github.com/steipete/gogcli) | `workspace` | See [repo README](https://github.com/steipete/gogcli) | See [repo README](https://github.com/steipete/gogcli) |
 | [`playwright-cli`](https://github.com/nicolo-ribaudo/playwright-cli) | `web-browser` | `npm install -g @anthropic-ai/playwright-cli@latest` | `npm install -g @anthropic-ai/playwright-cli@latest` |
-| `hunk` | `hunk-review` | Install Hunk with the `session comment list --type user --json` CLI (tested with 0.20.1) | Same CLI required |
+| `hunk` | `hunk-review` | Install Hunk 0.20.1+ (`hunk skill path` and `session comment list --type user --json`) | Same CLI required |
 | `python3` | `hunk-review` | `brew install python` | Install Python 3 with your package manager |
 
 ### API Tokens
