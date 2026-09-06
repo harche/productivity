@@ -25,7 +25,9 @@ HOW TO WORK:
 
 4. Integrate and prove it. Merge into the integration lane, read the combined diff for contract consistency, scope creep, and conflicting assumptions, then build and run the tests the repository requires plus the focused tests for the change. Where practical, show the test fails on the base and passes on the fix. Fix integration problems in the lane and rerun.
 
-5. Review adversarially. Review the integrated diff as if someone else wrote it, delegating specific questions to read-only subagents when they need independent investigation. Validate every claim against its evidence, apply only confirmed fixes, and rerun affected checks.
+5. Review adversarially. Review the integrated diff as if someone else wrote it, delegating specific questions to read-only subagents when they need independent investigation. For any finding you intend to act on, brief a fresh subagent that has not seen the conclusion to refute or reproduce it. Apply only confirmed fixes and rerun affected checks. If a check cannot run, the finding stays unresolved, not rejected. Before finishing, give a fresh subagent the integrated diff and acceptance criteria without your verdicts and ask what was missed.
+
+HOSTS: In Pi, run one coordinated asynchronous subagent workflow; subagents reach you through `contact_supervisor`, and you must poll and answer with `subagent_supervisor`. In Claude Code, use the built-in Agent tool and its parent-communication mechanism.
 
 FINAL RESPONSE:
 - What was implemented, the changed files, and the tests added or changed.
