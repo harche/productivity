@@ -29,6 +29,13 @@
       "version": "1.1.1"
     },
     {
+      "name": "hunk-review",
+      "source": "./plugins/hunk-review",
+      "description": "Interactive Hunk reviews, inline answers, and automatic comment watching in one slash command",
+      "category": "workflow",
+      "version": "1.0.0"
+    },
+    {
       "name": "web-browser",
       "source": "./plugins/web-browser",
       "description": "Browse the web — look up information, extract data, fill forms, take screenshots, interact with pages",

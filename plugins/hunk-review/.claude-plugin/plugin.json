@@ -1,0 +1,8 @@
+{
+  "name": "hunk-review",
+  "description": "Interactive Hunk reviews, inline answers, and automatic comment watching in one slash command.",
+  "version": "1.0.0",
+  "author": {
+    "name": "harpatil"
+  }
+}

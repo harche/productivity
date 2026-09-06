@@ -13,6 +13,7 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 - `workspace` — Manage email, calendar, and documents across Google Workspace
 - `node-support` — OpenShift Node team assistant: kubelet/MCO/CRI-O/crun/conmonrs/Kueue development, debug-binary + CVO deployment, Jira (OCPNODE/OCPBUGS), Knowledge Base, support cases, platform docs (k8s + OpenShift), and Prometheus metrics
 - `ultracode` — On-demand adversarial multi-agent review and isolated implementation workflows for Claude Code and Pi
+- `hunk-review` — Interactive Hunk reviews, inline answers, and automatic comment watching in one slash command
 - `context-keeper` — Capture project state as structured markdown notes from Slack, Docs, Jira, and other sources
 
 **infra**
