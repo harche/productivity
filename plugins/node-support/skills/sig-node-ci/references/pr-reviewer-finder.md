@@ -2,6 +2,8 @@
 
 For each card in the 'PRs - Needs Reviewer' lane of the SIG Node CI/Test project board (https://github.com/orgs/kubernetes/projects/151, org: kubernetes, project number: 151), decide whether the PR is actually blocked on a reviewer, and if so who is the most suitable person to ask, with a drafted comment that says *why* they were pinged. This is outward-facing: it pages real people. It is strictly recommend-only, and the report must let the user veto or swap any candidate before anything is posted.
 
+board-triage.md also invokes steps 2, 3, 4, and 6 of this reference for every PR it accepts, so the `/cc` rides on the `/triage accepted` comment and the card never enters the lane without a reviewer ask. This sweep remains the tool for the existing backlog and for RE-PING when a reviewer goes quiet later.
+
 ## What the Lane Actually Means
 
 Cards land on the board automatically: a project workflow bot adds every PR the day it opens (the filter behaves like `is:pr label:sig/node`, so sig-storage or sig-apps PRs that merely carry `sig/node` leak in) with status Triage. A human then moves the card to 'PRs - Needs Reviewer' on the day they comment `/triage accepted`, and nobody moves it out when a reviewer engages. So the lane means **"triage accepted"**, not "no reviewer". Expect most cards to need re-laning, not a ping; in a live sweep of 27 cards, 15 were re-lanes, 5 re-pings, 7 genuine new asks. The actor and date of these moves are in the REST issue timeline (`added_to_project_v2`, `project_v2_item_status_changed`; status names are not populated there, only actor and date).
