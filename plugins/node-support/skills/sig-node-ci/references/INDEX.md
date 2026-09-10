@@ -7,4 +7,5 @@ Root: `./`
 ## Workflows
 
 |board-triage.md — triage the SIG Node CI/Test project board (kubernetes project 151): keep/remove calls for Triage-column items
+|board-todo-sweep.md — sweep the board's 'Issues - To do' lane: move cards that already have an assignee to 'Issues - In progress', flag in-progress cards with none
 |testgrid-review.md — weekly TestGrid review: find FAILING jobs via the JSON API, cluster by root cause, check/draft kubernetes/kubernetes tracking issues
