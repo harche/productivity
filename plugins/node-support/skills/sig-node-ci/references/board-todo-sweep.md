@@ -7,6 +7,7 @@ Keep the 'Issues - To do' lane of the SIG Node CI/Test project board (https://gi
 - **MOVE** a card from 'Issues - To do' to 'Issues - In progress' when the card's `assignees` list is non-empty.
 - **LEAVE** it in 'Issues - To do' when `assignees` is `null`/empty.
 - **FLAG (do not move)** a card in 'Issues - In progress' that has no assignee — surface it so the user can decide whether it went stale; moving cards backwards is a human call.
+- **DUPLICATE check before any MOVE.** Compare To-do cards pairwise on test name + job + author; if two match, verify the root cause and recommend closing the older/narrower one (see *Duplicate Cards* below). A card whose issue was closed as a duplicate goes to **'Archive-it'**, never 'Done'.
 - **STALE check** every card in 'Issues - In progress' that has an assignee: if the assignee has shown no activity for longer than the threshold, recommend a nudge comment, or an unassign if a nudge already went unanswered. See *Stale In-progress Cards* below.
 - Scope is **issues only**. PRs live in the 'PRs - *' lanes and use reviewer/author state, not assignment; do not touch them here.
 
@@ -14,19 +15,37 @@ An assignee is the only signal. Do not infer "in progress" from linked PRs, comm
 
 ## Workflow
 
-1. **List the board.** One call gives everything needed — `assignees` and `status` are top-level fields on every item, so no per-issue `gh issue view` is required:
-   `gh project item-list 151 --owner kubernetes --format json --limit 500`
+1. **List the board once and cache it.** One call gives everything needed — `assignees` and `status` are top-level fields on every item, so no per-issue `gh issue view` is required. The board holds ~1300 items, so use a high limit and save to a file; the project GraphQL API rate-limits heavy item-list calls even when `gh api rate_limit` still shows budget, so reuse the file for the rest of the session:
+   `gh project item-list 151 --owner kubernetes --format json --limit 2000 > board.json`
    Pull `.items[] | select(.content.type == "Issue")` and bucket by `.status`:
    - `"Issues - To do"` with `assignees` non-empty → MOVE candidates
    - `"Issues - To do"` with `assignees` null/empty → leave, list only in the tally
    - `"Issues - In progress"` with `assignees` null/empty → FLAG
 2. **Resolve the real IDs** (same as board-triage.md): project ID (`PVT_...`) from `gh project view 151 --owner kubernetes --format json`; Status field ID (`PVTSSF_...`) and the 'Issues - In progress' option ID from `gh project field-list 151 --owner kubernetes --format json`; each card's item ID (`PVTI_...`) is the `id` in the item-list output. Never emit `<placeholder>` IDs you could have resolved.
-3. **Report.** One table for MOVE candidates (issue number, title, assignees) and one for FLAGged in-progress cards with no assignee. State the unassigned To-do count in the tally rather than listing every card.
-4. **Recommend-only, always print the commands.** Do not run any `gh project item-edit` unless the user explicitly asks. For every MOVE candidate print:
+3. **Duplicate pass** over the To-do lane (see *Duplicate Cards*), before recommending any move.
+4. **Prow-command sanity check.** While reading each candidate issue's comments, flag malformed Prow commands that silently did nothing — e.g. `/triage accept` (should be `/triage accepted`) or `/priority imporant-soon` — and print the corrected comment. These leave the issue without `triage/accepted` / `priority/*` labels.
+5. **Report.** One table for MOVE candidates (issue number, title, assignees) and one for FLAGged in-progress cards with no assignee. State the unassigned To-do count in the tally rather than listing every card.
+6. **Recommend-only, always print the commands.** Do not run any `gh project item-edit` unless the user explicitly asks. For every MOVE candidate print:
    `gh project item-edit --id <ITEM_ID> --project-id <PROJECT_ID> --field-id <STATUS_FIELD_ID> --single-select-option-id <IN_PROGRESS_OPTION_ID>`
    in a copy-pasteable block keyed by issue number. If the user approves, run them and re-list the board to confirm the status changed.
-5. **Stale pass** over 'Issues - In progress' cards with assignees (see below), reported as its own table.
-6. **Tally**: e.g. "4 to move, 9 stay in To do (unassigned), 1 in-progress card has no assignee, 2 in-progress cards stale (1 nudge, 1 unassign)".
+7. **Stale pass** over 'Issues - In progress' cards with assignees (see below), reported as its own table.
+8. **Tally**: e.g. "4 to move, 9 stay in To do (unassigned), 1 duplicate pair, 1 in-progress card has no assignee, 2 in-progress cards stale (1 nudge, 1 unassign)".
+
+## Duplicate Cards
+
+The same flake gets filed twice more often than you would expect (seen: k/k #141614 and #141786, same author, same assignee, same job, near-identical titles, neither referencing the other). Moving both to In progress just doubles the noise.
+
+**Detect.** Within the To-do lane, pair cards that share two or more of: the same test name in "Which tests are flaking/failing?", the same TestGrid link or job name, the same author, the same assignee, or a title that differs only by a word. `gh issue view <NUM> --json title,body,author,assignees` on the candidates is enough.
+
+**Verify before calling it a duplicate.** Same title is not proof. Confirm the same failure signature: the same assertion line in the example runs (e.g. `expected number of restarts: 0, found restarts: 1`) and the same root cause in the node logs. For a prow run, take the GCS path from the issue's example link, fetch `artifacts/<node>/kubelet.log`, and grep for the failing pod name from `build-log.txt`. Two issues with the same assertion but different kubelet-side causes are not duplicates.
+
+**Recommend.** Keep the newer or superset issue (the one covering more variants, or with k8s-triage links); close the older/narrower one. Draft the closing comment with the reason, a pointer to the survivor, the one-line root cause, and `/close` on its own last line, so Prow closes it:
+`gh issue comment <OLD> --repo kubernetes/kubernetes --body $'Closing as a duplicate of #<NEW>, which covers the same test on the same job (<one-line root cause>). Tracking continues there.\n/close'`
+Verify afterwards with `gh issue view <OLD> --json state,stateReason` (expect CLOSED / COMPLETED).
+
+**Lane for the closed duplicate: 'Archive-it', never 'Done'.** Done means the tracked problem was fixed; a duplicate closed with no fix is noise. The survivor's card follows the normal assignee rule. Print the move:
+`gh project item-edit --id <OLD_ITEM_ID> --project-id <PROJECT_ID> --field-id <STATUS_FIELD_ID> --single-select-option-id <ARCHIVE_IT_OPTION_ID>`
+Board IDs as of 2026-09 (re-check with `gh project field-list 151 --owner kubernetes --format json` if any edit fails): project `PVT_kwDOAM_34M4AURf4`; Status field `PVTSSF_lADOAM_34M4AURf4zgM87lc`; options Issues - To do `fd8421e5`, Issues - In progress `975693a6`, Done `05887be2`, Archive-it `0bc92ec1`.
 
 ## Stale In-progress Cards
 
@@ -55,6 +74,7 @@ Assigned does not mean attended. An in-progress card whose assignee has gone qui
 
 - **Never use `gh project item-delete`** on this board; this sweep only ever changes Status.
 - If `field-list` shows the lane names or Status options have changed, adapt to the real names rather than assuming 'Issues - To do' / 'Issues - In progress'.
-- If `--limit 500` returns exactly 500 items, raise the limit — the board may be larger than one page.
+- If `--limit N` returns exactly N items, raise the limit — the board has ~1300 items and `--limit 500` silently truncates.
+- Confirm a Status move with `gh api graphql -f query='{ node(id:"<ITEM_ID>") { ... on ProjectV2Item { fieldValueByName(name:"Status") { ... on ProjectV2ItemFieldSingleSelectValue { name } } } } }'` rather than re-listing the whole board.
 - Cards in 'Triage' are out of scope here even if assigned; they go through board-triage.md first.
 - The stale pass costs a few `gh` calls per in-progress card; if the lane is large, offer to run it only for cards older than the threshold by `updatedAt` first.
