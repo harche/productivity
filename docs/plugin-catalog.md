@@ -16,6 +16,7 @@ claude plugin install --scope local <name>@productivity-tools
 | `node-support` | OpenShift Node team assistant: kubelet/MCO/CRI-O/crun/conmonrs/Kueue development, debug-binary + CVO deployment, Jira (OCPNODE/OCPBUGS), Knowledge Base, support cases, platform docs (k8s + OpenShift), and Prometheus metrics | — |
 | `ultracode` | On-demand adversarial multi-agent review and isolated implementation workflows for Claude Code and Pi | — |
 | `hunk-review` | Watch a live Hunk session for user comments and answer them inline (loads Hunk's own skill via `hunk skill path`) ([usage](../plugins/hunk-review/README.md)) | — |
+| `code-comments` | Answer inline `AQ` code comments with `AA` replies ([usage](../plugins/code-comments/README.md)) | — |
 | `knowledge-base` | Build and maintain knowledge bases: ingest sources (conversations, articles, URLs), compile structured wikis, and lint for consistency. Obsidian-compatible. | — |
 
 ### Infra

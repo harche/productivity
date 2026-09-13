@@ -36,6 +36,13 @@
       "version": "1.1.0"
     },
     {
+      "name": "code-comments",
+      "source": "./plugins/code-comments",
+      "description": "Answer inline AQ code comments with AA replies.",
+      "category": "workflow",
+      "version": "0.1.0"
+    },
+    {
       "name": "web-browser",
       "source": "./plugins/web-browser",
       "description": "Browse the web — look up information, extract data, fill forms, take screenshots, interact with pages",
