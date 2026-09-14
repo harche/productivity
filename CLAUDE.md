@@ -18,7 +18,6 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 - `context-keeper` — Capture project state as structured markdown notes from Slack, Docs, Jira, and other sources
 
 **misc**
-- `trading` — Monitor portfolio, place trades, and analyze account performance on Interactive Brokers
 - `video-research` — Extract insights from YouTube videos: transcripts, summaries, comments, and channel info
 - `predictions` — Research prediction markets and event probabilities on Polymarket
 - `financial-research` — Research company fundamentals (SEC filings) and economic trends (Federal Reserve data)

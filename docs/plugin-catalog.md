@@ -23,7 +23,6 @@ claude plugin install --scope local <name>@productivity-tools
 
 | Plugin | Description | Dependencies |
 |--------|-------------|--------------|
-| `trading` | Monitor portfolio, place trades, and analyze account performance on Interactive Brokers | — |
 | `video-research` | Extract insights from YouTube videos: transcripts, summaries, comments, and channel info | — |
 | `predictions` | Research prediction markets and event probabilities on Polymarket | — |
 | `financial-research` | Research company fundamentals (SEC filings) and economic trends (Federal Reserve data) | — |
@@ -75,7 +74,6 @@ See the full examples in the [README](../README.md#authentication--secrets).
 | `workspace` | `gog` CLI (OAuth flow) |
 | `video-research` | No auth required (public API) |
 | `predictions` | No auth required (public API) |
-| `trading` | Credentials from Keychain (`ibkr-paper-*`, `ibkr-live-*`) |
 | `financial-research` | SEC EDGAR: no auth; FRED: API key from Keychain (`fred-api-key`) |
 | `medical-research` | Europe PMC and ClinicalTrials.gov: no auth; Semantic Scholar and OpenAlex: API keys from Keychain (optional/free) |
 | `knowledge-base` | No auth required |

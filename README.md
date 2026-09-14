@@ -46,7 +46,7 @@ eval "$(cpi completions zsh)"
 ```bash
 cpi list                                # all plugins across all marketplaces
 cpi install workspace                   # install one plugin
-cpi install trading node-support        # install multiple (deps auto-resolved)
+cpi install workspace node-support        # install multiple (deps auto-resolved)
 cpi install all                         # install everything
 cpi uninstall google                    # remove a plugin and its deps
 cpi search node                         # search by name or description
