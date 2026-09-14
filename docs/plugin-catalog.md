@@ -19,17 +19,11 @@ claude plugin install --scope local <name>@productivity-tools
 | `code-comments` | Answer inline `AQ` code comments with `AA` replies ([usage](../plugins/code-comments/README.md)) | — |
 | `knowledge-base` | Build and maintain knowledge bases: ingest sources (conversations, articles, URLs), compile structured wikis, and lint for consistency. Obsidian-compatible. | — |
 
-### Infra
-
-| Plugin | Description | Dependencies |
-|--------|-------------|--------------|
-| `web-browser` | Browse the web: look up information, extract data, fill forms, take screenshots | — |
-
 ### Misc
 
 | Plugin | Description | Dependencies |
 |--------|-------------|--------------|
-| `trading` | Monitor portfolio, place trades, and analyze account performance on Interactive Brokers | `web-browser` |
+| `trading` | Monitor portfolio, place trades, and analyze account performance on Interactive Brokers | — |
 | `video-research` | Extract insights from YouTube videos: transcripts, summaries, comments, and channel info | — |
 | `predictions` | Research prediction markets and event probabilities on Polymarket | — |
 | `financial-research` | Research company fundamentals (SEC filings) and economic trends (Federal Reserve data) | — |
@@ -44,7 +38,6 @@ External CLI tools and API tokens required by specific plugins. Only install wha
 | Tool | Plugins | macOS | Linux |
 |------|---------|-------|-------|
 | [`gog`](https://github.com/steipete/gogcli) | `workspace` | See [repo README](https://github.com/steipete/gogcli) | See [repo README](https://github.com/steipete/gogcli) |
-| [`playwright-cli`](https://github.com/nicolo-ribaudo/playwright-cli) | `web-browser` | `npm install -g @anthropic-ai/playwright-cli@latest` | `npm install -g @anthropic-ai/playwright-cli@latest` |
 | `hunk` | `hunk-review` | Install Hunk 0.20.1+ (`hunk skill path` and `session comment list --type user --json`) | Same CLI required |
 | `python3` | `hunk-review` | `brew install python` | Install Python 3 with your package manager |
 
@@ -82,8 +75,7 @@ See the full examples in the [README](../README.md#authentication--secrets).
 | `workspace` | `gog` CLI (OAuth flow) |
 | `video-research` | No auth required (public API) |
 | `predictions` | No auth required (public API) |
-| `trading` | Auto-login via `web-browser` (headless); credentials from Keychain (`ibkr-paper-*`, `ibkr-live-*`) |
-| `web-browser` | No auth required |
+| `trading` | Credentials from Keychain (`ibkr-paper-*`, `ibkr-live-*`) |
 | `financial-research` | SEC EDGAR: no auth; FRED: API key from Keychain (`fred-api-key`) |
 | `medical-research` | Europe PMC and ClinicalTrials.gov: no auth; Semantic Scholar and OpenAlex: API keys from Keychain (optional/free) |
 | `knowledge-base` | No auth required |

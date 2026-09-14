@@ -17,11 +17,8 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 - `code-comments` — Answer inline `AQ` code comments with `AA` replies
 - `context-keeper` — Capture project state as structured markdown notes from Slack, Docs, Jira, and other sources
 
-**infra**
-- `web-browser` — Browse the web: look up information, extract data, fill forms, take screenshots
-
 **misc**
-- `trading` — Monitor portfolio, place trades, and analyze account performance on Interactive Brokers (depends on `web-browser`)
+- `trading` — Monitor portfolio, place trades, and analyze account performance on Interactive Brokers
 - `video-research` — Extract insights from YouTube videos: transcripts, summaries, comments, and channel info
 - `predictions` — Research prediction markets and event probabilities on Polymarket
 - `financial-research` — Research company fundamentals (SEC filings) and economic trends (Federal Reserve data)

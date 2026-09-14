@@ -43,19 +43,11 @@
       "version": "0.1.0"
     },
     {
-      "name": "web-browser",
-      "source": "./plugins/web-browser",
-      "description": "Browse the web — look up information, extract data, fill forms, take screenshots, interact with pages",
-      "category": "infra",
-      "version": "2.0.0"
-    },
-    {
       "name": "trading",
       "source": "./plugins/trading",
       "description": "Monitor portfolio, check positions, place trades, and analyze account performance on Interactive Brokers. Also: historical charts, stock lookup, scanners, options pricing",
       "category": "misc",
-      "version": "6.1.0",
-      "dependencies": ["web-browser"]
+      "version": "6.1.0"
     },
     {
       "name": "knowledge-base",
