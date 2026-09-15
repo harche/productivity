@@ -22,13 +22,6 @@
       "version": "0.30.0"
     },
     {
-      "name": "ultracode",
-      "source": "./plugins/ultracode",
-      "description": "On-demand adversarial multi-agent review and isolated implementation workflows for Claude Code and Pi",
-      "category": "workflow",
-      "version": "1.4.2"
-    },
-    {
       "name": "hunk-review",
       "source": "./plugins/hunk-review",
       "description": "Watch a live Hunk session for user comments and answer them inline",
