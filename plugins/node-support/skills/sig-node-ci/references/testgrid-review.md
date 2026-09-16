@@ -38,7 +38,7 @@ TestGrid's UI is backed by plain JSON endpoints — use them directly:
 
 Note: `https://testgrid.k8s.io/api/v1/...` is not served for this instance (404); the endpoints above are the working interface.
 
-Convert epoch timestamps portably with jq (works on macOS and Linux): `jq -rn '<epoch> | todate'`.
+Convert epoch timestamps with `jq -rn '<epoch> | todate'`; if your jq errors (`strftime/1 requires parsed datetime inputs`), use: `python3 -c "import datetime; print(datetime.datetime.fromtimestamp(<epoch>, tz=datetime.timezone.utc).isoformat())"`.
 
 ## How TestGrid computes the status (so you never need the UI)
 
@@ -53,6 +53,8 @@ Practical consequences:
 - **FLAKY = failures that never hit 3-in-a-row.** Report the FLAKY tally for awareness, but flakes generally don't get a fresh issue from this workflow unless the user asks (they're often better handled via existing flake issues / triage board).
 - A single passing run resets the streak, so a tab can flip FAILING → FLAKY without anyone fixing anything — check `fail_timestamp` history before assuming a fix.
 
+**TestGrid status is the sole classifier.** A tab is "flaky" iff its `overall_status` is `FLAKY` (red cells in the window, no 3-in-a-row alert), and "failing" iff `FAILING`. GitHub's `kind/flake` ("related to a flaky test") vs `kind/failing-test` ("consistently or frequently failing test") are human-applied tracking labels — see `kubernetes/community` `contributors/devel/sig-testing/flaky-tests.md` ("Any test that fails occasionally is 'flaky'"). Never use issue labels to classify tabs, and never run a tracking sweep over FLAKY tabs: no alert means the `kind/failing-test` bar isn't met.
+
 ## Workflow
 
 1. **Fetch all summaries and bucket the tabs.**
@@ -65,7 +67,7 @@ Practical consequences:
    ```
    Also collect the FLAKY list (same query with `=="FLAKY"`) for the report tally.
    - **Deduplicate by tab name** — the same job appears on multiple dashboards (e.g. `ci-node-e2e` is on both `sig-node-containerd` and `sig-node-release-blocking`). Track each job once, noting all dashboards it appears on; release-blocking membership raises priority.
-   - **Separate `pull-*` tabs** (presubmit/canary jobs) from `ci-*`/periodic tabs. The weekly review's main target is periodic CI; report failing presubmit canaries in their own low-priority section.
+   - **Exclude `pull-*` tabs** (presubmit/canary jobs) from the FLAKY tally entirely — filter with `grep -v '^pull-'`. They flake as PR authors iterate, which is expected noise, not CI signal. (A FAILING `pull-*` tab still gets a one-line low-priority note, but never an issue draft.)
 
 2. **For each FAILING job, extract the failure details** from the summary entry's `tests[]`:
    - Failing test names (`display_name`), consecutive `fail_count`, since-when (`fail_timestamp | todate`), and `failure_message`.
@@ -102,7 +104,7 @@ Practical consequences:
 
 6. **Report — and stop.** Present:
    - A summary table of FAILING jobs grouped by cluster: jobs, dashboards, failing tests count, since-when, consecutive fails, tracking status with issue link or "UNTRACKED".
-   - A one-line FLAKY tally per dashboard (names only).
+   - A one-line FLAKY tally per dashboard: periodic-job names only (`pull-*` excluded per step 1).
    - For each UNTRACKED failure: the full drafted issue body, followed by a copy-pasteable command the **user** runs:
      ```bash
      gh issue create --repo kubernetes/kubernetes \
