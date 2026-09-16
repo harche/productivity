@@ -1,0 +1,5 @@
+{
+  "name": "devkit",
+  "description": "Dev toolkit: isolated worktrees for PRs/issues, AQ/AA inline code review, and dynamic exhaustive workflows",
+  "version": "0.1.0"
+}
