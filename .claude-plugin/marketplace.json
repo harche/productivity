@@ -29,6 +29,13 @@
       "version": "1.1.0"
     },
     {
+      "name": "treehouse",
+      "source": "./plugins/treehouse",
+      "description": "Answer inline review comments left in VS Code (Treehouse Review extension), with a background watcher for live back-and-forth",
+      "category": "workflow",
+      "version": "0.1.0"
+    },
+    {
       "name": "code-comments",
       "source": "./plugins/code-comments",
       "description": "Answer inline AQ code comments with AA replies.",

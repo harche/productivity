@@ -1,0 +1,8 @@
+{
+  "name": "treehouse",
+  "description": "Answer inline review comments left in VS Code (Treehouse Review extension), with a background watcher for live back-and-forth.",
+  "version": "0.1.0",
+  "author": {
+    "name": "harpatil"
+  }
+}
