@@ -1,5 +1,5 @@
 {
   "name": "devkit",
   "description": "Dev toolkit: isolated worktrees for PRs/issues, ASD-STE100 PR/issue explanations, narrated video explainers, interactive HTML pages, and draft-first pending PR reviews",
-  "version": "0.7.0"
+  "version": "0.7.1"
 }
