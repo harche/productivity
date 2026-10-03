@@ -28,15 +28,21 @@ is ambiguous.
 
 ## 1. Preflight
 
-QA uses `playwright-cli`:
-
 ```bash
-command -v playwright-cli && playwright-cli --version
+command -v playwright-cli d2 python3
+PK="${CLAUDE_PLUGIN_ROOT}/scripts/page"
+[ -f "$PK/pagekit.py" ] || PK="$(dirname "$(ls -t ~/.claude/plugins/cache/*/devkit/*/scripts/page/pagekit.py | head -1)")"
+python3 "$PK/pagekit.py" init <build-dir>
 ```
 
-If it is missing, stop and print the install command
-(`brew install playwright-cli`, or `npm install -g @playwright/cli` on Linux). If the browser is missing, run
-`playwright-cli install-browser chromium`. Never skip QA.
+`$PK` holds `pagekit.py` (build and QA) and `template.html` (theme, layout,
+component patterns, pinned libraries). Use them; do not rewrite them in the
+build dir. If one has a bug, fix it in the plugin.
+
+Missing tools: stop, print the install commands and offer to run them:
+`brew install playwright-cli d2` (Linux: `npm install -g @playwright/cli`,
+`curl -fsSL https://d2lang.com/install.sh | sh -s --`). If the browser is
+missing, run `playwright-cli install-browser chromium`. Never skip QA.
 
 ## 2. Gather context
 
@@ -70,30 +76,44 @@ list at the end.
 
 ## 4. Build
 
-One `.html` file. Inline CSS, JS and SVG. No build step.
+Edit `<build-dir>/page.html` (from `template.html`). It already has the
+theme tokens (light and dark), the layout, the favicon, and commented
+patterns for every component below. Keep the patterns the plan needs and
+delete the rest.
 
-- **Diagrams**: hand-written inline SVG with a `viewBox` that scales to the
-  container. Use text, not images, for labels. Every diagram has a
-  `<figcaption>` and a `<title>`/`aria-label` text alternative. Mermaid only
-  for large generated graphs, loaded from cdnjs.cloudflare.com or
-  cdn.jsdelivr.net.
-- **External resources**: scripts only from cdnjs.cloudflare.com or
-  cdn.jsdelivr.net, and fonts only from Google Fonts. Everything else
-  inline. The page must still be readable if the CDN fails.
-- **Theme**: define colors as tokens on `:root`. Override them under
-  `@media (prefers-color-scheme: dark)`. Set an explicit `body` background.
-  SVG strokes and fills use the tokens (`currentColor` or `var(--…)`), so
-  diagrams work in both themes.
-- **Layout**: a readable text column (about 70ch). Diagrams can be wider.
-  At 390 px width: 16 px side padding, no horizontal page scroll. Wide
-  diagrams scroll inside their own container.
-- **Interactions**: plain JS, keyboard-accessible (buttons, not `div`s),
-  and visible focus. The default state must make sense without JS.
-- **Code**: identifiers in `<code>`. Diff excerpts in `<pre>` with
-  added and removed lines colored by token.
-- **Title**: a `<title>` of 2–4 words that names the subject.
-- **Favicon**: an inline `<link rel="icon" href="data:,">` (or an inline
-  SVG icon), so the browser does not log a 404 for `/favicon.ico`.
+**Use the libraries, not hand-made versions:**
+
+| Need | Use | Fallback without JS or CDN |
+|---|---|---|
+| Sequence, flow, structure, before/after diagram | **D2**: source in `diagrams/NAME.d2`, `<!-- d2:NAME -->` in the page. `pagekit build` renders it to inline SVG with light and dark themes and ELK layout. Use `direction: down` for anything with more than 3 nodes in a row. | Inline SVG: no JS needed |
+| PR diff | **diff2html**: put the diff in `pr.diff` (`gh pr diff`), use the diff pattern. It stays collapsed by default. | Raw diff in `<details><pre>` |
+| Metrics, numbers over time, comparisons | **Observable Plot** (`plot` in `devkit-libs`). Only for real data from the sources. | `<table>` of the same data |
+| Tabs, scenario toggle, step-through | **Alpine.js** (`alpine`): state in `x-data`, `x-show`. | All panels show, each with a heading |
+| Hover or focus card on an identifier | Native `popover` + `popovertarget` button. No library. | The button text stays |
+| Summary numbers | `.tiles` / `.tile` in the template | Plain HTML |
+| Code excerpt | **highlight.js** (`hljs`), `<code class="language-go">`, `<!-- text:excerpt.go -->` | Plain `<pre>` |
+
+Hand-written SVG only for a mechanism that D2 cannot show (for example, a
+row of CPU cells that change color). Do not use a library that the plan
+does not need: `devkit-libs` lists only the libraries in use.
+
+**Markers** that `pagekit build` replaces: `devkit-libs` (pinned CDN tags
+with SRI), `<!-- d2:NAME -->`, `<!-- text:PATH -->` (HTML-escaped file,
+for diffs and code). Put the diff source in a hidden `<textarea>`, as the
+pattern does, not a `<script type="text/plain">`: escaped `&` stays escaped
+there.
+
+```bash
+python3 "$PK/pagekit.py" build <build-dir> <output>
+```
+
+**Rules that the template does not enforce:**
+
+- Every diagram is in a `<figure>` with `role="img"`, an `aria-label` text
+  alternative, and a `<figcaption>`.
+- Interactions use buttons, not `div`s, and work from the keyboard.
+- Identifiers in `<code>`. GitHub links are permalinks at the PR head SHA.
+- `<title>`: 2–4 words that name the subject.
 
 ### Language: ASD-STE100
 
@@ -112,59 +132,42 @@ All prose, captions and labels in ASD-STE100 Simplified Technical English.
 
 ## 5. QA (all must pass before handover)
 
-Run on the **final file** with `playwright-cli`. It blocks `file://`, so
-serve the output directory on loopback, and use a named session so the
-checks do not touch other browser sessions:
-
 ```bash
-PORT=$(python3 -c 'import socket;s=socket.socket();s.bind(("127.0.0.1",0));print(s.getsockname()[1])')
-python3 -m http.server "$PORT" --bind 127.0.0.1 --directory <output-dir> >/dev/null 2>&1 &
-SRV=$!
-until curl -sf "http://127.0.0.1:$PORT/<file>" >/dev/null; do sleep 0.2; done
-S=-s=devkit-page-<slug>
-URL="http://127.0.0.1:$PORT/<file>"
-playwright-cli $S open "$URL"
+python3 "$PK/pagekit.py" qa <build-dir> <output> [--repo owner/name]
 ```
 
-Commands per check (repeat for each viewport and color scheme):
+It serves the final file on loopback, uses its own `playwright-cli`
+session, and prints a table for the mechanical checks, at 1440×900 and
+390×844 in light and dark:
 
-```bash
-playwright-cli $S resize 1440 900                 # or 390 844
-playwright-cli $S set-color-scheme light          # or dark
-playwright-cli $S reload
-playwright-cli $S console error                   # must report Errors: 0
-playwright-cli $S requests --static               # no [FAILED], only allowed hosts
-playwright-cli $S eval "() => document.documentElement.scrollWidth <= innerWidth" --raw
-playwright-cli $S screenshot --full-page --filename=<build-dir>/shots/<w>-<scheme>.png
-playwright-cli $S snapshot                        # refs for the controls to click
-playwright-cli $S click <ref>                     # then eval/snapshot to assert a change
-```
+1. **Clean load**: zero console errors, zero failed requests.
+2. **Screenshots**: full page, split into viewport-sized tiles in
+   `shots/`. It also scans for text that overflows its box and for empty
+   visible figures.
+3. **No horizontal scroll** at 390 px.
+5. **Links well-formed**: `href` syntax, `#anchors` exist, GitHub links
+   match `--repo`.
+6. **Hosts and size**: only cdn.jsdelivr.net, cdnjs.cloudflare.com and
+   Google Fonts; file under 2 MB.
+7. **Sentence length**: no prose sentence over 25 words (quotes and code
+   are not checked).
 
-Always clean up, also after a failure:
+Then do the checks that need judgment:
 
-```bash
-playwright-cli $S close; kill "$SRV"
-```
-
-1. **Clean load**: zero console errors, zero failed network requests,
-   zero uncaught exceptions.
-2. **Screenshots**: full page at 1440×900 and 390×844, in light and dark
-   (`set-color-scheme`). Look at all four with the image reader.
-   Fail on: clipped or overlapping text, labels that run outside their
-   shapes, unreadable contrast, empty diagram areas, broken layout.
-3. **No horizontal scroll** at 390 px:
-   `document.documentElement.scrollWidth <= innerWidth`.
-4. **Interactions work**: find every control with `snapshot`, then
-   `click` or `press` it. Use `eval` or a new `snapshot` to assert that the
-   DOM or the SVG state changes. Step-through controls reach the last step
-   and return. Take a screenshot of one mid-sequence state.
-5. **Links and sources**: every `href` is well-formed. GitHub links match
-   the target repo. Every intent claim in `plan.json` has its source on
-   the page.
-6. **Hosts and size**: the only external hosts are the allowed CDNs. The
-   file is under 2 MB.
-7. **Language**: no sentence over 25 words (`eval` over
-   `document.body.innerText`), and no passive voice in headings and captions.
+- **Look at every tile** with the image reader. Fail on clipped or
+  overlapping text, labels outside their shapes, unreadable contrast,
+  diagrams too small to read on the phone tiles, broken layout.
+- **4. Interactions**: open a `playwright-cli -s=<name>` session on a
+  loopback server. Click every control (and press Enter on one with the
+  keyboard). Use `eval` to assert the state changes: panels with
+  `checkVisibility()`, popovers with `:popover-open`, `aria-selected` on
+  tabs, `details.open`. Step-through controls reach the last step and
+  return. Screenshot one changed state. In zsh, wrap the CLI in a function
+  (`P() { playwright-cli -s=name "$@"; }`): `$P` with flags in a variable
+  does not split.
+- **5. Sources**: every intent claim in `plan.json` has its source on the
+  page.
+- **7. Language**: no passive voice in headings and captions.
 
 On a failure: fix the cause and run **all** checks again. After 3 full
 rounds that still fail, stop and report the failing check with numbers.
@@ -180,7 +183,8 @@ xdg-open <output>   # Linux
 Report:
 
 - Output path and file size.
-- QA table: each check, measured value, pass/fail.
+- The QA table from `pagekit.py qa`, plus the manual checks (4, 5, 7) with
+  what you tested.
 - Screenshot paths in the build dir.
 - If the host has a publishing tool (for example Claude Artifacts), offer
   to publish in one line. Do not publish without a yes: a published

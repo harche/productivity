@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITLE}}</title>
+<link rel="icon" href="data:,">
+<!-- Libraries: keep only what the page uses. pagekit build swaps this for pinned CDN tags with SRI.
+     diff2html: PR diffs. hljs: code highlighting. plot: charts (d3 + Observable Plot). alpine: state. -->
+<meta name="devkit-libs" content="diff2html,hljs,alpine">
+<style>
+:root {
+  --bg: #ffffff; --surface: #f6f8fa; --border: #d0d7de; --fg: #1f2328; --muted: #59636e;
+  --accent: #0969da; --add: #1a7f37; --add-bg: #dafbe1; --del: #cf222e; --del-bg: #ffebe9;
+  --warn: #9a6700; --warn-bg: #fff8c5;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d; --fg: #e6edf3; --muted: #9198a1;
+    --accent: #4493f8; --add: #3fb950; --add-bg: #12261e; --del: #f85149; --del-bg: #25171c;
+    --warn: #d29922; --warn-bg: #272115;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.6 var(--sans); }
+main { max-width: 72ch; margin: 0 auto; padding: 32px 16px 64px; }
+.wide { width: min(1100px, calc(100vw - 32px)); margin-left: 50%; transform: translateX(-50%); }
+h1 { font-size: 1.9rem; line-height: 1.25; margin: 0 0 4px; }
+h2 { font-size: 1.35rem; margin: 48px 0 12px; padding-top: 8px; border-top: 1px solid var(--border); }
+h3 { font-size: 1.05rem; margin: 24px 0 8px; }
+a { color: var(--accent); }
+code { font: 0.9em var(--mono); background: var(--surface); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+pre { font: 13px/1.5 var(--mono); background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px; overflow-x: auto; }
+pre code { background: none; padding: 0; }
+.muted { color: var(--muted); }
+.sub { color: var(--muted); margin: 0 0 24px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+[x-cloak] { display: none !important; }
+
+/* At a glance: metric tiles */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 16px 0; }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+.tile .label { font-size: 0.8rem; color: var(--muted); }
+.tile .value { font-size: 1.4rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.tile .value.add { color: var(--add); } .tile .value.del { color: var(--del); } .tile .value.warn { color: var(--warn); }
+
+/* Callouts and badges */
+.callout { border-left: 4px solid var(--accent); background: var(--surface); padding: 10px 14px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+.callout.warn { border-color: var(--warn); background: var(--warn-bg); }
+.badge { display: inline-block; font: 600 0.75rem/1.6 var(--sans); padding: 0 8px; border-radius: 999px;
+         border: 1px solid var(--border); background: var(--surface); }
+.badge.add { color: var(--add); border-color: var(--add); } .badge.del { color: var(--del); border-color: var(--del); }
+
+/* Figures: D2 SVGs scale to the container */
+figure { margin: 24px 0; }
+/* On phones, keep labels legible: scroll the diagram inside its figure, not the page. */
+figure .d2 { overflow-x: auto; }
+figure .d2 svg { width: 100%; min-width: 640px; height: auto; display: block; }
+figure .scroll-x { overflow-x: auto; }
+figcaption { font-size: 0.9rem; color: var(--muted); margin-top: 8px; }
+
+/* Segmented control (tabs / scenario toggle) */
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin: 8px 0 12px; flex-wrap: wrap; }
+.seg button { font: inherit; font-size: 0.9rem; padding: 6px 14px; border: 0; background: var(--bg); color: var(--fg); cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--border); }
+.seg button[aria-selected="true"] { background: var(--accent); color: #fff; }
+
+/* Step-through */
+.steps-nav { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
+.steps-nav button { font: inherit; padding: 4px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--fg); cursor: pointer; }
+.steps-nav button:disabled { opacity: 0.4; cursor: default; }
+
+/* Hover / focus cards on identifiers (native Popover API) */
+button.ident { font: 0.9em var(--mono); background: var(--surface); border: 1px dashed var(--border); border-radius: 4px; padding: 0 5px; color: var(--fg); cursor: help; }
+[popover] { max-width: min(420px, 90vw); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px;
+            background: var(--surface); color: var(--fg); box-shadow: 0 8px 24px rgb(0 0 0 / 0.2); }
+
+/* Tables */
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); }
+th { color: var(--muted); font-weight: 600; }
+
+/* diff2html: follow the page tokens */
+.d2h-wrapper { font-size: 13px; }
+.d2h-file-header { background: var(--surface) !important; border-color: var(--border) !important;
+                   flex-wrap: wrap; height: auto !important; gap: 4px; }
+.d2h-file-name-wrapper { min-width: 0; }
+.d2h-file-name { overflow-wrap: anywhere; white-space: normal; }
+details.diff > summary { cursor: pointer; color: var(--muted); }
+
+.sources li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>{{TITLE}}</h1>
+  <p class="sub">{{SUBTITLE}}</p>
+
+  <!-- PATTERNS: copy what the plan needs, delete the rest. Every pattern reads well without JS.
+
+  At a glance tiles:
+    <div class="tiles">
+      <div class="tile"><div class="label">Files</div><div class="value">1</div></div>
+      <div class="tile"><div class="label">Lines</div><div class="value add">+79</div></div>
+    </div>
+
+  D2 diagram (source in diagrams/NAME.d2; light and dark themes built in):
+    <figure>
+      <div class="d2" role="img" aria-label="TEXT ALTERNATIVE"><!-- d2:NAME --></div>
+      <figcaption>CAPTION</figcaption>
+    </figure>
+
+  Diff (diff2html; collapsed, because a full diff dwarfs the prose; the <pre> shows when the CDN fails):
+    <details class="diff" id="diff-panel"><summary>Show the diff (+N −M)</summary>
+      <div class="wide"><div id="diff-view"></div></div>
+    </details>
+    <details class="diff" id="diff-fallback"><summary>Raw diff</summary><pre><code><!-- text:pr.diff --></code></pre></details>
+    <textarea id="diff-src" hidden aria-hidden="true"><!-- text:pr.diff --></textarea>
+    (and the diff2html block in the script at the end)
+
+  Segmented toggle (Alpine; without JS both panels show, each under its own heading):
+    <div x-data="{v: 'before'}">
+      <div class="seg" role="tablist" x-cloak>
+        <button role="tab" :aria-selected="v==='before'" @click="v='before'">Before</button>
+        <button role="tab" :aria-selected="v==='after'" @click="v='after'">After</button>
+      </div>
+      <section x-show="v==='before'"><h3>Before</h3>...</section>
+      <section x-show="v==='after'"><h3>After</h3>...</section>
+    </div>
+
+  Step-through (Alpine; without JS all steps show as a list):
+    <div x-data="{i: 0, n: 4}">
+      <div class="steps-nav" x-cloak>
+        <button @click="i--" :disabled="i===0">Previous</button>
+        <span x-text="`Step ${i+1} of ${n}`"></span>
+        <button @click="i++" :disabled="i===n-1">Next</button>
+      </div>
+      <ol><li x-show="i===0">...</li><li x-show="i===1">...</li></ol>
+    </div>
+
+  Identifier card (native popover, keyboard accessible, no library):
+    <button class="ident" popovertarget="pop-foo">foo</button>
+    <div id="pop-foo" popover><code>foo(x)</code> does ... <a href="PERMALINK">file.go:12</a></div>
+
+  Chart (Observable Plot; add "plot" to devkit-libs; the table is the fallback and text alternative):
+    <figure>
+      <div id="chart-x" role="img" aria-label="..."></div>
+      <details><summary>Data</summary><table>...</table></details>
+      <figcaption>...</figcaption>
+    </figure>
+    <script>
+      if (window.Plot) document.getElementById('chart-x').append(Plot.plot({
+        style: {background: 'transparent', color: 'currentColor'},
+        marks: [Plot.barY(DATA, {x: 'name', y: 'value', fill: 'var(--accent)'}), Plot.ruleY([0])]}));
+    </script>
+
+  Code excerpt (highlight.js):
+    <pre><code class="language-go"><!-- text:excerpt.go --></code></pre>
+  -->
+
+  <section id="glance">
+    <h2>At a glance</h2>
+  </section>
+
+  <section id="sources">
+    <h2>Sources</h2>
+    <ul class="sources"></ul>
+  </section>
+</main>
+<script>
+  // Highlight code blocks when highlight.js loaded; plain <pre> otherwise.
+  if (window.hljs) document.querySelectorAll('pre code[class*="language-"]').forEach(el => hljs.highlightElement(el));
+
+  // Render the PR diff when diff2html loaded; keep the raw <details> fallback otherwise.
+  const diffSrc = document.getElementById('diff-src');
+  if (diffSrc && window.Diff2HtmlUI) {
+    const ui = new Diff2HtmlUI(document.getElementById('diff-view'), diffSrc.value, {
+      drawFileList: false, matching: 'lines', outputFormat: 'line-by-line',
+      colorScheme: 'auto', highlight: true, fileContentToggle: true,  // slim bundle ships its own highlighter
+    });
+    ui.draw();
+    ui.highlightCode();
+    document.getElementById('diff-fallback')?.remove();
+  }
+</script>
+</body>
+</html>
