@@ -1,5 +1,5 @@
 {
   "name": "devkit",
-  "description": "Dev toolkit: isolated worktrees for PRs/issues, AQ/AA inline code review, and dynamic exhaustive workflows",
-  "version": "0.1.0"
+  "description": "Dev toolkit: isolated worktrees for PRs/issues, AQ/AA inline code review, dynamic exhaustive workflows, and ASD-STE100 PR/issue explanations",
+  "version": "0.2.0"
 }

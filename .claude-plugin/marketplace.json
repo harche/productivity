@@ -45,9 +45,9 @@
     {
       "name": "devkit",
       "source": "./plugins/devkit",
-      "description": "Dev toolkit: isolated worktrees for PRs/issues, AQ/AA inline code review, and dynamic exhaustive workflows",
+      "description": "Dev toolkit: isolated worktrees for PRs/issues, AQ/AA inline code review, dynamic exhaustive workflows, and ASD-STE100 PR/issue explanations",
       "category": "workflow",
-      "version": "0.1.0"
+      "version": "0.2.0"
     },
     {
       "name": "knowledge-base",
