@@ -36,18 +36,11 @@
       "version": "0.1.0"
     },
     {
-      "name": "code-comments",
-      "source": "./plugins/code-comments",
-      "description": "Answer inline AQ code comments with AA replies.",
-      "category": "workflow",
-      "version": "0.1.0"
-    },
-    {
       "name": "devkit",
       "source": "./plugins/devkit",
       "description": "Dev toolkit: isolated worktrees for PRs/issues, ASD-STE100 PR/issue explanations, narrated video explainers, interactive HTML pages, and draft-first pending PR reviews",
       "category": "workflow",
-      "version": \"0.7.0\"
+      "version": "0.7.0"
     },
     {
       "name": "knowledge-base",
