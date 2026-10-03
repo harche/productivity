@@ -28,17 +28,15 @@ is ambiguous.
 
 ## 1. Preflight
 
-Need a headless browser for QA. First match wins:
+QA uses `playwright-cli`:
 
 ```bash
-npx --yes playwright --version          # preferred: console + network capture
-command -v google-chrome chromium chromium-browser
-ls "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+command -v playwright-cli && playwright-cli --version
 ```
 
-If Playwright is missing but `npx` works, run
-`npx --yes playwright install chromium`. If there is no browser, stop and
-print the install commands. Never skip QA.
+If it is missing, stop and print the install command
+(`brew install playwright-cli`, or `npm install -g @playwright/cli` on Linux). If the browser is missing, run
+`playwright-cli install-browser chromium`. Never skip QA.
 
 ## 2. Gather context
 
@@ -94,6 +92,8 @@ One `.html` file. Inline CSS, JS and SVG. No build step.
 - **Code**: identifiers in `<code>`. Diff excerpts in `<pre>` with
   added and removed lines colored by token.
 - **Title**: a `<title>` of 2–4 words that names the subject.
+- **Favicon**: an inline `<link rel="icon" href="data:,">` (or an inline
+  SVG icon), so the browser does not log a 404 for `/favicon.ico`.
 
 ### Language: ASD-STE100
 
@@ -112,18 +112,50 @@ All prose, captions and labels in ASD-STE100 Simplified Technical English.
 
 ## 5. QA (all must pass before handover)
 
-Run on the **final file** in the headless browser. Write the QA script to
-the build dir (Playwright preferred).
+Run on the **final file** with `playwright-cli`. It blocks `file://`, so
+serve the output directory on loopback, and use a named session so the
+checks do not touch other browser sessions:
+
+```bash
+PORT=$(python3 -c 'import socket;s=socket.socket();s.bind(("127.0.0.1",0));print(s.getsockname()[1])')
+python3 -m http.server "$PORT" --bind 127.0.0.1 --directory <output-dir> >/dev/null 2>&1 &
+SRV=$!
+until curl -sf "http://127.0.0.1:$PORT/<file>" >/dev/null; do sleep 0.2; done
+S=-s=devkit-page-<slug>
+URL="http://127.0.0.1:$PORT/<file>"
+playwright-cli $S open "$URL"
+```
+
+Commands per check (repeat for each viewport and color scheme):
+
+```bash
+playwright-cli $S resize 1440 900                 # or 390 844
+playwright-cli $S set-color-scheme light          # or dark
+playwright-cli $S reload
+playwright-cli $S console error                   # must report Errors: 0
+playwright-cli $S requests --static               # no [FAILED], only allowed hosts
+playwright-cli $S eval "() => document.documentElement.scrollWidth <= innerWidth" --raw
+playwright-cli $S screenshot --full-page --filename=<build-dir>/shots/<w>-<scheme>.png
+playwright-cli $S snapshot                        # refs for the controls to click
+playwright-cli $S click <ref>                     # then eval/snapshot to assert a change
+```
+
+Always clean up, also after a failure:
+
+```bash
+playwright-cli $S close; kill "$SRV"
+```
 
 1. **Clean load**: zero console errors, zero failed network requests,
    zero uncaught exceptions.
 2. **Screenshots**: full page at 1440×900 and 390×844, in light and dark
-   (`colorScheme` emulation). Look at all four with the image reader.
+   (`set-color-scheme`). Look at all four with the image reader.
    Fail on: clipped or overlapping text, labels that run outside their
    shapes, unreadable contrast, empty diagram areas, broken layout.
 3. **No horizontal scroll** at 390 px:
    `document.documentElement.scrollWidth <= innerWidth`.
-4. **Interactions work**: click or press every control. Assert that the
+4. **Interactions work**: find every control with `snapshot`, then
+   `click` or `press` it. Use `eval` or a new `snapshot` to assert that the
    DOM or the SVG state changes. Step-through controls reach the last step
    and return. Take a screenshot of one mid-sequence state.
 5. **Links and sources**: every `href` is well-formed. GitHub links match
@@ -131,8 +163,8 @@ the build dir (Playwright preferred).
    the page.
 6. **Hosts and size**: the only external hosts are the allowed CDNs. The
    file is under 2 MB.
-7. **Language**: no sentence over 25 words (script check on the visible
-   text), and no passive voice in headings and captions.
+7. **Language**: no sentence over 25 words (`eval` over
+   `document.body.innerText`), and no passive voice in headings and captions.
 
 On a failure: fix the cause and run **all** checks again. After 3 full
 rounds that still fail, stop and report the failing check with numbers.

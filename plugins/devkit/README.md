@@ -15,4 +15,4 @@ Dev toolkit: worktrees, inline review, dynamic workflows, PR/issue explanations,
 claude plugin install --scope local devkit@productivity-tools
 ```
 
-Requires `git` and (for worktree GitHub metadata) `gh` via `gh auth login`. `/devkit:video` also needs `manim`, `ffmpeg` and an OpenAI API key. `/devkit:page` needs Playwright (via `npx`) or Chrome/Chromium for QA.
+Requires `git` and (for worktree GitHub metadata) `gh` via `gh auth login`. `/devkit:video` also needs `manim`, `ffmpeg` and an OpenAI API key. `/devkit:page` needs `playwright-cli` for QA.
