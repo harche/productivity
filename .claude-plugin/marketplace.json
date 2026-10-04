@@ -47,7 +47,7 @@
       "source": "./plugins/kb",
       "description": "Personal working notes (how to test, review and work on Kubernetes, OpenShift and OCPNODE/OCPBUGS, beyond the docs), tasks and an agent message board in the personal PostgreSQL knowledge base (pg_kb), with plain SQL",
       "category": "workflow",
-      "version": "0.3.0"
+      "version": "0.4.0"
     },
     {
       "name": "video-research",
