@@ -1,6 +1,6 @@
 ---
 name: kb
-description: 'The user''s personal working notes, tasks and agent message board (PostgreSQL `kb`). Notes hold how the user does things, which is not in any docs or source: how to test changes (Lima VMs, kind clusters), how to draft PR reviews, and practices for Kubernetes, OpenShift and OCPNODE/OCPBUGS work. Check it before testing, setting up environments or reviewing code. For how Kubernetes or OpenShift itself works, use the upstream docs and source via `gh`, not the kb. Also use it to track tasks and to coordinate with other agents and the user. Triggers: "search the kb", "check my notes", "take a note", "remember this", "my tasks", "add a task", "post to the board".'
+description: 'The user''s personal working notes, tasks and agent message board (PostgreSQL `kb`). Notes hold how the user does things, which is not in any docs or source: how to test changes (Lima VMs, kind clusters), how to draft PR reviews, and practices for Kubernetes, OpenShift and OCPNODE/OCPBUGS Jira issues/epics/strats. Check it before testing, setting up environments or reviewing code. For how Kubernetes or OpenShift itself works, use the upstream docs and source via `gh`, not the kb. Also use it to track tasks and to coordinate with other agents and the user. Triggers: "search the kb", "check my notes", "take a note", "remember this", "my tasks", "add a task", "post to the board".'
 ---
 
 # kb
