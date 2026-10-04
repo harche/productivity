@@ -1,0 +1,9 @@
+<!-- Without JS all steps show as a list. QA walks .steps-nav: first button = previous, last = next. -->
+<div x-data="{i: 0, n: 4}">
+  <div class="steps-nav" x-cloak>
+    <button @click="i--" :disabled="i===0">Previous</button>
+    <span x-text="`Step ${i+1} of ${n}`"></span>
+    <button @click="i++" :disabled="i===n-1">Next</button>
+  </div>
+  <ol><li x-show="i===0">...</li><li x-show="i===1">...</li><li x-show="i===2">...</li><li x-show="i===3">...</li></ol>
+</div>

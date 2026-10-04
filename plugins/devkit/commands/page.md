@@ -20,8 +20,8 @@ section 5 passes.
 - **Output path**: a trailing token ending in `.html`, or a directory.
   Default: `~/Documents/pages/<slug>.html`. `<slug>` is kebab-case from the
   topic. Create the directory if missing.
-- **Build dir**: `${TMPDIR:-/tmp}/devkit-page/<slug>/` for the plan,
-  screenshots and QA scripts.
+- **Build dir**: `${TMPDIR:-/tmp}/devkit-page/<slug>/` for the page source,
+  diagrams and screenshots.
 
 Work end to end without stopping for approval. Ask only if the topic itself
 is ambiguous.
@@ -29,18 +29,18 @@ is ambiguous.
 ## 1. Preflight
 
 ```bash
-command -v playwright-cli d2 python3
+command -v playwright-cli d2 python3 ffmpeg
 PK="${CLAUDE_PLUGIN_ROOT}/scripts/page"
 [ -f "$PK/pagekit.py" ] || PK="$(dirname "$(ls -t ~/.claude/plugins/cache/*/devkit/*/scripts/page/pagekit.py | head -1)")"
-python3 "$PK/pagekit.py" init <build-dir>
 ```
 
-`$PK` holds `pagekit.py` (build and QA) and `template.html` (theme, layout,
-component patterns, pinned libraries). Use them; do not rewrite them in the
-build dir. If one has a bug, fix it in the plugin.
+`$PK` holds `pagekit.py` (init, build and QA), `template.html` (theme,
+layout, pinned libraries) and `parts/` (one file per component). Use them;
+do not rewrite them in the build dir. If one has a bug, fix it in the
+plugin.
 
 Missing tools: stop, print the install commands and offer to run them:
-`brew install playwright-cli d2` (Linux: `npm install -g @playwright/cli`,
+`brew install playwright-cli d2 ffmpeg` (Linux: `npm install -g @playwright/cli`,
 `curl -fsSL https://d2lang.com/install.sh | sh -s --`). If the browser is
 missing, run `playwright-cli install-browser chromium`. Never skip QA.
 
@@ -52,8 +52,9 @@ comment link, reviewer) for every claim about intent.
 
 ## 3. Plan
 
-Write `plan.json`: an ordered list of sections, each
-`{id, claim, prose, diagram?, interaction?, sources[]}`.
+Decide the ordered sections, each `id: claim | diagram? | interaction? |
+sources`. You write this plan into the `<!-- PLAN -->` comment at the top
+of `page.html` in section 4. There is no separate plan file.
 
 - `claim`: the one thing this section makes true for the reader.
 - `diagram`: only if a picture shows the mechanism better than prose:
@@ -76,36 +77,50 @@ list at the end.
 
 ## 4. Build
 
-Edit `<build-dir>/page.html` (from `template.html`). It already has the
-theme tokens (light and dark), the layout, the favicon, and commented
-patterns for every component below. Keep the patterns the plan needs and
-delete the rest.
+Start the page with only the parts the plan uses:
 
-**Use the libraries, not hand-made versions:**
+```bash
+python3 "$PK/pagekit.py" init <build-dir> --with d2,diff,steps,popover
+```
 
-| Need | Use | Fallback without JS or CDN |
-|---|---|---|
-| Sequence, flow, structure, before/after diagram | **D2**: source in `diagrams/NAME.d2`, `<!-- d2:NAME -->` in the page. `pagekit build` renders it to inline SVG with light and dark themes and ELK layout. Use `direction: down` for anything with more than 3 nodes in a row. | Inline SVG: no JS needed |
-| PR diff | **diff2html**: put the diff in `pr.diff` (`gh pr diff`), use the diff pattern. It stays collapsed by default. | Raw diff in `<details><pre>` |
-| Metrics, numbers over time, comparisons | **Observable Plot** (`plot` in `devkit-libs`). Only for real data from the sources. | `<table>` of the same data |
-| Tabs, scenario toggle, step-through | **Alpine.js** (`alpine`): state in `x-data`, `x-show`. | All panels show, each with a heading |
-| Hover or focus card on an identifier | Native `popover` + `popovertarget` button. No library. | The button text stays |
-| Summary numbers | `.tiles` / `.tile` in the template | Plain HTML |
-| Code excerpt | **highlight.js** (`hljs`), `<code class="language-go">`, `<!-- text:excerpt.go -->` | Plain `<pre>` |
+| Part | Gives | Library (added to `devkit-libs` for you) | Fallback without JS or CDN |
+|---|---|---|---|
+| `d2` | Sequence, flow, structure, before/after diagram. Source in `diagrams/NAME.d2`. `build` renders it to inline SVG with light and dark themes and ELK layout. Use `direction: down` for anything with more than 3 nodes in a row. | D2 (build time) | Inline SVG: no JS needed |
+| `diff` | PR diff, collapsed by default. Put the diff in `pr.diff` (`gh pr diff`). | diff2html | Raw diff in `<details><pre>` |
+| `chart` | Metrics, numbers over time, comparisons. Only real data from the sources. | Observable Plot | `<table>` of the same data |
+| `toggle` | Before/after tabs, scenario toggle | Alpine.js | All panels show, each with a heading |
+| `steps` | Step-through for a sequence | Alpine.js | All steps show as a list |
+| `popover` | Hover or focus card on an identifier | none (native `popover`) | The button text stays |
+| `tiles` | Summary numbers | none | Plain HTML |
+| `code` | Code excerpt, `<!-- text:excerpt.go -->` | highlight.js | Plain `<pre>` |
 
-Hand-written SVG only for a mechanism that D2 cannot show (for example, a
-row of CPU cells that change color). Do not use a library that the plan
-does not need: `devkit-libs` lists only the libraries in use.
+`init` puts each part's snippet after "At a glance", marked
+`<!-- part: NAME -->`. Move each one into its section, remove the marker,
+and repeat a snippet if the plan uses it more than once. `build` fails while
+a marker is left. Hand-written SVG only for a mechanism that D2 cannot show
+(for example, a row of CPU cells that change color).
 
-**Markers** that `pagekit build` replaces: `devkit-libs` (pinned CDN tags
-with SRI), `<!-- d2:NAME -->`, `<!-- text:PATH -->` (HTML-escaped file,
-for diffs and code). Put the diff source in a hidden `<textarea>`, as the
-pattern does, not a `<script type="text/plain">`: escaped `&` stays escaped
-there.
+Write the whole page in one edit where you can: plan comment, sections,
+diagrams. Then build:
 
 ```bash
 python3 "$PK/pagekit.py" build <build-dir> <output>
 ```
+
+**Markers** that `build` replaces: `devkit-libs` (pinned CDN tags with SRI;
+stylesheets are inlined), `<!-- d2:NAME -->`, `<!-- text:PATH -->`
+(HTML-escaped file, for diffs and code). `build` removes the
+`<!-- PLAN -->` comment. Put the diff source in a hidden `<textarea>`, as
+the part does, not a `<script type="text/plain">`: escaped `&` stays
+escaped there.
+
+**Design.** The template gives a neutral GitHub-like theme. Change
+`--accent` (and, if the subject calls for it, a display font from Google
+Fonts) to suit the subject. Keep the three theme blocks (`:root`, the
+`prefers-color-scheme` block guarded by `:not([data-theme="light"])`, and
+`[data-theme="dark"]`) in step, so a host theme toggle works. Use colors
+only through the tokens. Put at least one detail that only this subject
+has (its real units, flags, terms of art) in the content.
 
 **Rules that the template does not enforce:**
 
@@ -137,41 +152,42 @@ python3 "$PK/pagekit.py" qa <build-dir> <output> [--repo owner/name]
 ```
 
 It serves the final file on loopback, uses its own `playwright-cli`
-session, and prints a table for the mechanical checks, at 1440×900 and
-390×844 in light and dark:
+session, and prints a table. Layout checks run at 1440×900 and 390×844 in
+light and dark:
 
 1. **Clean load**: zero console errors, zero failed requests.
-2. **Screenshots**: full page, split into viewport-sized tiles in
-   `shots/`. It also scans for text that overflows its box and for empty
-   visible figures.
+2. **Screenshots**: full page, split into tiles in `shots/`. A scan finds
+   text that overflows its box and empty visible figures.
 3. **No horizontal scroll** at 390 px.
+4. **Interactions**: clicks every button, tab and `summary` and checks
+   that the page state changes (visible text, ARIA state, open details or
+   popovers). Walks each `.steps-nav` to the last step and back. Presses
+   Enter on one control. Fails on a control with no effect, or one it
+   could not reach.
 5. **Links well-formed**: `href` syntax, `#anchors` exist, GitHub links
    match `--repo`.
 6. **Hosts and size**: only cdn.jsdelivr.net, cdnjs.cloudflare.com and
    Google Fonts; file under 2 MB.
 7. **Sentence length**: no prose sentence over 25 words (quotes and code
    are not checked).
+8. **Host theme override**: a forced `data-theme` changes the page and
+   any D2 diagram, in both directions.
 
 Then do the checks that need judgment:
 
-- **Look at every tile** with the image reader. Fail on clipped or
-  overlapping text, labels outside their shapes, unreadable contrast,
-  diagrams too small to read on the phone tiles, broken layout.
-- **4. Interactions**: open a `playwright-cli -s=<name>` session on a
-  loopback server. Click every control (and press Enter on one with the
-  keyboard). Use `eval` to assert the state changes: panels with
-  `checkVisibility()`, popovers with `:popover-open`, `aria-selected` on
-  tabs, `details.open`. Step-through controls reach the last step and
-  return. Screenshot one changed state. In zsh, wrap the CLI in a function
-  (`P() { playwright-cli -s=name "$@"; }`): `$P` with flags in a variable
-  does not split.
-- **5. Sources**: every intent claim in `plan.json` has its source on the
-  page.
-- **7. Language**: no passive voice in headings and captions.
+- **Read only the tiles that QA lists** under "Tiles to read": tiles with a
+  layout finding, the phone tiles that show a figure, and one sample per
+  width. Fail on clipped or overlapping text, labels outside their shapes,
+  unreadable contrast, diagrams too small to read on the phone, broken
+  layout. Read another tile only if you have a specific reason.
+- **Sources**: every intent claim in the plan comment has its source on
+  the page.
+- **Language**: no passive voice in headings and captions.
 
-On a failure: fix the cause and run **all** checks again. After 3 full
-rounds that still fail, stop and report the failing check with numbers.
-Never hand over a page that fails.
+On a failure: fix every cause in one pass, build again, and run `qa` once
+more. Read only the tiles it lists for the changed areas. If a check still
+fails after that one round, stop and report the failing check with
+numbers. Never hand over a page that fails.
 
 ## 6. Hand over
 
@@ -183,9 +199,14 @@ xdg-open <output>   # Linux
 Report:
 
 - Output path and file size.
-- The QA table from `pagekit.py qa`, plus the manual checks (4, 5, 7) with
-  what you tested.
-- Screenshot paths in the build dir.
+- The QA table from `pagekit.py qa`, plus the manual checks with what you
+  tested.
+- The `shots/` directory in the build dir.
 - If the host has a publishing tool (for example Claude Artifacts), offer
   to publish in one line. Do not publish without a yes: a published
-  page can be shared.
+  page can be shared. On a yes, build a body-only copy and publish that
+  file:
+
+  ```bash
+  python3 "$PK/pagekit.py" build <build-dir> <output> --artifact <build-dir>/artifact.html
+  ```
