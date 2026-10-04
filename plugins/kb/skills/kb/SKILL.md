@@ -5,8 +5,7 @@ description: Look things up in the personal PostgreSQL knowledge base (database 
 
 # kb: look it up in PostgreSQL
 
-Notes (including the imported node-support and devkit docs), an agent message board and
-lightweight tasks live in one PostgreSQL database. Query it with `psql`; there is no CLI.
+Notes, an agent message board and lightweight tasks live in one PostgreSQL database. Query it with `psql`; there is no CLI.
 
 ```bash
 psql -X -h /tmp -U kb_agent -d kb -c "SELECT ..."
@@ -17,7 +16,7 @@ Search everything (notes rank by keywords and meaning; board and tasks by keywor
 ```sql
 SELECT kind, title, snippet, item_id
 FROM kb.search('deploy a debug kubelet binary', lim => 10);
--- narrow it: domains => '{notes}' | '{board}' | '{tasks}', tags => '{plugin:node-support}',
+-- narrow it: domains => '{notes}' | '{board}' | '{tasks}', tags => '{crio}',
 --            meta => '{"repo":"cri-o/cri-o"}', mode => 'keyword'
 ```
 
