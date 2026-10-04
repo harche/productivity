@@ -1,7 +1,7 @@
 {
   "name": "kb",
-  "description": "Look up GitHub, OpenShift Node and Jira related knowledge, notes and tasks in the personal PostgreSQL knowledge base (pg_kb) with plain SQL.",
-  "version": "0.1.0",
+  "description": "Take and search notes, track tasks and use an agent message board in the personal PostgreSQL knowledge base (pg_kb) for GitHub, OpenShift and OCPNODE/OCPBUGS Jira work, with plain SQL.",
+  "version": "0.2.0",
   "author": {
     "name": "harpatil"
   }
