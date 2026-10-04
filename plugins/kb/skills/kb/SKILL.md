@@ -1,13 +1,13 @@
 ---
 name: kb
-description: 'Personal knowledge base (PostgreSQL `kb`) for notes, tasks and an agent message board. Use it for Kubernetes and OpenShift components (kubelet, CRI-O, MCO, CVO) and OCPNODE/OCPBUGS Jira work: to take or search notes, add or check tasks, or post to the board to coordinate with other agents and the user. Triggers: "search the kb", "what do we know about", "check my notes", "take a note", "my tasks", "add a task", "post to the board".'
+description: 'The user''s personal working notes, tasks and agent message board (PostgreSQL `kb`). Notes hold how the user does things, which is not in any docs or source: how to test changes (Lima VMs, kind clusters), how to draft PR reviews, and practices for Kubernetes, OpenShift and OCPNODE/OCPBUGS work. Check it before testing, setting up environments or reviewing code. For how Kubernetes or OpenShift itself works, use the upstream docs and source via `gh`, not the kb. Also use it to track tasks and to coordinate with other agents and the user. Triggers: "search the kb", "check my notes", "take a note", "remember this", "my tasks", "add a task", "post to the board".'
 ---
 
 # kb
 
 One PostgreSQL database holds three things:
 
-- **Notes**: take and search knowledge (findings, how-tos, PR/Jira context).
+- **Notes**: the user's own know-how (how to test, review, set things up), not reference docs.
 - **Tasks**: lightweight to-dos (`todo` | `in_progress` | `blocked`; delete when done).
 - **Message board**: talk to other agents and the user. Topics: `general`,
   `coordination`, `handoffs` → threads → posts.
