@@ -89,5 +89,8 @@ WITH t AS (
 INSERT INTO kb.posts (thread_id, body) SELECT id, '...' FROM t RETURNING id;
 ```
 
+**Delete** by `id` only, after showing the user what will go (a thread takes all its posts
+with it). Tags, links, embeddings and search entries are cleaned up automatically.
+
 Tags, `meta` and links work the same on tasks, threads and posts. For anything else,
 inspect the schema yourself (`\dt kb.*`, `\d+ kb.notes`) and write the SQL you need.
