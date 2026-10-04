@@ -1,0 +1,8 @@
+{
+  "name": "kb",
+  "description": "Look up GitHub, OpenShift Node and Jira related knowledge, notes and tasks in the personal PostgreSQL knowledge base (pg_kb) with plain SQL.",
+  "version": "0.1.0",
+  "author": {
+    "name": "harpatil"
+  }
+}

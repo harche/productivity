@@ -16,6 +16,7 @@ claude plugin install --scope local <name>@productivity-tools
 | `node-support` | OpenShift Node team assistant: kubelet/MCO/CRI-O/crun/conmonrs/Kueue development, debug-binary + CVO deployment, Jira (OCPNODE/OCPBUGS), Knowledge Base, support cases, platform docs (k8s + OpenShift), and Prometheus metrics | — |
 | `ultracode` | On-demand adversarial multi-agent review and isolated implementation workflows for Claude Code and Pi | — |
 | `hunk-review` | Watch a live Hunk session for user comments and answer them inline (loads Hunk's own skill via `hunk skill path`) ([usage](../plugins/hunk-review/README.md)) | — |
+| `kb` | Look up GitHub, OpenShift Node and Jira related knowledge, notes and tasks in [pg_kb](https://github.com/harche/pg_kb) with plain SQL ([usage](../plugins/kb/README.md)) | — |
 
 ### Misc
 
@@ -36,6 +37,7 @@ External CLI tools and API tokens required by specific plugins. Only install wha
 |------|---------|-------|-------|
 | [`gog`](https://github.com/steipete/gogcli) | `workspace` | See [repo README](https://github.com/steipete/gogcli) | See [repo README](https://github.com/steipete/gogcli) |
 | `hunk` | `hunk-review` | Install Hunk 0.20.1+ (`hunk skill path` and `session comment list --type user --json`) | Same CLI required |
+| `psql` + a running [pg_kb](https://github.com/harche/pg_kb) | `kb` | `brew install postgresql@18`, then follow the pg_kb README | Same |
 | `python3` | `hunk-review` | `brew install python` | Install Python 3 with your package manager |
 
 ### API Tokens

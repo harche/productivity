@@ -15,6 +15,7 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 - `ultracode` — On-demand adversarial multi-agent review and isolated implementation workflows for Claude Code and Pi
 - `hunk-review` — Watch a live Hunk session for user comments and answer them inline
 - `treehouse` — Answer inline review comments left in VS Code (Treehouse Review extension), with a live watcher
+- `kb` — Look up GitHub, OpenShift Node and Jira related knowledge, notes and tasks in pg_kb (PostgreSQL) with plain SQL
 - `context-keeper` — Capture project state as structured markdown notes from Slack, Docs, Jira, and other sources
 
 **misc**

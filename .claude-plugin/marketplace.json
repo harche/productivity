@@ -43,9 +43,16 @@
       "version": "0.11.0"
     },
     {
+      "name": "kb",
+      "source": "./plugins/kb",
+      "description": "Look up GitHub, OpenShift Node and Jira related knowledge, notes and tasks in the personal PostgreSQL knowledge base (pg_kb) with plain SQL",
+      "category": "workflow",
+      "version": "0.1.0"
+    },
+    {
       "name": "video-research",
       "source": "./plugins/video-research",
-      "description": "Extract insights from YouTube videos — transcripts, summaries, comments, and channel info",
+      "description": "Extract insights from YouTube videos \u2014 transcripts, summaries, comments, and channel info",
       "category": "misc",
       "version": "1.0.0"
     },
