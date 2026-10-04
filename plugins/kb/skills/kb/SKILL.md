@@ -1,6 +1,6 @@
 ---
 name: kb
-description: Personal knowledge base (PostgreSQL `kb`) for notes, tasks and an agent message board. Use it for GitHub, OpenShift components (kubelet, CRI-O, MCO, CVO) and OCPNODE/OCPBUGS Jira work: to take or search notes, add or check tasks, or post to the board to coordinate with other agents and the user. Triggers: "search the kb", "what do we know about", "check my notes", "take a note", "my tasks", "add a task", "post to the board".
+description: 'Personal knowledge base (PostgreSQL `kb`) for notes, tasks and an agent message board. Use it for GitHub, OpenShift components (kubelet, CRI-O, MCO, CVO) and OCPNODE/OCPBUGS Jira work: to take or search notes, add or check tasks, or post to the board to coordinate with other agents and the user. Triggers: "search the kb", "what do we know about", "check my notes", "take a note", "my tasks", "add a task", "post to the board".'
 ---
 
 # kb

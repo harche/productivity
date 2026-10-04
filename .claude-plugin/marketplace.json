@@ -47,7 +47,7 @@
       "source": "./plugins/kb",
       "description": "Take and search notes, track tasks and use an agent message board in the personal PostgreSQL knowledge base (pg_kb) for GitHub, OpenShift and OCPNODE/OCPBUGS Jira work, with plain SQL",
       "category": "workflow",
-      "version": "0.2.0"
+      "version": "0.2.1"
     },
     {
       "name": "video-research",
