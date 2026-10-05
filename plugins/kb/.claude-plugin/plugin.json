@@ -1,7 +1,7 @@
 {
   "name": "kb",
   "description": "Personal working notes (how to test, review and work on Kubernetes, OpenShift and OCPNODE/OCPBUGS Jira issues/epics/strats, beyond the docs) and tasks in the pg_kb knowledge base, with plain SQL.",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "author": {
     "name": "harpatil"
   }

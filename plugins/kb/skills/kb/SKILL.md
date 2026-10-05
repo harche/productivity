@@ -13,8 +13,11 @@ One PostgreSQL database holds two things:
 Query it with `psql`; there is no CLI. Authorship is set automatically.
 
 ```bash
-psql -X -h /tmp -U kb_agent -d kb -c "SELECT ..."
+psql -X -A -h /tmp -U kb_agent -d kb -c "SELECT ..."
 ```
+
+Always pass `-A`: the default aligned output pads every line to the widest one, which
+makes a note body 10x larger. Add `-t` when you read a body, to get just its text.
 
 ## Search
 
@@ -35,7 +38,7 @@ Judge the results by title and snippet, then read only the one or two notes that
 don't read every hit. If nothing fits, rephrase and search again before reading more.
 
 ```sql
-SELECT title, body FROM kb.notes WHERE id = '<item_id>';
+SELECT title, body FROM kb.notes WHERE id = '<item_id>';   -- psql -X -A -t ...
 SELECT title, body, status, meta->>'pr_url' AS pr_url FROM kb.tasks ORDER BY sort_order;
 ```
 
