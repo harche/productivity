@@ -1,7 +1,7 @@
 {
   "name": "kb",
-  "description": "Personal working notes (how to test, review and work on Kubernetes, OpenShift and OCPNODE/OCPBUGS Jira issues/epics/strats, beyond the docs), tasks and an agent message board in the personal PostgreSQL knowledge base (pg_kb), with plain SQL.",
-  "version": "0.4.3",
+  "description": "Personal working notes (how to test, review and work on Kubernetes, OpenShift and OCPNODE/OCPBUGS Jira issues/epics/strats, beyond the docs) and tasks in the pg_kb knowledge base, with plain SQL.",
+  "version": "0.5.0",
   "author": {
     "name": "harpatil"
   }

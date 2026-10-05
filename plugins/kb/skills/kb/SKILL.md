@@ -1,16 +1,14 @@
 ---
 name: kb
-description: 'The user''s personal notes on how they do their work: upstream and downstream GitHub PRs and issues (Kubernetes, OpenShift, CRI-O and related), and their team''s Jira (OCPNODE, OCPBUGS). The notes say how the user does the work, not what the code does. Search them before you explain or review a PR or issue, test a change, or pick up a Jira item, and follow their steps. For code, PR history and upstream docs, use `gh`. The kb also holds the user''s tasks and a message board shared with other agents. Triggers: "search the kb", "check my notes", "remember this", "my tasks", "add a task", "post to the board".'
+description: 'The user''s personal notes on how they do their work: upstream and downstream GitHub PRs and issues (Kubernetes, OpenShift, CRI-O and related), and their team''s Jira (OCPNODE, OCPBUGS). The notes say how the user does the work, not what the code does. Search them before you explain or review a PR or issue, test a change, or pick up a Jira item, and follow their steps. For code, PR history and upstream docs, use `gh`. The kb also holds the user''s tasks. Triggers: "search the kb", "check my notes", "remember this", "my tasks", "add a task".'
 ---
 
 # kb
 
-One PostgreSQL database holds three things:
+One PostgreSQL database holds two things:
 
 - **Notes**: the user's own know-how (how to test, review, set things up), not reference docs.
 - **Tasks**: lightweight to-dos (`todo` | `in_progress` | `blocked`; delete when done).
-- **Message board**: talk to other agents and the user. Topics: `general`,
-  `coordination`, `handoffs` → threads → posts.
 
 Query it with `psql`; there is no CLI. Authorship is set automatically.
 
@@ -23,14 +21,14 @@ psql -X -h /tmp -U kb_agent -d kb -c "SELECT ..."
 ```sql
 SELECT kind, title, snippet, item_id
 FROM kb.search('deploy a debug kubelet binary', lim => 10);
--- narrow it: domains => '{notes}' | '{tasks}' | '{board}', tags => '{crio}',
+-- narrow it: domains => '{notes}' | '{tasks}', tags => '{crio}',
 --            meta => '{"repo":"cri-o/cri-o"}'
 ```
 
 Three modes, chosen with `mode =>`:
 
 - `'hybrid'` (default): keyword and semantic results combined.
-- `'keyword'`: full-text plus fuzzy title match. Covers notes, tasks and the board.
+- `'keyword'`: full-text plus fuzzy title match. Covers notes and tasks.
 - `'semantic'`: meaning-based (embeddings). Notes only; finds notes that share no words with the query.
 
 Then read what you found:
@@ -54,7 +52,7 @@ Write every note so a future search finds it:
 - **Tags**: 2–5 plain, lower-case tags (`lima`, `kind`, `pr-review`); they also count as
   search words. Reuse existing tags before inventing synonyms. No `:` or `/` in tags.
 - **meta**: facts to filter on, with these keys: `jira`, `pr_url`, `repo`.
-- **Links**: connect the note to related notes, tasks or threads.
+- **Links**: connect the note to related notes or tasks.
 
 ```sql
 -- existing tags
@@ -75,22 +73,14 @@ INSERT INTO kb.links (src_id, dst_id, rel)   -- rel: relates | references | deri
 VALUES ('<note id>', '<other id>', 'relates') ON CONFLICT DO NOTHING;
 ```
 
-Tasks and the board:
+Tasks:
 
 ```sql
 INSERT INTO kb.tasks (title, body, priority, meta)  -- priority p0..p3, default p2
 VALUES ('...', '...', 'p2', '{"jira":"OCPNODE-123"}') RETURNING id;
-
--- New board thread with its first post
-WITH t AS (
-  INSERT INTO kb.threads (topic_id, title)
-  SELECT id, '...' FROM kb.topics WHERE slug = 'coordination' RETURNING id
-)
-INSERT INTO kb.posts (thread_id, body) SELECT id, '...' FROM t RETURNING id;
 ```
 
-**Delete** by `id` only, after showing the user what will go (a thread takes all its posts
-with it). Tags, links, embeddings and search entries are cleaned up automatically.
+**Delete** by `id` only, after showing the user what will go. Tags, links, embeddings and search entries are cleaned up automatically.
 
-Tags, `meta` and links work the same on tasks, threads and posts. For anything else,
+Tags, `meta` and links work the same on tasks. For anything else,
 inspect the schema yourself (`\dt kb.*`, `\d+ kb.notes`) and write the SQL you need.
