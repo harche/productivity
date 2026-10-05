@@ -22,20 +22,24 @@ makes a note body 10x larger. Add `-t` when you read a body, to get just its tex
 ## Search
 
 ```sql
-SELECT kind, title, snippet, item_id
-FROM kb.search('deploy a debug kubelet binary', lim => 5);
+SELECT kind, title, snippet, jev_prob, item_id
+FROM kb.search('deploy a debug kubelet binary', mode => 'jev');
 -- narrow it: domains => '{notes}' | '{tasks}', tags => '{crio}',
 --            meta => '{"repo":"cri-o/cri-o"}'
 ```
 
-Three modes, chosen with `mode =>`:
+Use `mode => 'jev'` (best match). A hybrid search finds candidates, then a decision model
+(TypeSafe's Jev) picks the ones that fit, so you get one to three rows, or none:
 
-- `'hybrid'` (default): keyword and semantic results combined.
-- `'keyword'`: full-text plus fuzzy title match. Covers notes and tasks.
-- `'semantic'`: meaning-based (embeddings). Notes only; finds notes that share no words with the query.
+- **One row**: read it.
+- **Two or three rows**: close alternatives, best first (`jev_prob` says how close). Read the
+  first; read the next only if the first doesn't cover the question.
+- **No rows**: nothing in the KB fits. Say so, or rephrase once. To see every partial match,
+  use `mode => 'hybrid', lim => 5` and judge by title and snippet.
 
-Judge the results by title and snippet, then read only the one or two notes that fit;
-don't read every hit. If nothing fits, rephrase and search again before reading more.
+The other modes return ranked lists: `'hybrid'` (keyword and semantic combined, the default
+when `mode` is omitted), `'keyword'` (full-text plus fuzzy title; notes and tasks) and
+`'semantic'` (embeddings; notes only).
 
 ```sql
 SELECT title, body FROM kb.notes WHERE id = '<item_id>';   -- psql -X -A -t ...
