@@ -20,7 +20,7 @@ psql -X -h /tmp -U kb_agent -d kb -c "SELECT ..."
 
 ```sql
 SELECT kind, title, snippet, item_id
-FROM kb.search('deploy a debug kubelet binary', lim => 10);
+FROM kb.search('deploy a debug kubelet binary', lim => 5);
 -- narrow it: domains => '{notes}' | '{tasks}', tags => '{crio}',
 --            meta => '{"repo":"cri-o/cri-o"}'
 ```
@@ -31,7 +31,8 @@ Three modes, chosen with `mode =>`:
 - `'keyword'`: full-text plus fuzzy title match. Covers notes and tasks.
 - `'semantic'`: meaning-based (embeddings). Notes only; finds notes that share no words with the query.
 
-Then read what you found:
+Judge the results by title and snippet, then read only the one or two notes that fit;
+don't read every hit. If nothing fits, rephrase and search again before reading more.
 
 ```sql
 SELECT title, body FROM kb.notes WHERE id = '<item_id>';
