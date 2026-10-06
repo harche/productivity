@@ -22,7 +22,7 @@ In a worktree open in VS Code:
 /treehouse:review stop   # cancel the watcher
 ```
 
-Or just say "check my comments" for a one-pass answer (the `treehouse-review` skill).
+It answers anything already waiting before it starts watching.
 
 ## Requirements
 

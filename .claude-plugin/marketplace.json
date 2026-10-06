@@ -33,7 +33,7 @@
       "source": "./plugins/treehouse",
       "description": "Answer inline review comments left in VS Code (Treehouse Review extension), with a background watcher for live back-and-forth",
       "category": "workflow",
-      "version": "0.1.0"
+      "version": "0.2.0"
     },
     {
       "name": "devkit",
