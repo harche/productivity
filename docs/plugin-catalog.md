@@ -12,20 +12,9 @@ claude plugin install --scope local <name>@productivity-tools
 
 | Plugin | Description | Dependencies |
 |--------|-------------|--------------|
-| `workspace` | Manage email, calendar, and documents across Google Workspace | — |
 | `node-support` | OpenShift Node team assistant: kubelet/MCO/CRI-O/crun/conmonrs/Kueue development, debug-binary + CVO deployment, Jira (OCPNODE/OCPBUGS), Knowledge Base, support cases, platform docs (k8s + OpenShift), and Prometheus metrics | — |
 | `ultracode` | On-demand adversarial multi-agent review and isolated implementation workflows for Claude Code and Pi | — |
-| `hunk-review` | Watch a live Hunk session for user comments and answer them inline (loads Hunk's own skill via `hunk skill path`) ([usage](../plugins/hunk-review/README.md)) | — |
 | `kb` | Look up GitHub, OpenShift Node and Jira related knowledge, notes and tasks in [pg_kb](https://github.com/harche/pg_kb) with plain SQL ([usage](../plugins/kb/README.md)) | — |
-
-### Misc
-
-| Plugin | Description | Dependencies |
-|--------|-------------|--------------|
-| `video-research` | Extract insights from YouTube videos: transcripts, summaries, comments, and channel info | — |
-| `predictions` | Research prediction markets and event probabilities on Polymarket | — |
-| `financial-research` | Research company fundamentals (SEC filings) and economic trends (Federal Reserve data) | — |
-| `medical-research` | Find peer-reviewed medical evidence, clinical trials, and scientific papers | — |
 
 ## Prerequisites
 
@@ -35,10 +24,7 @@ External CLI tools and API tokens required by specific plugins. Only install wha
 
 | Tool | Plugins | macOS | Linux |
 |------|---------|-------|-------|
-| [`gog`](https://github.com/steipete/gogcli) | `workspace` | See [repo README](https://github.com/steipete/gogcli) | See [repo README](https://github.com/steipete/gogcli) |
-| `hunk` | `hunk-review` | Install Hunk 0.20.1+ (`hunk skill path` and `session comment list --type user --json`) | Same CLI required |
 | `psql` + a running [pg_kb](https://github.com/harche/pg_kb) | `kb` | `brew install postgresql@18`, then follow the pg_kb README | Same |
-| `python3` | `hunk-review` | `brew install python` | Install Python 3 with your package manager |
 
 ### API Tokens
 
@@ -46,9 +32,6 @@ External CLI tools and API tokens required by specific plugins. Only install wha
 |-------|---------|---------------|
 | `JIRA_API_TOKEN` | `node-support` | [Create a PAT](https://issues.redhat.com) — Profile → Personal Access Tokens |
 | `RH_API_OFFLINE_TOKEN` | `node-support` | [Generate an offline token](https://access.redhat.com/management/api) for the Customer Portal API |
-| `fred-api-key` | `financial-research` | [Get a free API key](https://fred.stlouisfed.org/docs/api/api_key.html) (instant approval) |
-| `semantic-scholar-api-key` | `medical-research` | [Request a free API key](https://www.semanticscholar.org/product/api#api-key-form) (optional — plugin works without it) |
-| `openalex-api-key` | `medical-research` | [Get a free API key](https://openalex.org/settings/api) (sign up, then copy from settings) |
 
 ### Storing Tokens
 
@@ -71,10 +54,4 @@ See the full examples in the [README](../README.md#authentication--secrets).
 
 | Plugin | Auth method |
 |--------|-------------|
-| `workspace` | `gog` CLI (OAuth flow) |
-| `video-research` | No auth required (public API) |
-| `predictions` | No auth required (public API) |
-| `financial-research` | SEC EDGAR: no auth; FRED: API key from Keychain (`fred-api-key`) |
-| `medical-research` | Europe PMC and ClinicalTrials.gov: no auth; Semantic Scholar and OpenAlex: API keys from Keychain (optional/free) |
 | `ultracode` | No auth required |
-| `hunk-review` | No auth required; uses the local Hunk daemon |

@@ -5,9 +5,9 @@ Review** VS Code extension, which adds GitHub-style comment threads to any file
 or diff in a git worktree and stores them in `<worktree>/.treehouse/comments.json`
 (self-gitignored). Agent replies show up live in the VS Code thread.
 
-Like `hunk-review`, but threads persist on disk (survive restarts), follow their
-code as lines move, and work on the branch diff vs origin's default branch as
-well as uncommitted changes.
+Threads persist on disk (survive restarts), follow their code as lines move,
+and work on the branch diff vs origin's default branch as well as uncommitted
+changes.
 
 ## Install and use
 

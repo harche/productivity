@@ -10,19 +10,11 @@ Personal AI-powered productivity hub focused on software engineering workflows.
 ## Plugins
 
 **workflow**
-- `workspace` — Manage email, calendar, and documents across Google Workspace
 - `node-support` — OpenShift Node team assistant: kubelet/MCO/CRI-O/crun/conmonrs/Kueue development, debug-binary + CVO deployment, Jira (OCPNODE/OCPBUGS), Knowledge Base, support cases, platform docs (k8s + OpenShift), and Prometheus metrics
 - `ultracode` — On-demand adversarial multi-agent review and isolated implementation workflows for Claude Code and Pi
-- `hunk-review` — Watch a live Hunk session for user comments and answer them inline
 - `treehouse` — Answer inline review comments left in VS Code (Treehouse Review extension), with a live watcher
 - `kb` — Look up GitHub, OpenShift Node and Jira related knowledge, notes and tasks in pg_kb (PostgreSQL) with plain SQL
 - `context-keeper` — Capture project state as structured markdown notes from Slack, Docs, Jira, and other sources
-
-**misc**
-- `video-research` — Extract insights from YouTube videos: transcripts, summaries, comments, and channel info
-- `predictions` — Research prediction markets and event probabilities on Polymarket
-- `financial-research` — Research company fundamentals (SEC filings) and economic trends (Federal Reserve data)
-- `medical-research` — Find peer-reviewed medical evidence, clinical trials, and scientific papers
 
 ## Plugin Versioning
 
