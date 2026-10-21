@@ -35,7 +35,7 @@ It answers anything already waiting before it starts watching.
 
 `scripts/comments.py` — read and answer threads:
 `list [--all]`, `pending`, `show <id>`, `reply <id> <text|->`, `resolve`, `reopen`,
-`add --file F --line N <text>`. Pass `--root` or run inside the worktree.
+`delete <id>... | --resolved`, `add --file F --line N <text>`. Pass `--root` or run inside the worktree.
 
 `scripts/watch_comments.py` — polls every second and exits with a JSON event when
 a thread's latest message is from the user and its id is not acknowledged, on

@@ -8,6 +8,7 @@ Threads live in <git toplevel>/.treehouse/comments.json. Run from inside the wor
   comments.py show <id>                   one thread with code context
   comments.py reply <id> <text|->         reply as the agent ("-" reads stdin)
   comments.py resolve <id> | reopen <id>
+  comments.py delete <id>... | delete --resolved   remove threads for good
   comments.py add --file F --line N <text|->   start a thread as the agent
 """
 
@@ -139,6 +140,7 @@ def main(argv=None):
     p = sub.add_parser("reply"); p.add_argument("id"); p.add_argument("text"); p.add_argument("--resolve", action="store_true")
     p = sub.add_parser("resolve"); p.add_argument("id")
     p = sub.add_parser("reopen"); p.add_argument("id")
+    p = sub.add_parser("delete"); p.add_argument("ids", nargs="*"); p.add_argument("--resolved", action="store_true")
     p = sub.add_parser("add"); p.add_argument("--file", required=True); p.add_argument("--line", type=int, required=True); p.add_argument("text")
     args = parser.parse_args(argv)
     root = git_root(args.root)
@@ -157,10 +159,24 @@ def main(argv=None):
                                        "body": text_arg(args.text), "createdAt": now()})
         if args.cmd == "resolve" or getattr(args, "resolve", False):
             thread["status"] = "resolved"
+        if args.cmd == "resolve" and thread["comments"]:
+            # A bare resolve adds nothing to read, so it shouldn't leave old replies unread in VS Code;
+            # reply --resolve keeps its new reply unread.
+            thread["readUpTo"] = thread["comments"][-1]["id"]
         elif args.cmd == "reopen":
             thread["status"] = "open"
         save(root, data)
         print(f"{args.cmd}: {thread['id']}")
+    elif args.cmd == "delete":
+        if not args.ids and not args.resolved:
+            parser.error("delete needs thread ids or --resolved")
+        data = load(root)
+        doomed = {find(data, i)["id"] for i in args.ids}
+        if args.resolved:
+            doomed |= {t["id"] for t in data["threads"] if not is_open(t)}
+        data["threads"] = [t for t in data["threads"] if t["id"] not in doomed]
+        save(root, data)
+        print(f"deleted: {len(doomed)} thread{'' if len(doomed) == 1 else 's'}")
     elif args.cmd == "add":
         rel = os.path.relpath(os.path.abspath(args.file), root) if os.path.isabs(args.file) or os.path.exists(args.file) else args.file
         lines = file_lines(root, rel) or []

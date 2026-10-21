@@ -48,6 +48,22 @@ class CliTests(unittest.TestCase):
         self.assertEqual(self.cli("list").strip(), "no threads")
         self.assertIn(tid, self.cli("list", "--all"))
 
+    def test_bare_resolve_marks_read_but_reply_resolve_does_not(self):
+        a = self.cli("add", "--file", "main.go", "--line", "1", "a").split()[-1]
+        b = self.cli("add", "--file", "main.go", "--line", "1", "b").split()[-1]
+        self.cli("resolve", a)
+        self.cli("reply", b, "done", "--resolve")
+        ta, tb = self.store()["threads"]
+        self.assertEqual(ta["readUpTo"], ta["comments"][-1]["id"])
+        self.assertNotIn("readUpTo", tb)
+
+    def test_delete_by_id_and_resolved(self):
+        a, b, c = (self.cli("add", "--file", "main.go", "--line", "1", n).split()[-1] for n in "abc")
+        self.cli("resolve", b)
+        self.assertIn("deleted: 1 thread", self.cli("delete", a))
+        self.assertIn("deleted: 1 thread", self.cli("delete", "--resolved"))
+        self.assertEqual([t["id"] for t in self.store()["threads"]], [c])
+
     def test_missing_store_lists_nothing(self):
         self.assertEqual(self.cli("list").strip(), "no threads")
 
