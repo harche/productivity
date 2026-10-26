@@ -26,6 +26,7 @@ For these, skip search and read the note by id (`SELECT body FROM kb.notes WHERE
 - Review a PR: `01a109b5-8014-7c45-9346-846c18ee3ff9`
 - Explain a PR, issue or Jira: `01a109b5-7fe7-7d43-bb0d-23a081cb63b8`
 - SIG Node boards and TestGrid (which note for which column): `01a13e20-c66a-7c28-b386-2d61ff920cd7`
+- Access Red Hat Jira (REST API auth, endpoints, ADF, gotchas): `01a10900-cad2-7ce1-a8d3-e59cdee9daf7`
 
 If no row comes back, search as usual.
 
